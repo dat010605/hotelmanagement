@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\web\\hotelmanagement\\HotelManagement.API.csproj": {}
+    "D:\\New folder (2)\\hotelmanagement\\HotelManagement.API.csproj": {}
   },
   "projects": {
-    "D:\\web\\hotelmanagement\\HotelManagement.API.csproj": {
+    "D:\\New folder (2)\\hotelmanagement\\HotelManagement.API.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\web\\hotelmanagement\\HotelManagement.API.csproj",
+        "projectUniqueName": "D:\\New folder (2)\\hotelmanagement\\HotelManagement.API.csproj",
         "projectName": "HotelManagement.API",
-        "projectPath": "D:\\web\\hotelmanagement\\HotelManagement.API.csproj",
+        "projectPath": "D:\\New folder (2)\\hotelmanagement\\HotelManagement.API.csproj",
         "packagesPath": "C:\\Users\\ASUS\\.nuget\\packages\\",
-        "outputPath": "D:\\web\\hotelmanagement\\obj\\",
+        "outputPath": "D:\\New folder (2)\\hotelmanagement\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\ASUS\\AppData\\Roaming\\NuGet\\NuGet.Config",
