@@ -662,10 +662,6 @@ namespace HotelManagement.API.Migrations
                         .HasColumnType("int")
                         .HasColumnName("floor");
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("RoomNumber")
                         .IsRequired()
                         .HasMaxLength(50)
