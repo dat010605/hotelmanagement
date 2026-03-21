@@ -90,7 +90,7 @@ namespace HotelManagement.API.Controllers
         // 5. PATCH : Cập nhật nhanh trạng thái
         // ====================================================
         [HttpPatch("{id}/status")]
-        [Authorize(Roles = "Admin,Manager")] 
+        [Authorize(Roles = "Admin,Manager")]
         public async Task<IActionResult> UpdateRoomStatus(int id, [FromBody] UpdateRoomStatusRequest request)
         {
             var room = await _context.Rooms.FindAsync(id);
@@ -100,5 +100,27 @@ namespace HotelManagement.API.Controllers
             await _context.SaveChangesAsync();
             return Ok(new { message = $"Đã cập nhật trạng thái phòng thành: {request.Status}" });
         }
+        // THÊM: 7. PATCH: Cập nhật trạng thái d Dọn dẹp
+// ==========================================
+[HttpPatch("cleaning-status")]
+public async Task<IActionResult> UpdateCleaningStatus([FromBody] UpdateRoomCleaningStatusDto dto)
+{
+    var room = await _context.Rooms.FindAsync(dto.RoomId);
+    if (room == null) return NotFound("Phòng không tồn tại.");
+    room.Status = dto.NewStatus; // Ví dụ: "Available", "Cleaning", "Dirty"
+    await _context.SaveChangesAsync();
+    return Ok(new { Message = "Cập nhật trạng thái dọn dẹp thành công!" });
+}
+
+// ==========================================
+// THÊM: 8. POST: Tạo nhiều phòng cùng lúc
+// ==========================================
+[HttpPost("bulk-create")]
+public async Task<IActionResult> BulkCreateRooms([FromBody] List<CreateRoomDto> dtos)
+{
+    foreach (var dto in dtos) { /* ... Logic tạo phòng ... */ }
+    await _context.SaveChangesAsync();
+    return Ok(new { Message = $"Đã tạo thành công {dtos.Count} phòng!" });
+}
     }
 }

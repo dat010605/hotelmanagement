@@ -96,5 +96,30 @@ namespace HotelManagement.API.Controllers
 
             return Ok(new { message = "Xóa hạng phòng thành công!" });
         }
+        // ... (Code hiện tại) ...
+
+// ==========================================
+// THÊM: 6. GET: Lấy loại phòng theo tên
+// ==========================================
+[HttpGet("by-name/{name}")]
+public async Task<IActionResult> GetByName(string name) { /* ... Logic sum ... */ return Ok(); }
+
+// ==========================================
+// THÊM: 7. POST: Thêm hình ảnh cho loại phòng
+// ==========================================
+[HttpPost("images")]
+public async Task<IActionResult> UploadImage(IFormFile file, [FromQuery] int roomTypeId) { /* ... Logic upload ... */ return Ok(); }
+
+// ==========================================
+// THÊM: 8. PATCH: Đặt ảnh làm ảnh chính
+// ==========================================
+[HttpPatch("set-primary")]
+public async Task<IActionResult> SetPrimaryImage([FromQuery] int imageId, [FromQuery] int roomTypeId) { /* ... Logic set ... */ return Ok(); }
+
+// ==========================================
+// THÊM: 9. DELETE: Xóa hình ảnh
+// ==========================================
+[HttpDelete("images/{imageId}")]
+public async Task<IActionResult> DeleteImage(int imageId) { /* ... Logic delete ... */ return Ok(); }
     }
 }
