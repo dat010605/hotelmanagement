@@ -1,12 +1,15 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ProtectedRoute from './routes/ProtectedRoute';
+import AdminLayout from './layouts/AdminLayout'; // Import khung giao diện mới
 
-// Component giả lập để test luồng (Người số 2 sẽ thay thế cái này sau bằng AdminLayout)
-const TempDashboard = () => (
-  <div style={{ padding: 50, textAlign: 'center' }}>
-    <h1>🎉 Chào mừng đến với Admin Dashboard!</h1>
-    <p>Nếu ngài thấy dòng này, nghĩa là ngài đã đăng nhập thành công và có Token hợp lệ.</p>
+// Trang Dashboard con (thực tế)
+const DashboardPage = () => (
+  <div>
+    <h2>📊 Tổng quan hệ thống</h2>
+    <p>Chào mừng ngài trở lại. </p>
   </div>
 );
 
@@ -14,15 +17,19 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Tuyến đường công khai */}
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         
-        {/* Nếu gõ localhost:5173, tự động chuyển về trang login */}
         <Route path="/" element={<Navigate to="/login" replace />} />
 
-        {/* Tuyến đường bảo vệ (Yêu cầu phải qua ải ProtectedRoute) */}
+        {/* Tuyến đường bảo vệ có lồng Layout */}
         <Route element={<ProtectedRoute />}>
-          <Route path="/admin/dashboard" element={<TempDashboard />} />
+          <Route element={<AdminLayout />}> 
+            <Route path="/admin/dashboard" element={<DashboardPage />} />
+            <Route path="/admin/users" element={<div>Trang quản lý User</div>} />
+            <Route path="/admin/rooms" element={<div>Trang quản lý Phòng</div>} />
+          </Route>
         </Route>
       </Routes>
     </BrowserRouter>

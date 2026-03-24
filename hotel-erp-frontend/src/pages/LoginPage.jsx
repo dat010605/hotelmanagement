@@ -1,32 +1,28 @@
 import React, { useState } from 'react';
 import { Form, Input, Button, Card, notification, Typography } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import { useAdminAuthStore } from '../store/adminAuthStore';
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 const LoginPage = () => {
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
-  // Lấy hàm lưu token từ Zustand Store
+  const navigate = useNavigate();// Lấy hàm setAuth từ store để cập nhật trạng thái đăng nhập
   const setAuth = useAdminAuthStore((state) => state.setAuth);
 
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      // Gọi API đăng nhập thực tế tới Backend
-      const response = await axiosClient.post('/Auth/login', {
+      const response = await axiosClient.post('/Auth/login', {// Thay bằng endpoint thực tế của ngài
         email: values.email,
         password: values.password,
       });
 
-      // Bóc tách dữ liệu từ Backend (Ngài nhớ chỉnh lại key cho khớp với API của team nhé)
-      const { token, user, permissions } = response.data;
+      const { token, user, permissions } = response.data;// Lưu token và thông tin người dùng vào store
 
-      // Lưu vào Zustand và LocalStorage
-      setAuth(token, user, permissions);
+      setAuth(token, user, permissions);// Hiển thị thông báo thành công và chuyển hướng đến dashboard
       
       notification.success({
         message: 'Đăng nhập thành công!',
@@ -34,8 +30,7 @@ const LoginPage = () => {
         placement: 'topRight',
       });
 
-      // Chuyển hướng vào trang trong
-      navigate('/admin/dashboard');
+      navigate('/admin/dashboard');// Chuyển hướng đến dashboard sau khi đăng nhập thành công
     } catch (error) {
       notification.error({
         message: 'Đăng nhập thất bại',
@@ -47,34 +42,90 @@ const LoginPage = () => {
     }
   };
 
+  
+  const bigInputStyle = {
+    padding: '16px 20px', 
+    fontSize: '18px', 
+    borderRadius: '10px', 
+  };
+
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f0f2f5' }}>
-      <Card style={{ width: 400, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-        <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <Title level={3}>Hotel ERP Admin</Title>
-          <p>Vui lòng đăng nhập để tiếp tục</p>
+    <div style={{ 
+      display: 'flex', 
+      justifyContent: 'center', 
+      alignItems: 'center', 
+      height: '100vh', 
+      background: '#f0f2f5', 
+      fontFamily: 'SFProDisplay-Regular, Helvetica, Arial, sans-serif' 
+    }}>
+      <Card style={{ 
+        width: 580, 
+        borderRadius: '12px', 
+        boxShadow: '0 2px 4px rgba(0, 0, 0, .1), 0 8px 16px rgba(0, 0, 0, .1)', 
+        padding: '25px 15px' // Giãn cách lề trong Card
+      }}>
+        <div style={{ textAlign: 'center', marginBottom: 35 }}>
+          <Title level={1} style={{ color: '#1c1e21', fontWeight: 'bold', marginBottom: 10 }}>
+            Hotel Những Người Bạn
+          </Title>
+          <Text style={{ fontSize: '18px', color: '#1c1e21' }}>
+            Vui lòng đăng nhập để tiếp tục 
+          </Text>
         </div>
 
         <Form name="login_form" onFinish={onFinish} layout="vertical">
           <Form.Item
             name="email"
+            validateTrigger="onSubmit"
             rules={[
               { required: true, message: 'Vui lòng nhập Email!' }, 
               { type: 'email', message: 'Email không hợp lệ!' }
             ]}
+            style={{ marginBottom: 20 }}
           >
-            <Input prefix={<UserOutlined />} placeholder="Email quản trị" size="large" />
+            <Input 
+              prefix={<UserOutlined style={{ fontSize: '20px', color: '#90949c', marginRight: 8 }} />} 
+              placeholder="Email của bạn" 
+              size="large" 
+              style={bigInputStyle} 
+            />
           </Form.Item>
 
           <Form.Item
             name="password"
             rules={[{ required: true, message: 'Vui lòng nhập Mật khẩu!' }]}
+            style={{ marginBottom: 15 }}
           >
-            <Input.Password prefix={<LockOutlined />} placeholder="Mật khẩu" size="large" />
+            <Input.Password 
+              prefix={<LockOutlined style={{ fontSize: '20px', color: '#90949c', marginRight: 8 }} />} 
+              placeholder="Mật khẩu" 
+              size="large"
+              style={bigInputStyle} 
+            />
           </Form.Item>
 
-          <Form.Item>
-            <Button type="primary" htmlType="submit" size="large" block loading={loading}>
+          {/* Dòng Quên mk và Đăng ký */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 30, padding: '0 5px' }}>
+            <Link to="/forgot-password" style={{ color: '#1877f2', fontSize: '16px', fontWeight: '500' }}>Quên mật khẩu?</Link>
+            <Link to="/register" style={{ color: '#1877f2', fontSize: '16px', fontWeight: '500' }}>Đăng ký tài khoản mới?</Link>
+          </div>
+
+          <Form.Item style={{ marginBottom: 0 }}>
+            <Button 
+              type="primary" 
+              htmlType="submit" 
+              size="large" 
+              block 
+              loading={loading}
+              style={{ 
+                height: '60px', 
+                fontSize: '22px', 
+                fontWeight: 'bold', 
+                borderRadius: '10px',
+                background: '#1877f2', 
+                borderColor: '#1877f2'
+              }}
+            >
               Đăng Nhập
             </Button>
           </Form.Item>
