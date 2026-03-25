@@ -87,8 +87,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 // ==========================================
 // 5. BUILD & CẤU HÌNH MIDDLEWARE PIPELINE
 // ==========================================
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll",
+        policy => policy.AllowAnyOrigin()   // Cho phép tất cả nguồn (5173)
+                        .AllowAnyMethod()   // QUAN TRỌNG: Cho phép POST, GET, PUT, DELETE
+                        .AllowAnyHeader()); // Cho phép các Header gửi kèm
+});
 var app = builder.Build();
-
+app.UseCors("AllowAll");
 // Chỉ bật Swagger UI khi đang chạy ở môi trường Development
 if (app.Environment.IsDevelopment())
 {

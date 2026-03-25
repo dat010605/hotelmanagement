@@ -121,7 +121,7 @@ public class UsersController : ControllerBase
     }
 
     // 49. LẤY DANH SÁCH QUYỀN (Roles)
-    [HttpGet("/api/Roles")]
+    [HttpGet("api/Users/roles-list")]
     [Authorize(Roles = "Admin,Manager")]
     public async Task<IActionResult> GetRoles()
     {

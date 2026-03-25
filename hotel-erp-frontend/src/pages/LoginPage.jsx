@@ -15,7 +15,7 @@ const LoginPage = () => {
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      const response = await axiosClient.post('/Auth/login', {// Thay bằng endpoint thực tế của ngài
+      const response = await axiosClient.post('Auth/Login', {// Thay bằng endpoint thực tế của ngài
         email: values.email,
         password: values.password,
       });
