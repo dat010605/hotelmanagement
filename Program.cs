@@ -4,51 +4,48 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
-using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // ==========================================
-// 1. ĐĂNG KÝ CONTROLLERS & API EXPLORER
+// 1. ĐĂNG KÝ CONTROLLERS & CẤU HÌNH JSON
 // ==========================================
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
-        // Dòng này giúp bỏ qua các vòng lặp vô tận khi xuất JSON
-        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+        // Ngăn chặn lỗi vòng lặp vô tận (Fix lỗi 500 khi lôi dữ liệu quan hệ)
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        
+        // Đảm bảo dữ liệu trả về giữ nguyên kiểu camelCase (fullName thay vì FullName)
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+        
+        // Bỏ qua các giá trị null để JSON gọn nhẹ hơn
+        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
     });
+
 builder.Services.AddEndpointsApiExplorer();
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-
 // ==========================================
-// 2. CẤU HÌNH SWAGGER (HỖ TRỢ JWT BEARER)
+// 2. CẤU HÌNH SWAGGER (HỖ TRỢ JWT)
 // ==========================================
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo { Title = "HotelManagement API", Version = "v1" });
-
-    // Định nghĩa form nhập Token
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "Nhập Token theo cú pháp: Bearer {chuỗi_token_của_bạn}\n\nVí dụ: Bearer eyJhbGciOiJIUzI1NiIsInR...",
+        Description = "Nhập Token theo cú pháp: Bearer {token}",
         Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.ApiKey,
         Scheme = "Bearer"
     });
-
-    // Yêu cầu Swagger gắn Token vào Header của mỗi Request
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
             new OpenApiSecurityScheme
             {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
             },
             new string[] {}
         }
@@ -56,18 +53,24 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 // ==========================================
-// 3. CẤU HÌNH DATABASE (SQL SERVER)
+// 3. DATABASE & CORS
 // ==========================================
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-    
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy => 
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader());
+});
 
 // ==========================================
-// 4. CẤU HÌNH BẢO MẬT (JWT AUTHENTICATION)
+// 4. CẤU HÌNH JWT
 // ==========================================
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-// Đã thêm dấu '!' để bỏ qua cảnh báo CS8604 (Nullable)
-var secretKey = Encoding.UTF8.GetBytes(jwtSettings["Key"]!);
+var secretKey = Encoding.UTF8.GetBytes(jwtSettings["Key"] ?? "ChuoiBiMatSieuCapVip123456789");
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -84,32 +87,28 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// ==========================================
-// 5. BUILD & CẤU HÌNH MIDDLEWARE PIPELINE
-// ==========================================
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll",
-        policy => policy.AllowAnyOrigin()   // Cho phép tất cả nguồn (5173)
-                        .AllowAnyMethod()   // QUAN TRỌNG: Cho phép POST, GET, PUT, DELETE
-                        .AllowAnyHeader()); // Cho phép các Header gửi kèm
-});
 var app = builder.Build();
-app.UseCors("AllowAll");
-// Chỉ bật Swagger UI khi đang chạy ở môi trường Development
+
+// ==========================================
+// 5. CẤU HÌNH MIDDLEWARE PIPELINE (THỨ TỰ RẤT QUAN TRỌNG)
+// ==========================================
+
+// Bật trang báo lỗi chi tiết khi đang code để soi lỗi 500
 if (app.Environment.IsDevelopment())
 {
+    app.UseDeveloperExceptionPage(); 
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
 
-// Kích hoạt hệ thống Cửa An Ninh (Xác thực & Phân quyền)
+// CORS phải đặt TRƯỚC Authentication và Authorization
+app.UseCors("AllowAll");
+
 app.UseAuthentication(); 
 app.UseAuthorization();
 
-// Ánh xạ các API (Controllers)
 app.MapControllers();
 
 app.Run();

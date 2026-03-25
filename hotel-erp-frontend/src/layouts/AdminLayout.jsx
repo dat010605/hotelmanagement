@@ -9,9 +9,10 @@ import {
   LogoutOutlined,
   SettingOutlined,
   BellOutlined,
-  HomeOutlined
+  HomeOutlined,
+  LockOutlined // <--- Đã thêm icon Ổ khóa vào đây
 } from '@ant-design/icons';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom'; // Dòng này là đủ rồi Duy nhé
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAdminAuthStore } from '../store/adminAuthStore';
 
 const { Header, Sider, Content } = Layout;
@@ -32,9 +33,11 @@ const AdminLayout = () => {
     navigate('/login');
   };
 
+  // ĐÃ THÊM MỤC PHÂN QUYỀN VÀO ĐÂY:
   const sidebarItems = [
     { key: '/admin/dashboard', icon: <DashboardOutlined />, label: 'Bảng điều khiển' },
     { key: '/admin/employees', icon: <TeamOutlined />, label: 'Quản lý nhân sự' },
+    { key: '/admin/roles', icon: <LockOutlined />, label: 'Phân quyền (RBAC)' }, 
     { key: '/admin/rooms', icon: <HomeOutlined />, label: 'Quản lý phòng' },
     { key: '/admin/profile', icon: <UserOutlined />, label: 'Hồ sơ cá nhân' },
     { key: '/admin/settings', icon: <SettingOutlined />, label: 'Cấu hình hệ thống' },
