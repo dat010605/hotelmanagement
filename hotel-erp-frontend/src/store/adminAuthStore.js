@@ -1,22 +1,29 @@
 import { create } from 'zustand';
-const savedUser = localStorage.getItem('user');
-const savedPermissions = localStorage.getItem('permissions');
+
+// Hàm hỗ trợ parse JSON an toàn để không bị lỗi "undefined"
+const getSafeJSON = (key, defaultValue) => {
+  const item = localStorage.getItem(key);
+  if (!item || item === "undefined" || item === "null") return defaultValue;
+  try {
+    return JSON.parse(item);
+  } catch (error) {
+    console.error(`Lỗi parse ${key}:`, error);
+    return defaultValue;
+  }
+};
 
 export const useAdminAuthStore = create((set) => ({
+  // Lấy dữ liệu ban đầu từ LocalStorage một cách an toàn
   token: localStorage.getItem('token') || null,
-  user: savedUser && savedUser !== "undefined" ? JSON.parse(savedUser) : null,
-  permissions: savedPermissions && savedPermissions !== "undefined" ? JSON.parse(savedPermissions) : [],
-  user: JSON.parse(localStorage.getItem('user')) || null,
-  
-  
-  permissions: JSON.parse(localStorage.getItem('permissions')) || [],
-  
+  user: getSafeJSON('user', null),
+  permissions: getSafeJSON('permissions', []),
 
-  // Hàm gọi khi đăng nhập thành công
+  // Hàm gọi khi đăng nhập hoặc cập nhật profile thành công
   setAuth: (token, user, permissions) => {
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(user));
-    localStorage.setItem('permissions', JSON.stringify(permissions));
+    if (token) localStorage.setItem('token', token);
+    if (user) localStorage.setItem('user', JSON.stringify(user));
+    if (permissions) localStorage.setItem('permissions', JSON.stringify(permissions));
+    
     set({ token, user, permissions });
   },
 
