@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Input, Select, Switch, message, Tag, Space, Card } from 'antd';
-import { PlusOutlined, EditOutlined, UserOutlined, MailOutlined } from '@ant-design/icons';
+import { Table, Button, Modal, Form, Input, Select, Switch, message, Tag, Space, Card, Row, Col } from 'antd';
+import { 
+  PlusOutlined, 
+  EditOutlined, 
+  UserOutlined, 
+  MailOutlined, 
+  SearchOutlined, 
+  ReloadOutlined 
+} from '@ant-design/icons';
 import axiosClient from '../api/axiosClient';
-// 1. Phải đảm bảo file này đã được tạo ở src/components/RequirePermission.jsx
 import RequirePermission from '../components/RequirePermission'; 
 
 const UserManagementPage = () => {
@@ -10,16 +16,24 @@ const UserManagementPage = () => {
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(false);
   
+  // 1. Khai báo State cho bộ lọc
+  const [filters, setFilters] = useState({
+    searchTerm: '',
+    roleId: undefined,
+    status: undefined
+  });
+
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [form] = Form.useForm();
 
+  // 2. Cập nhật hàm fetchData để gửi kèm params lọc lên Backend
   const fetchData = async () => {
     setLoading(true);
     try {
       const [usersRes, rolesRes] = await Promise.all([
-        axiosClient.get('/Users'),
+        axiosClient.get('/Users', { params: filters }), // Gửi searchTerm, roleId, status
         axiosClient.get('/Roles')
       ]);
       setUsers(usersRes.data);
@@ -31,7 +45,20 @@ const UserManagementPage = () => {
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  // Tự động tải lại khi đổi Role hoặc Trạng thái
+  useEffect(() => {
+    fetchData();
+  }, [filters.roleId, filters.status]);
+
+  // 3. Hàm Xóa lọc (Reset)
+  const handleResetFilters = () => {
+    setFilters({
+      searchTerm: '',
+      roleId: undefined,
+      status: undefined
+    });
+    // Lưu ý: fetchData sẽ chạy lại do useEffect hoặc gọi thủ công
+  };
 
   const showEditModal = (user) => {
     setIsEditMode(true);
@@ -47,7 +74,6 @@ const UserManagementPage = () => {
   const handleSave = async (values) => {
     try {
       if (isEditMode && editingUser) {
-        // Sửa: Gửi đúng endpoint /Roles và chỉ gửi roleId (số nguyên)
         await axiosClient.put(`/Users/${editingUser.id}/Roles`, values.roleId, {
             headers: { 'Content-Type': 'application/json' }
         }); 
@@ -60,11 +86,11 @@ const UserManagementPage = () => {
       form.resetFields();
       fetchData();
     } catch (error) {
-      message.error('Thao tác thất bại. Kiểm tra lại quyền Admin hoặc Backend!');
+      message.error('Thao tác thất bại. Kiểm tra lại Backend!');
     }
   };
 
-  const handleToggleStatus = async (userId, currentStatus) => {
+  const handleToggleStatus = async (userId) => {
     try {
       await axiosClient.patch(`/Users/${userId}/ToggleStatus`);
       message.success('Đã cập nhật trạng thái');
@@ -75,11 +101,11 @@ const UserManagementPage = () => {
   const columns = [
     { title: 'Họ và Tên', dataIndex: 'fullName', key: 'fullName' },
     { title: 'Email', dataIndex: 'email', key: 'email' },
+    { title: 'Số điện thoại', dataIndex: 'phone', key: 'phone', render: (text) => text || '---' },
     { 
       title: 'Vai trò', 
       key: 'role',
       render: (_, record) => {
-        // Fix lỗi hiển thị: Backend trả về tên Role trực tiếp
         const roleName = record.role || record.Role; 
         return (
           <Tag color={roleName === 'Admin' ? 'volcano' : 'blue'}>
@@ -94,7 +120,7 @@ const UserManagementPage = () => {
       render: (_, record) => (
         <Switch 
           checked={record.status} 
-          onChange={() => handleToggleStatus(record.id, record.status)}
+          onChange={() => handleToggleStatus(record.id)}
           checkedChildren="Hoạt động" unCheckedChildren="Khóa"
         />
       )
@@ -103,23 +129,19 @@ const UserManagementPage = () => {
       title: 'Hành động',
       key: 'action',
       render: (_, record) => (
-        <Space>
-          {/* 2. Chỉ hiện nút Sửa nếu có quyền MANAGE_USERS */}
-          <RequirePermission permission="MANAGE_USERS">
-            <Button type="primary" ghost icon={<EditOutlined />} onClick={() => showEditModal(record)}>
-              Sửa / Đổi quyền
-            </Button>
-          </RequirePermission>
-        </Space>
+        <RequirePermission permission="MANAGE_USERS">
+          <Button type="primary" ghost icon={<EditOutlined />} onClick={() => showEditModal(record)}>
+            Sửa quyền
+          </Button>
+        </RequirePermission>
       ),
     },
   ];
 
   return (
     <Card 
-      title={<span style={{fontSize: '20px'}}>👥 Quản lý Nhân sự</span>} 
+      title={<span style={{fontSize: '20px'}}>👥 Quản lý Nhân sự & Người dùng</span>} 
       extra={
-        /* 3. Chỉ hiện nút Thêm mới nếu có quyền MANAGE_USERS */
         <RequirePermission permission="MANAGE_USERS">
           <Button 
             type="primary" 
@@ -131,7 +153,64 @@ const UserManagementPage = () => {
         </RequirePermission>
       }
     >
-      <Table dataSource={users} columns={columns} rowKey="id" loading={loading} />
+      {/* --- THANH TÌM KIẾM VÀ LỌC --- */}
+      <div style={{ marginBottom: 20, padding: '15px', background: '#f9f9f9', borderRadius: '8px' }}>
+        <Row gutter={[16, 16]} align="middle">
+          <Col xs={24} md={8}>
+            <Input 
+              prefix={<SearchOutlined style={{color: '#bfbfbf'}}/>}
+              placeholder="Tìm theo Tên, Email hoặc SĐT..." 
+              value={filters.searchTerm}
+              onChange={(e) => setFilters({...filters, searchTerm: e.target.value})}
+              onPressEnter={fetchData}
+              allowClear
+            />
+          </Col>
+          <Col xs={12} md={5}>
+            <Select 
+              style={{ width: '100%' }}
+              placeholder="Lọc theo Vai trò"
+              value={filters.roleId}
+              onChange={(val) => setFilters({...filters, roleId: val})}
+              allowClear
+            >
+              {roles.map(role => (
+                <Select.Option key={role.id} value={role.id}>{role.name}</Select.Option>
+              ))}
+            </Select>
+          </Col>
+          <Col xs={12} md={4}>
+            <Select 
+              style={{ width: '100%' }}
+              placeholder="Trạng thái"
+              value={filters.status}
+              onChange={(val) => setFilters({...filters, status: val})}
+              allowClear
+            >
+              <Select.Option value={true}>Hoạt động</Select.Option>
+              <Select.Option value={false}>Đang khóa</Select.Option>
+            </Select>
+          </Col>
+          <Col xs={24} md={7}>
+            <Space>
+              <Button type="primary" icon={<SearchOutlined />} onClick={fetchData}>
+                Tìm kiếm
+              </Button>
+              <Button icon={<ReloadOutlined />} onClick={handleResetFilters}>
+                Xóa lọc
+              </Button>
+            </Space>
+          </Col>
+        </Row>
+      </div>
+
+      <Table 
+        dataSource={users} 
+        columns={columns} 
+        rowKey="id" 
+        loading={loading}
+        pagination={{ pageSize: 8 }}
+      />
 
       <Modal
         title={isEditMode ? "📝 Chỉnh sửa nhân viên" : "➕ Thêm nhân viên mới"}
@@ -140,14 +219,14 @@ const UserManagementPage = () => {
         onOk={() => form.submit()}
       >
         <Form form={form} layout="vertical" onFinish={handleSave}>
-          <Form.Item name="fullName" label="Họ tên" rules={[{ required: true }]}>
+          <Form.Item name="fullName" label="Họ tên" rules={[{ required: true, message: 'Vui lòng nhập họ tên' }]}>
             <Input prefix={<UserOutlined />} disabled={isEditMode} />
           </Form.Item>
-          <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email' }]}>
+          <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email', message: 'Email không hợp lệ' }]}>
             <Input prefix={<MailOutlined />} disabled={isEditMode} />
           </Form.Item>
-          <Form.Item name="roleId" label="Vai trò / Chức vụ" rules={[{ required: true }]}>
-            <Select placeholder="Chọn vai trò mới">
+          <Form.Item name="roleId" label="Vai trò / Chức vụ" rules={[{ required: true, message: 'Vui lòng chọn vai trò' }]}>
+            <Select placeholder="Chọn vai trò">
               {roles.map(role => (
                 <Select.Option key={role.id} value={role.id}>{role.name}</Select.Option>
               ))}

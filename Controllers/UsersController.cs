@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using HotelManagement.API.Models;
 using HotelManagement.DTOs;
+
 [Route("api/[controller]")]
 [ApiController]
 [Authorize] 
@@ -12,18 +13,65 @@ public class UsersController : ControllerBase
     private readonly AppDbContext _context;
     public UsersController(AppDbContext context) => _context = context;
 
-    // 1. LẤY DANH SÁCH TÀI KHOẢN (Đã tối ưu lấy RoleName)
+    // 1. LẤY DANH SÁCH TÀI KHOẢN + TÌM KIẾM + LỌC
     [HttpGet]
     [Authorize(Roles = "Admin,Manager")]
-    public async Task<IActionResult> GetAllUsers()
+    public async Task<IActionResult> GetAllUsers(
+        [FromQuery] string? searchTerm, 
+        [FromQuery] int? roleId, 
+        [FromQuery] bool? status)
     {
-        var users = await _context.Users.Include(u => u.Role)
-            .Select(u => new { u.Id, u.FullName, u.Email, u.Phone, Role = u.Role.Name, u.Status })
-            .ToListAsync();
-        return Ok(users);
+        try 
+        {
+            // Bắt đầu xây dựng truy vấn (Chưa thực thi vào SQL)
+            var query = _context.Users.Include(u => u.Role).AsQueryable();
+
+            // A. Tìm kiếm theo Tên, Email hoặc SĐT
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                var search = searchTerm.ToLower();
+                query = query.Where(u => 
+                    u.FullName.ToLower().Contains(search) || 
+                    u.Email.ToLower().Contains(search) || 
+                    (u.Phone != null && u.Phone.Contains(search))
+                );
+            }
+
+            // B. Lọc theo Vai trò (Role ID)
+            if (roleId.HasValue && roleId.Value > 0)
+            {
+                query = query.Where(u => u.RoleId == roleId.Value);
+            }
+
+            // C. Lọc theo Trạng thái (Hoạt động/Khóa)
+            if (status.HasValue)
+            {
+                query = query.Where(u => u.Status == status.Value);
+            }
+
+            // D. Thực thi và trả về dữ liệu chuẩn cho React
+            var users = await query
+                .Select(u => new { 
+                    u.Id, 
+                    u.FullName, 
+                    u.Email, 
+                    u.Phone, 
+                    Role = u.Role.Name, // Hiện Admin, Manager...
+                    u.Status,
+                    u.RoleId // Trả về để React biết User thuộc Role nào khi bấm Sửa
+                })
+                .ToListAsync();
+
+            return Ok(users);
+        }
+        catch (Exception ex)
+        {
+            // Trả về lỗi để Frontend ngừng xoay vòng và hiển thị thông báo
+            return StatusCode(500, $"Lỗi hệ thống: {ex.Message}");
+        }
     }
 
-    // 2. TẠO TÀI KHOẢN MỚI (Đã fix lỗi mật khẩu và SaveChanges)
+    // 2. TẠO TÀI KHOẢN MỚI
     [HttpPost]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request)
@@ -31,20 +79,19 @@ public class UsersController : ControllerBase
         if (await _context.Users.AnyAsync(u => u.Email == request.Email))
             return BadRequest("Email đã tồn tại trong hệ thống.");
 
-        // Fix: Tự động đặt pass 123456 nếu frontend không gửi
         string passwordToHash = string.IsNullOrEmpty(request.Password) ? "123456" : request.Password;
 
         var newUser = new User {
             FullName = request.FullName,
             Email = request.Email,
             Phone = request.Phone,
-            RoleId = request.RoleId, // Gán 1 trong 10 Role ID
+            RoleId = request.RoleId, 
             Status = true, 
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(passwordToHash) 
         };
 
         _context.Users.Add(newUser);
-        await _context.SaveChangesAsync(); // Lệnh quyết định dữ liệu có vào SQL không
+        await _context.SaveChangesAsync(); 
         return Ok(new { Message = "Tạo tài khoản thành công", UserId = newUser.Id });
     }
 
@@ -103,20 +150,19 @@ public class UsersController : ControllerBase
         return Ok(new { Message = "Cập nhật trạng thái thành công", Status = user.Status });
     }
 
-    // 7. PHÂN QUYỀN LẠI (Đổi vai trò cho nhân viên)
+    // 7. PHÂN QUYỀN LẠI (Đổi vai trò)
     [HttpPut("{id}/Roles")]
-[Authorize(Roles = "Admin")] //
-public async Task<IActionResult> UpdateUserRole(int id, [FromBody] int newRoleId)
-{
-    var user = await _context.Users.FindAsync(id);
-    if (user == null) return NotFound("Không tìm thấy user");
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> UpdateUserRole(int id, [FromBody] int newRoleId)
+    {
+        var user = await _context.Users.FindAsync(id);
+        if (user == null) return NotFound("Không tìm thấy user");
 
-    // Kiểm tra xem ID quyền gửi lên có nằm trong 10 Role chuẩn không
-    var roleExists = await _context.Roles.AnyAsync(r => r.Id == newRoleId);
-    if (!roleExists) return BadRequest("Quyền không tồn tại.");
+        var roleExists = await _context.Roles.AnyAsync(r => r.Id == newRoleId);
+        if (!roleExists) return BadRequest("Quyền không tồn tại.");
 
-    user.RoleId = newRoleId;
-    await _context.SaveChangesAsync(); // Lệnh này sẽ cập nhật SQL
-    return Ok("Cập nhật vai trò thành công.");
-}
+        user.RoleId = newRoleId;
+        await _context.SaveChangesAsync(); 
+        return Ok("Cập nhật vai trò thành công.");
+    }
 }

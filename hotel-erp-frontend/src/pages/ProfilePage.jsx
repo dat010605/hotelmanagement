@@ -9,53 +9,65 @@ const { Title, Text } = Typography;
 const ProfilePage = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const { user, setAuth, token, permissions } = useAdminAuthStore();
-  const [previewImage, setPreviewImage] = useState(user?.avatarUrl || user?.avatar_url || null);
   
-  // State phụ để đồng bộ tên/SĐT lên Card bên trái khi đang gõ
+  // Lấy dữ liệu từ Zustand Store
+  const { user, setAuth, token, permissions } = useAdminAuthStore();
+  
+  const API_URL = axiosClient.defaults.baseURL.replace('/api', '');
+  const [previewImage, setPreviewImage] = useState(null);
+  
   const [displayData, setDisplayData] = useState({
-    fullName: user?.fullName || user?.full_name || 'Người dùng',
-    phone: user?.phone || 'Chưa cập nhật số điện thoại'
+    fullName: 'Người dùng',
+    phone: 'Chưa cập nhật'
   });
 
+  // Hàm xử lý hiển thị ảnh
+  const getFullAvatarUrl = (url) => {
+    if (!url) return null;
+    if (url.startsWith('http')) return url; // Link Cloudinary
+    return `${API_URL}${url}`; // Link local
+  };
+
+  // 1. Load dữ liệu khi vào trang
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const response = await axiosClient.get('/UserProfile/my-profile');
         const data = response.data;
+
+        // Ưu tiên lấy avatarUrl (camelCase) cho khớp với Backend mới
+        const currentAvatar = data.avatarUrl || data.avatar_url;
+
         form.setFieldsValue({
           fullName: data.fullName || data.full_name,
           phone: data.phone,
           email: data.email
         });
+
         setDisplayData({ 
           fullName: data.fullName || data.full_name, 
           phone: data.phone 
         });
-        if (data.avatarUrl || data.avatar_url) {
-          setPreviewImage(data.avatarUrl || data.avatar_url);
-        }
+
+        setPreviewImage(getFullAvatarUrl(currentAvatar));
       } catch (error) {
-        form.setFieldsValue({
-          fullName: user?.fullName || user?.full_name,
-          phone: user?.phone || '',
-          email: user?.email || ''
-        });
+        console.error("Lỗi load profile:", error);
       }
     };
     fetchProfile();
-  }, [form, user]);
+  }, [form]);
 
+  // 2. Xử lý khi bấm LƯU
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      // 1. Cập nhật thông tin text
+      // BƯỚC 1: Cập nhật thông tin text
       await axiosClient.put('/UserProfile/update-profile', {
         fullName: values.fullName,
         phone: values.phone
       });
 
-      // 2. Upload ảnh nếu có
+      // BƯỚC 2: Upload ảnh (nếu có chọn file mới)
       if (values.avatar?.file?.originFileObj) {
         const formData = new FormData();
         formData.append('file', values.avatar.file.originFileObj); 
@@ -64,18 +76,26 @@ const ProfilePage = () => {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
         
-        if (uploadRes.data.avatarUrl || uploadRes.data.avatar_url) {
-          setPreviewImage(uploadRes.data.avatarUrl || uploadRes.data.avatar_url);
+        // Ngay khi upload xong, cập nhật ảnh preview để người dùng thấy luôn
+        const newUrl = uploadRes.data.avatarUrl || uploadRes.data.avatar_url;
+        if (newUrl) {
+          setPreviewImage(getFullAvatarUrl(newUrl));
         }
       }
 
-      // 3. Lấy lại dữ liệu tươi nhất để cập nhật Store
-      const finalProfile = await axiosClient.get('/UserProfile/my-profile');
-      setAuth(token, finalProfile.data, permissions);
+      // BƯỚC 3: QUAN TRỌNG - Đồng bộ lại toàn bộ hệ thống
+      // Lấy lại dữ liệu "sạch" nhất từ Database sau khi đã lưu
+      const finalRes = await axiosClient.get('/UserProfile/my-profile');
+      const latestData = finalRes.data;
+
+      // Cập nhật Zustand Store. 
+      // Chú ý: Đảm bảo setAuth nhận vào đối tượng có cấu trúc giống hệt lúc Login
+      setAuth(token, latestData, permissions); 
       
-      message.success('Cập nhật hồ sơ thành công!');
+      message.success('Hồ sơ và ảnh đại diện đã được cập nhật!');
     } catch (error) {
-      message.error(error.response?.data?.message || 'Cập nhật thất bại!');
+      console.error("Lỗi cập nhật:", error);
+      message.error('Cập nhật thất bại. Vui lòng kiểm tra lại!');
     } finally {
       setLoading(false);
     }
@@ -84,7 +104,6 @@ const ProfilePage = () => {
   return (
     <div style={{ padding: '20px' }}>
       <Row gutter={24}>
-        {/* Cột hiển thị (Bên trái) */}
         <Col xs={24} md={8}>
           <Card style={{ borderRadius: 12, textAlign: 'center' }}>
             <div style={{ padding: '20px 0' }}>
@@ -95,28 +114,21 @@ const ProfilePage = () => {
                 style={{ border: '4px solid #f0f2f5', marginBottom: 20 }} 
               />
               <Title level={4}>{displayData.fullName}</Title>
-              <Text type="secondary">Kỹ sư Khung giao diện</Text>
+              <Text type="secondary">Nhân viên hệ thống</Text>
             </div>
             <Divider />
             <Space direction="vertical" style={{ width: '100%', textAlign: 'left' }}>
-              <Text><MailOutlined /> {user?.email}</Text>
+              <Text><MailOutlined /> {form.getFieldValue('email')}</Text>
               <Text><PhoneOutlined /> {displayData.phone || 'Chưa cập nhật'}</Text>
             </Space>
           </Card>
         </Col>
 
-        {/* Cột chỉnh sửa (Bên phải) */}
         <Col xs={24} md={16}>
           <Card title="Chỉnh sửa thông tin cá nhân" style={{ borderRadius: 12 }}>
-            <Form 
-              form={form} 
-              layout="vertical" 
-              onFinish={onFinish}
-              onValuesChange={(changedValues, allValues) => {
-                setDisplayData({
-                  fullName: allValues.fullName,
-                  phone: allValues.phone
-                });
+            <Form form={form} layout="vertical" onFinish={onFinish}
+              onValuesChange={(changed, all) => {
+                setDisplayData({ fullName: all.fullName, phone: all.phone });
               }}
             >
               <Form.Item label="Ảnh đại diện" name="avatar">
@@ -124,6 +136,7 @@ const ProfilePage = () => {
                   maxCount={1} 
                   beforeUpload={() => false} 
                   listType="picture"
+                  showUploadList={false}
                   onChange={(info) => {
                     if (info.fileList.length > 0) {
                       const url = URL.createObjectURL(info.fileList[0].originFileObj);
@@ -137,7 +150,7 @@ const ProfilePage = () => {
 
               <Row gutter={16}>
                 <Col span={12}>
-                  <Form.Item label="Họ và Tên" name="fullName" rules={[{ required: true, message: 'Vui lòng nhập họ tên!' }]}>
+                  <Form.Item label="Họ và Tên" name="fullName" rules={[{ required: true, message: 'Nhập họ tên!' }]}>
                     <Input prefix={<UserOutlined />} size="large" />
                   </Form.Item>
                 </Col>
@@ -148,18 +161,11 @@ const ProfilePage = () => {
                 </Col>
               </Row>
 
-              <Form.Item label="Email (Không thể thay đổi)" name="email">
+              <Form.Item label="Email" name="email">
                 <Input prefix={<MailOutlined />} disabled size="large" />
               </Form.Item>
 
-              <Button 
-                type="primary" 
-                htmlType="submit" 
-                icon={<SaveOutlined />} 
-                loading={loading} 
-                size="large"
-                style={{ borderRadius: 8, background: '#1877f2', height: '45px', width: '100%' }}
-              >
+              <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={loading} size="large" style={{ width: '100%', height: '45px', borderRadius: 8 }}>
                 Lưu thay đổi
               </Button>
             </Form>

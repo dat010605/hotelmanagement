@@ -2,7 +2,7 @@
 namespace HotelManagement.API.DTOs
 {
     // DTOs cho Amenities
-    public class CreateAmenityDto { public string Name { get; set; } = null!;  }
+    public class CreateAmenityDto { public string Name { get; set; } = null!; }
     public class UpdateAmenityDto { public string Name { get; set; } = null!; }
 
     // DTOs cho Articles & Categories
@@ -18,10 +18,18 @@ namespace HotelManagement.API.DTOs
     // DTOs cho RoomInventories
     public class CreateRoomInventoryDto { public int RoomId { get; set; } public DateTime Date { get; set; } public bool IsAvailable { get; set; } }
     public class UpdateRoomInventoryDto { public bool IsAvailable { get; set; } }
+
     // DTOs cho UserProfile
     public class UpdateProfileDto { public string FullName { get; set; } = null!; public string? Phone { get; set; } }
-    public class ChangePasswordDto { public string CurrentPassword { get; set; } = null!; public string NewPassword { get; set; } = null!; }
-    // DTOs cho Rooms (Bổ sung)
+    
+    // ĐÃ XÓA BẢN TRÙNG Ở ĐÂY - CHỈ GIỮ LẠI BẢN DƯỚI ĐÂY
+    public class ChangePasswordDto
+    {
+        public string OldPassword { get; set; } = string.Empty; 
+        public string NewPassword { get; set; } = string.Empty;
+    }
+
+    // DTOs cho Rooms
     public class UpdateRoomCleaningStatusDto 
     { 
         public int RoomId { get; set; } 
@@ -36,9 +44,8 @@ namespace HotelManagement.API.DTOs
         public int Floor { get; set; }
         public string? Status { get; set; }
     }
-    // ==========================================
-    // DTOs cho Roles (Bổ sung)
-    // ==========================================
+
+    // DTOs cho Roles
     public class CreateRoleDto 
     { 
         public string Name { get; set; } = null!; 
@@ -51,7 +58,7 @@ namespace HotelManagement.API.DTOs
 
     public class AssignPermissionDto 
     { 
-        public string RoleId { get; set; } = null!; 
-        public List<string> Permissions { get; set; } = new List<string>(); 
+        public int RoleId { get; set; } // Đổi sang int cho khớp với DB
+        public List<int> Permissions { get; set; } = new List<int>(); 
     }
 }

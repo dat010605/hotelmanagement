@@ -1,20 +1,24 @@
 {
   "format": 1,
   "restore": {
-    "D:\\datpronak1234\\hotelmanagement\\HotelManagement.API.csproj": {}
+    "D:\\datpro4\\hotelmanagement\\HotelManagement.API.csproj": {}
   },
   "projects": {
-    "D:\\datpronak1234\\hotelmanagement\\HotelManagement.API.csproj": {
+    "D:\\datpro4\\hotelmanagement\\HotelManagement.API.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\datpronak1234\\hotelmanagement\\HotelManagement.API.csproj",
+        "projectUniqueName": "D:\\datpro4\\hotelmanagement\\HotelManagement.API.csproj",
         "projectName": "HotelManagement.API",
-        "projectPath": "D:\\datpronak1234\\hotelmanagement\\HotelManagement.API.csproj",
-        "packagesPath": "C:\\Users\\thanh\\.nuget\\packages\\",
-        "outputPath": "D:\\datpronak1234\\hotelmanagement\\obj\\",
+        "projectPath": "D:\\datpro4\\hotelmanagement\\HotelManagement.API.csproj",
+        "packagesPath": "C:\\Users\\LHUser\\.nuget\\packages\\",
+        "outputPath": "D:\\datpro4\\hotelmanagement\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
         "configFilePaths": [
-          "C:\\Users\\thanh\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\LHUser\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
@@ -53,6 +57,10 @@
             "ClosedXML": {
               "target": "Package",
               "version": "[0.105.0, )"
+            },
+            "CloudinaryDotNet": {
+              "target": "Package",
+              "version": "[1.28.0, )"
             },
             "Microsoft.AspNetCore.Authentication.JwtBearer": {
               "target": "Package",

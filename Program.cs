@@ -7,7 +7,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
-
+// Cho phép truy cập thư mục wwwroot
 // ==========================================
 // 1. ĐĂNG KÝ CONTROLLERS & CẤU HÌNH JSON
 // ==========================================
@@ -88,7 +88,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 var app = builder.Build();
-
+app.UseStaticFiles();
 // ==========================================
 // 5. CẤU HÌNH MIDDLEWARE PIPELINE (THỨ TỰ RẤT QUAN TRỌNG)
 // ==========================================
