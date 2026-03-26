@@ -23,12 +23,15 @@ namespace HotelManagement.API.Controllers
             _config = config;
         }
 
-        // 41. ĐĂNG NHẬP & TRẢ VỀ JWT
-        [HttpPost("Login")]
+        // 41. ĐĂNG NHẬP & TRẢ VỀ JWT KÈM THEO QUYỀN (PERMISSIONS)
+      [HttpPost("Login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            var user = await _context.Users.Include(u => u.Role)
-                                     .FirstOrDefaultAsync(u => u.Email == request.Email && u.Status == true);
+            // 1. TÌM USER + GỘP ROLE + GỘP LUÔN PERMISSIONS (Nhờ cầu nối của EF Core)
+            var user = await _context.Users
+                .Include(u => u.Role)
+                    .ThenInclude(r => r.Permissions) // EF Core nối thẳng sang bảng Permissions
+                .FirstOrDefaultAsync(u => u.Email == request.Email && u.Status == true);
 
             if (user == null)
                 return Unauthorized(new { message = "Email không tồn tại hoặc tài khoản bị khóa." });
@@ -38,12 +41,10 @@ namespace HotelManagement.API.Controllers
             // Xử lý dữ liệu: Phân biệt mật khẩu mẫu và mật khẩu đã mã hóa BCrypt
             if (user.PasswordHash.StartsWith("$"))
             {
-                // Nếu là tài khoản tạo mới (đã được băm chuẩn bằng BCrypt)
                 isPasswordValid = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
             }
             else
             {
-                // Nếu là dữ liệu mẫu từ file SQL ("hash1", "hash2"...)
                 isPasswordValid = (user.PasswordHash == request.Password);
             }
 
@@ -51,19 +52,34 @@ namespace HotelManagement.API.Controllers
                 return Unauthorized(new { message = "Mật khẩu không đúng." });
 
             var token = GenerateJwtToken(user);
-            return Ok(new { Token = token, Message = "Đăng nhập thành công" });
-        }
 
+            // ==========================================
+            // 2. LẤY DANH SÁCH QUYỀN CỰC KỲ ĐƠN GIẢN
+            // ==========================================
+            // Lấy trực tiếp từ danh sách Permissions đã Include ở bước 1
+            var userPermissions = user.Role?.Permissions?.Select(p => p.Name).ToList() ?? new List<string>();
+
+            // TRẢ VỀ ĐẦY ĐỦ CHO REACT
+            return Ok(new 
+            { 
+                Token = token, 
+                User = new 
+                { 
+                    Id = user.Id, 
+                    FullName = user.FullName, 
+                    Email = user.Email,
+                    Role = user.Role?.Name 
+                },
+                Permissions = userPermissions 
+            });
+        }
         // 42. REFRESH TOKEN (Cấp lại token mới dựa trên thông tin cũ)
         [HttpPost("RefreshToken")]
         public IActionResult RefreshToken([FromBody] RefreshTokenRequest request)
         {
-            // Trong thực tế, bạn nên lưu RefreshToken vào Database.
-            // Ở đây là logic demo: Giải mã token cũ (dù đã hết hạn) để tạo token mới.
             var tokenHandler = new JwtSecurityTokenHandler();
             var jwtToken = tokenHandler.ReadJwtToken(request.Token);
             
-            // Lấy Email từ Token cũ để tìm lại User
             var email = jwtToken.Claims.First(claim => claim.Type == ClaimTypes.Email).Value;
             var user = _context.Users.Include(u => u.Role).FirstOrDefault(u => u.Email == email && u.Status == true);
             
@@ -78,13 +94,11 @@ namespace HotelManagement.API.Controllers
             var jwtSettings = _config.GetSection("JwtSettings");
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]));
             
-            // ĐỌC THỜI GIAN SỐNG TỪ APPSETTINGS.JSON
             double durationInMinutes = Convert.ToDouble(jwtSettings["DurationInMinutes"]);
 
             var claims = new List<Claim> {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Email, user.Email),
-                // Dùng để check quyền [Authorize(Roles="Admin")] ở các Controller khác
                 new Claim(ClaimTypes.Role, user.Role.Name) 
             };
 
@@ -92,7 +106,6 @@ namespace HotelManagement.API.Controllers
                 issuer: jwtSettings["Issuer"], 
                 audience: jwtSettings["Audience"],
                 claims: claims, 
-                // Cài đặt thời gian hết hạn dựa vào con số 1440 đọc từ json
                 expires: DateTime.Now.AddMinutes(durationInMinutes), 
                 signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256)
             );

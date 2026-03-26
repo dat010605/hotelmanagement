@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using HotelManagement.API.Models;
-
+using HotelManagement.DTOs;
 [Route("api/[controller]")]
 [ApiController]
 [Authorize] 
