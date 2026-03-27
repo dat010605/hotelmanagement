@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import useSignalR from '../hooks/useSignalR';
 import { Layout, Menu, Button, theme, Avatar, Dropdown, Space, Badge, Typography } from 'antd';
 import {
   MenuFoldOutlined,
@@ -10,7 +11,7 @@ import {
   SettingOutlined,
   BellOutlined,
   HomeOutlined,
-  LockOutlined // <--- Đã thêm icon Ổ khóa vào đây
+  LockOutlined
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAdminAuthStore } from '../store/adminAuthStore';
@@ -19,11 +20,23 @@ const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
 
 const AdminLayout = () => {
+
+  const connection = useSignalR('http://localhost:5057/notificationHub');
+  const [notifications, setNotifications] = useState([]);
+
+  useEffect(() => {
+    if (connection) {
+      connection.on('ReceiveNotification', (message) => {
+        setNotifications(prev => [message, ...prev]);
+      });
+    }
+  }, [connection]);
+
   const [collapsed, setCollapsed] = useState(false);
   const { user, clearAuth } = useAdminAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
@@ -33,49 +46,51 @@ const AdminLayout = () => {
     navigate('/login');
   };
 
-  // ĐÃ THÊM MỤC PHÂN QUYỀN VÀO ĐÂY:
   const sidebarItems = [
     { key: '/admin/dashboard', icon: <DashboardOutlined />, label: 'Bảng điều khiển' },
     { key: '/admin/employees', icon: <TeamOutlined />, label: 'Quản lý nhân sự' },
-    { key: '/admin/roles', icon: <LockOutlined />, label: 'Phân quyền (RBAC)' }, 
+    { key: '/admin/roles', icon: <LockOutlined />, label: 'Phân quyền (RBAC)' },
     { key: '/admin/rooms', icon: <HomeOutlined />, label: 'Quản lý phòng' },
     { key: '/admin/profile', icon: <UserOutlined />, label: 'Hồ sơ cá nhân' },
     { key: '/admin/settings', icon: <SettingOutlined />, label: 'Cấu hình hệ thống' },
   ];
 
   const userDropdownItems = [
-    { 
-      key: 'profile', 
-      icon: <UserOutlined />, 
-      label: 'Thông tin cá nhân', 
-      onClick: () => navigate('/admin/profile') 
+    {
+      key: 'profile',
+      icon: <UserOutlined />,
+      label: 'Thông tin cá nhân',
+      onClick: () => navigate('/admin/profile')
     },
-    { type: 'divider' }, 
-    { 
-      key: 'logout', 
-      icon: <LogoutOutlined />, 
-      label: 'Đăng xuất', 
-      danger: true, 
-      onClick: handleLogout 
+    { type: 'divider' },
+    {
+      key: 'logout',
+      icon: <LogoutOutlined />,
+      label: 'Đăng xuất',
+      danger: true,
+      onClick: handleLogout
     },
   ];
 
+  
   const notificationMenu = {
-    items: [
-      { key: '1', label: 'Có 3 nhân viên mới vừa đăng ký' },
-      { key: '2', label: 'Hệ thống vừa được cập nhật bản 1.0.2' },
-    ],
+    items: notifications?.length === 0 
+      ? [{ key: 'empty', label: 'Chưa có thông báo nào' }]
+      : notifications.map((msg, index) => ({
+          key: index,
+          label: msg
+        }))
   };
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Sider trigger={null} collapsible collapsed={collapsed} theme="dark" width={250}>
-        <div style={{ 
-          height: 64, 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
-          color: 'white', 
+        <div style={{
+          height: 64,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'white',
           background: '#001529',
           borderBottom: '1px solid rgba(255,255,255,0.1)'
         }}>
@@ -94,11 +109,11 @@ const AdminLayout = () => {
       </Sider>
 
       <Layout>
-        <Header style={{ 
-          padding: '0 24px', 
-          background: colorBgContainer, 
-          display: 'flex', 
-          justifyContent: 'space-between', 
+        <Header style={{
+          padding: '0 24px',
+          background: colorBgContainer,
+          display: 'flex',
+          justifyContent: 'space-between',
           alignItems: 'center',
           boxShadow: '0 1px 4px rgba(0,21,41,.08)',
           zIndex: 1
@@ -111,8 +126,9 @@ const AdminLayout = () => {
           />
 
           <Space size={24}>
+            {}
             <Dropdown menu={notificationMenu} placement="bottomRight" arrow>
-              <Badge count={2} size="small">
+              <Badge count={notifications?.length || 0} size="small">
                 <BellOutlined style={{ fontSize: '20px', cursor: 'pointer', color: '#65676b' }} />
               </Badge>
             </Dropdown>
@@ -122,10 +138,10 @@ const AdminLayout = () => {
                 <Text strong style={{ fontSize: '15px' }}>
                   {user?.fullName || user?.full_name || 'Tên của bạn'}
                 </Text>
-                <Avatar 
-                  size="large" 
-                  style={{ backgroundColor: '#1877f2' }} 
-                  icon={<UserOutlined />} 
+                <Avatar
+                  size="large"
+                  style={{ backgroundColor: '#1877f2' }}
+                  icon={<UserOutlined />}
                   src={user?.avatarUrl || user?.avatar_url}
                 />
               </Space>
@@ -133,13 +149,13 @@ const AdminLayout = () => {
           </Space>
         </Header>
 
-        <Content style={{ 
-          margin: '24px 16px', 
-          padding: 24, 
-          minHeight: 280, 
-          background: colorBgContainer, 
+        <Content style={{
+          margin: '24px 16px',
+          padding: 24,
+          minHeight: 280,
+          background: colorBgContainer,
           borderRadius: borderRadiusLG,
-          overflow: 'auto' 
+          overflow: 'auto'
         }}>
           <Outlet />
         </Content>
