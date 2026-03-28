@@ -22,6 +22,45 @@ namespace HotelManagement.API.Controllers
             _context = context;
             _config = config;
         }
+        // POST /api/Auth/register : Đăng ký tài khoản mới (Khách hàng)
+        // ====================================================
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] RegisterDto request)
+        {
+            // 1. Kiểm tra xem Email đã bị người khác đăng ký chưa
+            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+            if (existingUser != null)
+            {
+                return BadRequest(new { message = "Email này đã được sử dụng. Vui lòng dùng email khác!" });
+            }
+
+            // 2. Tìm Role mặc định cho người đăng ký mới (Thường là quyền "Customer" hoặc "KhachHang")
+            var customerRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "Guest");
+            
+            // NẾU CHƯA CÓ QUYỀN CUSTOMER -> TỰ ĐỘNG TẠO MỚI LUÔN
+            if (customerRole == null)
+            {
+                customerRole = new Role { Name = "Guest" };
+                _context.Roles.Add(customerRole);
+                await _context.SaveChangesAsync(); // Lưu quyền mới xuống Database
+            }
+            // 3. Tạo tài khoản mới
+            var newUser = new User
+            {
+                FullName = request.FullName,
+                Email = request.Email,
+                // Mã hóa mật khẩu bằng BCrypt trước khi lưu xuống Database để bảo mật
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+                RoleId = customerRole.Id,
+                Status = true // Kích hoạt tài khoản ngay lập tức
+            };
+
+            // 4. Lưu xuống Database
+            _context.Users.Add(newUser);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Đăng ký tài khoản thành công! Mời bạn đăng nhập." });
+        }
 
         // 41. ĐĂNG NHẬP & TRẢ VỀ JWT KÈM THEO QUYỀN (PERMISSIONS)
       [HttpPost("Login")]
