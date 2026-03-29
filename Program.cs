@@ -109,7 +109,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 // CORS phải đặt TRƯỚC Authentication và Authorization
-app.UseCors("AllowAll");
+app.UseCors("AllowReact");
 
 app.UseAuthentication(); 
 app.UseAuthorization();

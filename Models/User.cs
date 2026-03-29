@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace HotelManagement.API.Models;
 
@@ -33,5 +34,6 @@ public partial class User
 
     public virtual Role? Role { get; set; }
     
+    [Column("avatar_url")]
     public string? AvatarUrl { get; set; }
 }

@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "D:\\hotel\\hotelmanagement\\HotelManagement.API.csproj": {}
+    "D:\\Download\\hotelmanagement\\HotelManagement.API.csproj": {}
   },
   "projects": {
-    "D:\\hotel\\hotelmanagement\\HotelManagement.API.csproj": {
+    "D:\\Download\\hotelmanagement\\HotelManagement.API.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\hotel\\hotelmanagement\\HotelManagement.API.csproj",
+        "projectUniqueName": "D:\\Download\\hotelmanagement\\HotelManagement.API.csproj",
         "projectName": "HotelManagement.API",
-        "projectPath": "D:\\hotel\\hotelmanagement\\HotelManagement.API.csproj",
-        "packagesPath": "C:\\Users\\Administrator\\.nuget\\packages\\",
-        "outputPath": "D:\\hotel\\hotelmanagement\\obj\\",
+        "projectPath": "D:\\Download\\hotelmanagement\\HotelManagement.API.csproj",
+        "packagesPath": "C:\\Users\\PC\\.nuget\\packages\\",
+        "outputPath": "D:\\Download\\hotelmanagement\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\Administrator\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\PC\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],

@@ -310,6 +310,55 @@ namespace HotelManagement.API.Migrations
                     b.ToTable("Booking_Details", (string)null);
                 });
 
+            modelBuilder.Entity("HotelManagement.API.Models.Equipment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AvailableQuantity")
+                        .HasColumnType("int")
+                        .HasColumnName("available_quantity");
+
+                    b.Property<decimal>("BasePrice")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("base_price");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("category");
+
+                    b.Property<decimal>("DefaultPriceIfLost")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("default_price_if_lost");
+
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("image_url");
+
+                    b.Property<int>("InUseQuantity")
+                        .HasColumnType("int")
+                        .HasColumnName("in_use_quantity");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("name");
+
+                    b.Property<int>("TotalQuantity")
+                        .HasColumnType("int")
+                        .HasColumnName("total_quantity");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Equipments");
+                });
+
             modelBuilder.Entity("HotelManagement.API.Models.Invoice", b =>
                 {
                     b.Property<int>("Id")
@@ -866,7 +915,8 @@ namespace HotelManagement.API.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("AvatarUrl")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("avatar_url");
 
                     b.Property<string>("Email")
                         .IsRequired()

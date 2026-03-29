@@ -2,28 +2,29 @@ import axios from 'axios';
 import { useAdminAuthStore } from '../store/adminAuthStore';
 
 const axiosClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL, 
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5057/api', 
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Request Interceptor: Tự động đính kèm Token trước khi gửi đi
+// ✅ Tự động tìm và nhét Token vào mọi API
 axiosClient.interceptors.request.use((config) => {
-  const token = useAdminAuthStore.getState().token;
+  const token = useAdminAuthStore.getState().token || localStorage.getItem('token');
+  
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 
-// Response Interceptor: Bắt lỗi nếu Token hết hạn (401)
+// ✅ Tự động đá văng nếu Token hết hạn
 axiosClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      // Token hết hạn -> Xóa token và đá ra login
       useAdminAuthStore.getState().clearAuth();
+      localStorage.removeItem('token');
       window.location.href = '/login';
     }
     return Promise.reject(error);

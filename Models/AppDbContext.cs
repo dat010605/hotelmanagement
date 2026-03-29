@@ -54,6 +54,8 @@ public partial class AppDbContext : DbContext
     public virtual DbSet<RoomInventory> RoomInventories { get; set; }
 
     public virtual DbSet<RoomType> RoomTypes { get; set; }
+    
+    public DbSet<Equipment> Equipments { get; set; }
 
     public virtual DbSet<Service> Services { get; set; }
 

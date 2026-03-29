@@ -22,62 +22,52 @@ namespace HotelManagement.API.Controllers
             _context = context;
             _config = config;
         }
-        // POST /api/Auth/register : Đăng ký tài khoản mới (Khách hàng)
+
+        // ====================================================
+        // 1. ĐĂNG KÝ 
         // ====================================================
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDto request)
         {
-            // 1. Kiểm tra xem Email đã bị người khác đăng ký chưa
-            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
-            if (existingUser != null)
+            var emailExists = await _context.Users.AnyAsync(u => u.Email == request.Email);
+            if (emailExists) return BadRequest(new { message = "Email này đã được sử dụng!" });
+
+            var GuestRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "Guest");
+            if (GuestRole == null)
             {
-                return BadRequest(new { message = "Email này đã được sử dụng. Vui lòng dùng email khác!" });
+                GuestRole = new Role { Name = "Guest" };
+                _context.Roles.Add(GuestRole);
+                await _context.SaveChangesAsync();
             }
 
-            // 2. Tìm Role mặc định cho người đăng ký mới (Thường là quyền "Customer" hoặc "KhachHang")
-            var customerRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "Guest");
-            
-            // NẾU CHƯA CÓ QUYỀN CUSTOMER -> TỰ ĐỘNG TẠO MỚI LUÔN
-            if (customerRole == null)
-            {
-                customerRole = new Role { Name = "Guest" };
-                _context.Roles.Add(customerRole);
-                await _context.SaveChangesAsync(); // Lưu quyền mới xuống Database
-            }
-            // 3. Tạo tài khoản mới
             var newUser = new User
             {
                 FullName = request.FullName,
                 Email = request.Email,
-                // Mã hóa mật khẩu bằng BCrypt trước khi lưu xuống Database để bảo mật
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-                RoleId = customerRole.Id,
-                Status = true // Kích hoạt tài khoản ngay lập tức
+                RoleId = GuestRole.Id,
+                Status = true
             };
 
-            // 4. Lưu xuống Database
             _context.Users.Add(newUser);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Đăng ký tài khoản thành công! Mời bạn đăng nhập." });
+            return Ok(new { message = "Đăng ký tài khoản thành công!" });
         }
 
-        // 41. ĐĂNG NHẬP & TRẢ VỀ JWT KÈM THEO QUYỀN (PERMISSIONS)
-      [HttpPost("Login")]
+        // ====================================================
+        // 2. ĐĂNG NHẬP 
+        // ====================================================
+        [HttpPost("Login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            // 1. TÌM USER + GỘP ROLE + GỘP LUÔN PERMISSIONS (Nhờ cầu nối của EF Core)
-            var user = await _context.Users
-                .Include(u => u.Role)
-                    .ThenInclude(r => r.Permissions) // EF Core nối thẳng sang bảng Permissions
-                .FirstOrDefaultAsync(u => u.Email == request.Email && u.Status == true);
+            var user = await _context.Users.Include(u => u.Role)
+                                     .FirstOrDefaultAsync(u => u.Email == request.Email && u.Status == true);
 
             if (user == null)
                 return Unauthorized(new { message = "Email không tồn tại hoặc tài khoản bị khóa." });
 
             bool isPasswordValid = false;
-
-            // Xử lý dữ liệu: Phân biệt mật khẩu mẫu và mật khẩu đã mã hóa BCrypt
             if (user.PasswordHash.StartsWith("$"))
             {
                 isPasswordValid = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
@@ -91,28 +81,26 @@ namespace HotelManagement.API.Controllers
                 return Unauthorized(new { message = "Mật khẩu không đúng." });
 
             var token = GenerateJwtToken(user);
-
-            // ==========================================
-            // 2. LẤY DANH SÁCH QUYỀN CỰC KỲ ĐƠN GIẢN
-            // ==========================================
-            // Lấy trực tiếp từ danh sách Permissions đã Include ở bước 1
-            var userPermissions = user.Role?.Permissions?.Select(p => p.Name).ToList() ?? new List<string>();
-
-            // TRẢ VỀ ĐẦY ĐỦ CHO REACT
-            return Ok(new 
-            { 
-                Token = token, 
-                User = new 
-                { 
-                    Id = user.Id, 
-                    FullName = user.FullName, 
-                    Email = user.Email,
-                    Role = user.Role?.Name 
-                },
-                Permissions = userPermissions 
+            
+            // Trả về đúng format để Frontend không bị sập
+            return Ok(new
+            {
+                message = "Đăng nhập thành công",
+                token = token,
+                user = new
+                {
+                    id = user.Id,
+                    fullName = user.FullName,
+                    email = user.Email,
+                    role = user.Role?.Name
+                    //avatarUrl = user.AvatarUrl
+                }
             });
         }
-        // 42. REFRESH TOKEN (Cấp lại token mới dựa trên thông tin cũ)
+
+        // ====================================================
+        // 3. REFRESH TOKEN 
+        // ====================================================
         [HttpPost("RefreshToken")]
         public IActionResult RefreshToken([FromBody] RefreshTokenRequest request)
         {
@@ -127,23 +115,31 @@ namespace HotelManagement.API.Controllers
             return Ok(new { Token = GenerateJwtToken(user) });
         }
 
-        // Hàm tiện ích tạo JWT Token (Sử dụng chung)
+        // ====================================================
+        // 4. GENERATE TOKEN 
+        // ====================================================
         private string GenerateJwtToken(User user)
         {
             var jwtSettings = _config.GetSection("JwtSettings");
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]));
+            // Thêm bảo mật phòng hờ nếu máy nhà thiếu file cấu hình
+            var keyString = jwtSettings["Key"] ?? "MotChuoiBaoMatCucKyDaiVaKhoDoan1234567890"; 
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyString));
             
-            double durationInMinutes = Convert.ToDouble(jwtSettings["DurationInMinutes"]);
+            double durationInMinutes = 1440; 
+            if (double.TryParse(jwtSettings["DurationInMinutes"], out double parsedDuration)) {
+                durationInMinutes = parsedDuration;
+            }
 
             var claims = new List<Claim> {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Role, user.Role.Name) 
+                new Claim(ClaimTypes.Email, user.Email ?? ""),
+                new Claim(ClaimTypes.Name, user.FullName ?? ""),
+                new Claim(ClaimTypes.Role, user.Role?.Name ?? "Guest") 
             };
 
             var token = new JwtSecurityToken(
-                issuer: jwtSettings["Issuer"], 
-                audience: jwtSettings["Audience"],
+                issuer: jwtSettings["Issuer"] ?? "HotelAPI", 
+                audience: jwtSettings["Audience"] ?? "HotelClients",
                 claims: claims, 
                 expires: DateTime.Now.AddMinutes(durationInMinutes), 
                 signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256)

@@ -53,6 +53,7 @@ const AdminLayout = () => {
     { key: '/admin/rooms', icon: <HomeOutlined />, label: 'Quản lý phòng' },
     { key: '/admin/profile', icon: <UserOutlined />, label: 'Hồ sơ cá nhân' },
     { key: '/admin/settings', icon: <SettingOutlined />, label: 'Cấu hình hệ thống' },
+    { key: '/admin/inventory', icon: <DashboardOutlined />, label: 'Quản lý kho vật tư' },
   ];
 
   const userDropdownItems = [
