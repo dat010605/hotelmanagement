@@ -67,6 +67,9 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<Voucher> Vouchers { get; set; }
 
+    // Trong file AppDbContext.cs
+    public DbSet<RoomInventory> RoomInventory { get; set; } 
+// Hoặc nếu Duy đặt tên model là Room_Inventory thì sửa lại cho đúng tên Model
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         // Đã comment để không bị đè cấu hình trong Program.cs và appsettings.json

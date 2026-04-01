@@ -12,7 +12,8 @@ import {
   BellOutlined,
   HomeOutlined,
   LockOutlined,
-  AlertOutlined // THÊM DÒNG NÀY: Để không bị lỗi trắng trang
+  AlertOutlined, 
+  CheckSquareOutlined
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAdminAuthStore } from '../store/adminAuthStore';
@@ -27,16 +28,19 @@ const AdminLayout = () => {
   useEffect(() => {
     if (connection) {
       connection.on('ReceiveNotification', (message) => {
+        if (user?.roleId === 1 || user?.roleId === 3) {
         // Cập nhật danh sách trong chuông thông báo
         setNotifications(prev => [message, ...prev]);
 
         // HIỂN THỊ THÔNG BÁO ĐẨY (Push Notification)
         notification.warning({
+          message: 'Cảnh báo thất thoát',
           title: 'Cảnh báo hệ thống', // Dùng title thay vì message để tránh lỗi F12
           description: message,
           placement: 'topRight',
-          duration: 5
+          duration: 8
         });
+        }
       });
     }
     // Cleanup để tránh bị nhận thông báo trùng lặp khi render lại
@@ -64,6 +68,7 @@ const AdminLayout = () => {
     { key: '/admin/employees', icon: <TeamOutlined />, label: 'Quản lý nhân sự' },
     { key: '/admin/roles', icon: <LockOutlined />, label: 'Phân quyền (RBAC)' },
     { key: '/admin/rooms', icon: <HomeOutlined />, label: 'Quản lý phòng' },
+    { key: '/admin/housekeeping', icon: <CheckSquareOutlined />, label: 'Dọn Phòng' },
     { key: '/admin/loss-damage', icon: <AlertOutlined />, label: 'Thất thoát & Đền bù' }, // Đã có icon
     { key: '/admin/inventory', icon: <DashboardOutlined />, label: 'Quản lý kho vật tư' },
     { key: '/admin/profile', icon: <UserOutlined />, label: 'Hồ sơ cá nhân' },

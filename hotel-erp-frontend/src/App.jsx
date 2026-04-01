@@ -10,7 +10,8 @@ import UserManagementPage from './pages/UserManagementPage';
 import RoleManagementPage from './pages/RoleManagementPage';
 import RoomManagementPage from './pages/RoomManagementPage';
 import LossAndDamagePage from './pages/LossAndDamagePage';
-
+import HousekeepingChecklist from './pages/HousekeepingChecklist';
+import HousekeepingListPage from './pages/HousekeepingListPage';
 // Component thông báo hiện tại đã được tách ra hoặc để trong AdminLayout sẽ tốt hơn
 // Nếu vẫn muốn để ở App.jsx, hãy tạo một Component bao bọc riêng
 
@@ -25,12 +26,16 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        
+        
         {/* CÁC TRANG CÔNG KHAI (Không bị ảnh hưởng bởi SignalR) */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         
         <Route path="/" element={<Navigate to="/login" replace />} />
+
+        
 
         {/* CÁC TRANG CẦN ĐĂNG NHẬP */}
         <Route element={<ProtectedRoute />}>
@@ -46,6 +51,8 @@ function App() {
             <Route path="/admin/rooms" element={<RoomManagementPage />} />
             <Route path="/admin/loss-damage" element={<LossAndDamagePage />} />
             <Route path="/admin/settings" element={<div>⚙️ Cấu hình hệ thống</div>} />
+            <Route path="/admin/housekeeping" element={<HousekeepingListPage />} />
+            <Route path="/admin/housekeeping/:roomId" element={<HousekeepingChecklist />} />
           </Route>
         </Route>
 

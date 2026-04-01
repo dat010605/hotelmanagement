@@ -72,7 +72,23 @@ namespace HotelManagement.API.Controllers
             if (room == null) return NotFound(new { message = "Không tìm thấy phòng này!" });
             return Ok(room);
         }
-
+        [HttpGet("{id}/inventory")]
+        public async Task<IActionResult> GetRoomInventory(int id)
+        {
+            // Lấy danh sách vật tư từ bảng Room_Inventory dựa trên roomId
+           // Duy sửa lại đoạn Select trong RoomsController như sau:
+        var inventory = await _context.RoomInventory
+            .Where(ri => ri.RoomId == id) // Đảm bảo dùng RoomId (viết hoa R, I)
+            .Include(ri => ri.Equipment) // Phải có dòng này để lấy được tên vật tư
+            .Select(ri => new {
+               Id = ri.Id,              // Sửa id -> Id
+        Name = ri.Equipment.Name, // Sửa name -> Name
+        Quantity = ri.Quantity,   // Sửa quantity -> Quantity
+        PriceIfLost = ri.PriceIfLost, // Sửa priceIfLost -> PriceIfLost
+        ItemType = ri.ItemType    // Sửa item_type -> ItemType
+            }).ToListAsync();
+            return Ok(inventory);
+        }
         // ====================================================
         // 3. POST /api/Rooms : TẠO PHÒNG MỚI
         // ====================================================
