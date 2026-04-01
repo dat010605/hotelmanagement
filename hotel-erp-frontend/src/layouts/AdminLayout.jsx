@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import useSignalR from '../hooks/useSignalR';
-import { Layout, Menu, Button, theme, Avatar, Dropdown, Space, Badge, Typography } from 'antd';
+import { Layout, Menu, Button, theme, Avatar, Dropdown, Space, Badge, Typography, notification } from 'antd'; // Thêm notification
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
@@ -11,7 +11,8 @@ import {
   SettingOutlined,
   BellOutlined,
   HomeOutlined,
-  LockOutlined
+  LockOutlined,
+  AlertOutlined // THÊM DÒNG NÀY: Để không bị lỗi trắng trang
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAdminAuthStore } from '../store/adminAuthStore';
@@ -20,16 +21,28 @@ const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
 
 const AdminLayout = () => {
-
   const connection = useSignalR('http://localhost:5057/notificationHub');
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
     if (connection) {
       connection.on('ReceiveNotification', (message) => {
+        // Cập nhật danh sách trong chuông thông báo
         setNotifications(prev => [message, ...prev]);
+
+        // HIỂN THỊ THÔNG BÁO ĐẨY (Push Notification)
+        notification.warning({
+          title: 'Cảnh báo hệ thống', // Dùng title thay vì message để tránh lỗi F12
+          description: message,
+          placement: 'topRight',
+          duration: 5
+        });
       });
     }
+    // Cleanup để tránh bị nhận thông báo trùng lặp khi render lại
+    return () => {
+      if (connection) connection.off('ReceiveNotification');
+    };
   }, [connection]);
 
   const [collapsed, setCollapsed] = useState(false);
@@ -51,9 +64,10 @@ const AdminLayout = () => {
     { key: '/admin/employees', icon: <TeamOutlined />, label: 'Quản lý nhân sự' },
     { key: '/admin/roles', icon: <LockOutlined />, label: 'Phân quyền (RBAC)' },
     { key: '/admin/rooms', icon: <HomeOutlined />, label: 'Quản lý phòng' },
+    { key: '/admin/loss-damage', icon: <AlertOutlined />, label: 'Thất thoát & Đền bù' }, // Đã có icon
+    { key: '/admin/inventory', icon: <DashboardOutlined />, label: 'Quản lý kho vật tư' },
     { key: '/admin/profile', icon: <UserOutlined />, label: 'Hồ sơ cá nhân' },
     { key: '/admin/settings', icon: <SettingOutlined />, label: 'Cấu hình hệ thống' },
-    { key: '/admin/inventory', icon: <DashboardOutlined />, label: 'Quản lý kho vật tư' },
   ];
 
   const userDropdownItems = [
@@ -73,13 +87,12 @@ const AdminLayout = () => {
     },
   ];
 
-  
   const notificationMenu = {
     items: notifications?.length === 0 
       ? [{ key: 'empty', label: 'Chưa có thông báo nào' }]
       : notifications.map((msg, index) => ({
           key: index,
-          label: msg
+          label: typeof msg === 'string' ? msg : (msg.message || 'Thông báo mới')
         }))
   };
 
@@ -127,7 +140,6 @@ const AdminLayout = () => {
           />
 
           <Space size={24}>
-            {}
             <Dropdown menu={notificationMenu} placement="bottomRight" arrow>
               <Badge count={notifications?.length || 0} size="small">
                 <BellOutlined style={{ fontSize: '20px', cursor: 'pointer', color: '#65676b' }} />

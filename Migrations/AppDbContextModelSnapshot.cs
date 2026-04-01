@@ -35,6 +35,12 @@ namespace HotelManagement.API.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("icon_url");
 
+                    b.Property<bool?>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -42,7 +48,7 @@ namespace HotelManagement.API.Migrations
                         .HasColumnName("name");
 
                     b.HasKey("Id")
-                        .HasName("PK__Amenitie__3213E83F2C03CD82");
+                        .HasName("PK__Amenitie__3213E83F9F4AD4B8");
 
                     b.ToTable("Amenities");
                 });
@@ -68,6 +74,12 @@ namespace HotelManagement.API.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("content");
 
+                    b.Property<bool?>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
                     b.Property<DateTime?>("PublishedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime")
@@ -89,13 +101,13 @@ namespace HotelManagement.API.Migrations
                         .HasColumnName("title");
 
                     b.HasKey("Id")
-                        .HasName("PK__Articles__3213E83F6B0011FE");
+                        .HasName("PK__Articles__3213E83F5342ECB6");
 
                     b.HasIndex("AuthorId");
 
                     b.HasIndex("CategoryId");
 
-                    b.HasIndex(new[] { "Slug" }, "UQ__Articles__32DD1E4C106E2D2E")
+                    b.HasIndex(new[] { "Slug" }, "UQ__Articles__32DD1E4C62E939FC")
                         .IsUnique()
                         .HasFilter("[slug] IS NOT NULL");
 
@@ -111,6 +123,12 @@ namespace HotelManagement.API.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<bool?>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -118,7 +136,7 @@ namespace HotelManagement.API.Migrations
                         .HasColumnName("name");
 
                     b.HasKey("Id")
-                        .HasName("PK__Article___3213E83F08583F66");
+                        .HasName("PK__Article___3213E83F3592C026");
 
                     b.ToTable("Article_Categories", (string)null);
                 });
@@ -132,6 +150,11 @@ namespace HotelManagement.API.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Address")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("address");
+
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("description");
@@ -139,6 +162,20 @@ namespace HotelManagement.API.Migrations
                     b.Property<decimal?>("DistanceKm")
                         .HasColumnType("decimal(5, 2)")
                         .HasColumnName("distance_km");
+
+                    b.Property<bool?>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<decimal?>("Latitude")
+                        .HasColumnType("decimal(10, 8)")
+                        .HasColumnName("latitude");
+
+                    b.Property<decimal?>("Longitude")
+                        .HasColumnType("decimal(11, 8)")
+                        .HasColumnName("longitude");
 
                     b.Property<string>("MapEmbedLink")
                         .HasColumnType("nvarchar(max)")
@@ -151,7 +188,7 @@ namespace HotelManagement.API.Migrations
                         .HasColumnName("name");
 
                     b.HasKey("Id")
-                        .HasName("PK__Attracti__3213E83F82338BC3");
+                        .HasName("PK__Attracti__3213E83FE804037D");
 
                     b.ToTable("Attractions");
                 });
@@ -200,7 +237,7 @@ namespace HotelManagement.API.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("Id")
-                        .HasName("PK__Audit_Lo__3213E83FB0B1B12D");
+                        .HasName("PK__Audit_Lo__3213E83F7099AC85");
 
                     b.HasIndex("UserId");
 
@@ -253,13 +290,13 @@ namespace HotelManagement.API.Migrations
                         .HasColumnName("voucher_id");
 
                     b.HasKey("Id")
-                        .HasName("PK__Bookings__3213E83F28EECD7C");
+                        .HasName("PK__Bookings__3213E83FB9FFF2AF");
 
                     b.HasIndex("UserId");
 
                     b.HasIndex("VoucherId");
 
-                    b.HasIndex(new[] { "BookingCode" }, "UQ__Bookings__FF29040FFC3B0ACA")
+                    b.HasIndex(new[] { "BookingCode" }, "UQ__Bookings__FF29040FE6D99FEF")
                         .IsUnique();
 
                     b.ToTable("Bookings");
@@ -299,7 +336,7 @@ namespace HotelManagement.API.Migrations
                         .HasColumnName("room_type_id");
 
                     b.HasKey("Id")
-                        .HasName("PK__Booking___3213E83F083F2040");
+                        .HasName("PK__Booking___3213E83F162B8975");
 
                     b.HasIndex("BookingId");
 
@@ -319,63 +356,74 @@ namespace HotelManagement.API.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<decimal>("BasePrice")
-                        .HasColumnType("decimal(18,2)")
-                        .HasColumnName("BasePrice");
+                        .HasColumnType("decimal(18, 2)");
 
                     b.Property<string>("Category")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("Category");
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasDefaultValueSql("(getutcdate())");
 
                     b.Property<int>("DamagedQuantity")
-                        .HasColumnType("int")
-                        .HasColumnName("DamagedQuantity");
+                        .HasColumnType("int");
 
                     b.Property<decimal>("DefaultPriceIfLost")
-                        .HasColumnType("decimal(18,2)")
-                        .HasColumnName("DefaultPriceIfLost");
+                        .HasColumnType("decimal(18, 2)");
 
                     b.Property<string>("ImageUrl")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("ImageUrl");
+                        .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("InStockQuantity")
+                    b.Property<int?>("InStockQuantity")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("int")
-                        .HasColumnName("InStockQuantity");
+                        .HasComputedColumnSql("((([TotalQuantity]-[InUseQuantity])-[DamagedQuantity])-[LiquidatedQuantity])", false);
 
                     b.Property<int>("InUseQuantity")
-                        .HasColumnType("int")
-                        .HasColumnName("InUseQuantity");
+                        .HasColumnType("int");
 
                     b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
 
                     b.Property<string>("ItemCode")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("ItemCode");
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)");
 
                     b.Property<int>("LiquidatedQuantity")
-                        .HasColumnType("int")
-                        .HasColumnName("LiquidatedQuantity");
+                        .HasColumnType("int");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("Name");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<string>("Supplier")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("Supplier");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<int>("TotalQuantity")
-                        .HasColumnType("int")
-                        .HasColumnName("TotalQuantity");
+                        .HasColumnType("int");
 
                     b.Property<string>("Unit")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("Unit");
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
-                    b.HasKey("Id");
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime");
+
+                    b.HasKey("Id")
+                        .HasName("PK__Equipmen__3214EC078F8611FE");
+
+                    b.HasIndex(new[] { "ItemCode" }, "UQ__Equipmen__3ECC0FEAF6D602FB")
+                        .IsUnique();
 
                     b.ToTable("Equipments");
                 });
@@ -431,7 +479,7 @@ namespace HotelManagement.API.Migrations
                         .HasColumnName("total_service_amount");
 
                     b.HasKey("Id")
-                        .HasName("PK__Invoices__3213E83F0A0874E9");
+                        .HasName("PK__Invoices__3213E83F7EFDBA3E");
 
                     b.HasIndex("BookingId");
 
@@ -461,6 +509,9 @@ namespace HotelManagement.API.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("description");
 
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<decimal>("PenaltyAmount")
                         .HasColumnType("decimal(18, 2)")
                         .HasColumnName("penalty_amount");
@@ -474,7 +525,7 @@ namespace HotelManagement.API.Migrations
                         .HasColumnName("room_inventory_id");
 
                     b.HasKey("Id")
-                        .HasName("PK__Loss_And__3213E83FCBF9253B");
+                        .HasName("PK__Loss_And__3213E83FBB7A683B");
 
                     b.HasIndex("BookingDetailId");
 
@@ -511,9 +562,62 @@ namespace HotelManagement.API.Migrations
                         .HasColumnName("tier_name");
 
                     b.HasKey("Id")
-                        .HasName("PK__Membersh__3213E83FBE8D8CF1");
+                        .HasName("PK__Membersh__3213E83FB9758578");
 
                     b.ToTable("Memberships");
+                });
+
+            modelBuilder.Entity("HotelManagement.API.Models.Notification", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("content");
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("(getdate())");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_read");
+
+                    b.Property<string>("ReferenceLink")
+                        .HasMaxLength(255)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(255)")
+                        .HasColumnName("reference_link");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("title");
+
+                    b.Property<string>("Type")
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("type");
+
+                    b.Property<int?>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex(new[] { "UserId", "IsRead" }, "IX_Notifications_UserId_IsRead");
+
+                    b.ToTable("Notifications");
                 });
 
             modelBuilder.Entity("HotelManagement.API.Models.OrderService", b =>
@@ -549,7 +653,7 @@ namespace HotelManagement.API.Migrations
                         .HasColumnName("total_amount");
 
                     b.HasKey("Id")
-                        .HasName("PK__Order_Se__3213E83FEDEFA398");
+                        .HasName("PK__Order_Se__3213E83FE0BCCD8D");
 
                     b.HasIndex("BookingDetailId");
 
@@ -582,7 +686,7 @@ namespace HotelManagement.API.Migrations
                         .HasColumnName("unit_price");
 
                     b.HasKey("Id")
-                        .HasName("PK__Order_Se__3213E83FC00A5CD9");
+                        .HasName("PK__Order_Se__3213E83FEB09D500");
 
                     b.HasIndex("OrderServiceId");
 
@@ -625,7 +729,7 @@ namespace HotelManagement.API.Migrations
                         .HasColumnName("transaction_code");
 
                     b.HasKey("Id")
-                        .HasName("PK__Payments__3213E83F476B232E");
+                        .HasName("PK__Payments__3213E83FDBDA3941");
 
                     b.HasIndex("InvoiceId");
 
@@ -648,7 +752,7 @@ namespace HotelManagement.API.Migrations
                         .HasColumnName("name");
 
                     b.HasKey("Id")
-                        .HasName("PK__Permissi__3213E83F243B2DED");
+                        .HasName("PK__Permissi__3213E83F3E402695");
 
                     b.ToTable("Permissions");
                 });
@@ -685,7 +789,7 @@ namespace HotelManagement.API.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("Id")
-                        .HasName("PK__Reviews__3213E83F5E38E515");
+                        .HasName("PK__Reviews__3213E83F1867233A");
 
                     b.HasIndex("RoomTypeId");
 
@@ -714,7 +818,7 @@ namespace HotelManagement.API.Migrations
                         .HasColumnName("name");
 
                     b.HasKey("Id")
-                        .HasName("PK__Roles__3213E83F1DD0E771");
+                        .HasName("PK__Roles__3213E83F3EC5F97C");
 
                     b.ToTable("Roles");
                 });
@@ -728,13 +832,23 @@ namespace HotelManagement.API.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("CleaningStatus")
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)")
+                        .HasDefaultValue("Clean")
+                        .HasColumnName("cleaning_status");
+
+                    b.Property<string>("ExtensionNumber")
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)")
+                        .HasColumnName("extension_number");
+
                     b.Property<int?>("Floor")
                         .HasColumnType("int")
                         .HasColumnName("floor");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("RoomNumber")
                         .IsRequired()
@@ -754,7 +868,7 @@ namespace HotelManagement.API.Migrations
                         .HasColumnName("status");
 
                     b.HasKey("Id")
-                        .HasName("PK__Rooms__3213E83FB849AB02");
+                        .HasName("PK__Rooms__3213E83FBA4CFDE9");
 
                     b.HasIndex("RoomTypeId");
 
@@ -775,6 +889,12 @@ namespace HotelManagement.API.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("image_url");
 
+                    b.Property<bool?>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
                     b.Property<bool?>("IsPrimary")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
@@ -786,7 +906,7 @@ namespace HotelManagement.API.Migrations
                         .HasColumnName("room_type_id");
 
                     b.HasKey("Id")
-                        .HasName("PK__Room_Ima__3213E83F5BF62486");
+                        .HasName("PK__Room_Ima__3213E83F045A6193");
 
                     b.HasIndex("RoomTypeId");
 
@@ -803,25 +923,25 @@ namespace HotelManagement.API.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<int>("EquipmentId")
-                        .HasColumnType("int")
-                        .HasColumnName("EquipmentId");
+                        .HasColumnType("int");
 
                     b.Property<bool?>("IsActive")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
+                        .HasDefaultValue(true)
                         .HasColumnName("is_active");
 
-                    b.Property<string>("ItemName")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
-                        .HasColumnName("item_name");
-
                     b.Property<string>("ItemType")
-                        .HasColumnType("nvarchar(max)")
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)")
+                        .HasDefaultValue("Asset")
                         .HasColumnName("item_type");
 
                     b.Property<string>("Note")
-                        .HasColumnType("nvarchar(max)")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
                         .HasColumnName("note");
 
                     b.Property<decimal?>("PriceIfLost")
@@ -841,7 +961,7 @@ namespace HotelManagement.API.Migrations
                         .HasColumnName("room_id");
 
                     b.HasKey("Id")
-                        .HasName("PK__Room_Inv__3213E83FA41F31EE");
+                        .HasName("PK__Room_Inv__3213E83FEBDF520A");
 
                     b.HasIndex("EquipmentId");
 
@@ -863,6 +983,11 @@ namespace HotelManagement.API.Migrations
                         .HasColumnType("decimal(18, 2)")
                         .HasColumnName("base_price");
 
+                    b.Property<string>("BedType")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("bed_type");
+
                     b.Property<int>("CapacityAdults")
                         .HasColumnType("int")
                         .HasColumnName("capacity_adults");
@@ -871,9 +996,19 @@ namespace HotelManagement.API.Migrations
                         .HasColumnType("int")
                         .HasColumnName("capacity_children");
 
+                    b.Property<string>("Content")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("content");
+
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("description");
+
+                    b.Property<bool?>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -881,8 +1016,23 @@ namespace HotelManagement.API.Migrations
                         .HasColumnType("nvarchar(255)")
                         .HasColumnName("name");
 
+                    b.Property<int?>("SizeSqm")
+                        .HasColumnType("int")
+                        .HasColumnName("size_sqm");
+
+                    b.Property<string>("Slug")
+                        .HasMaxLength(255)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(255)")
+                        .HasColumnName("slug");
+
+                    b.Property<string>("ViewType")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("view_type");
+
                     b.HasKey("Id")
-                        .HasName("PK__Room_Typ__3213E83FDC021DD2");
+                        .HasName("PK__Room_Typ__3213E83FD935EF69");
 
                     b.ToTable("Room_Types", (string)null);
                 });
@@ -916,7 +1066,7 @@ namespace HotelManagement.API.Migrations
                         .HasColumnName("unit");
 
                     b.HasKey("Id")
-                        .HasName("PK__Services__3213E83F7C8FA04E");
+                        .HasName("PK__Services__3213E83F47224E5A");
 
                     b.HasIndex("CategoryId");
 
@@ -939,7 +1089,7 @@ namespace HotelManagement.API.Migrations
                         .HasColumnName("name");
 
                     b.HasKey("Id")
-                        .HasName("PK__Service___3213E83F5E3BD593");
+                        .HasName("PK__Service___3213E83FE9224A82");
 
                     b.ToTable("Service_Categories", (string)null);
                 });
@@ -953,9 +1103,23 @@ namespace HotelManagement.API.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Address")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("address");
+
                     b.Property<string>("AvatarUrl")
-                        .HasColumnType("nvarchar(max)")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
                         .HasColumnName("avatar_url");
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .HasColumnType("datetime")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateOnly?>("DateOfBirth")
+                        .HasColumnType("date")
+                        .HasColumnName("date_of_birth");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -994,13 +1158,13 @@ namespace HotelManagement.API.Migrations
                         .HasColumnName("status");
 
                     b.HasKey("Id")
-                        .HasName("PK__Users__3213E83F74E9F69B");
+                        .HasName("PK__Users__3213E83F39EDA16F");
 
                     b.HasIndex("MembershipId");
 
                     b.HasIndex("RoleId");
 
-                    b.HasIndex(new[] { "Email" }, "UQ__Users__AB6E616441B3DD1F")
+                    b.HasIndex(new[] { "Email" }, "UQ__Users__AB6E6164EB721056")
                         .IsUnique();
 
                     b.ToTable("Users");
@@ -1050,9 +1214,9 @@ namespace HotelManagement.API.Migrations
                         .HasColumnName("valid_to");
 
                     b.HasKey("Id")
-                        .HasName("PK__Vouchers__3213E83F5F1D4433");
+                        .HasName("PK__Vouchers__3213E83FC9D228F7");
 
-                    b.HasIndex(new[] { "Code" }, "UQ__Vouchers__357D4CF9974EFB9B")
+                    b.HasIndex(new[] { "Code" }, "UQ__Vouchers__357D4CF98290E970")
                         .IsUnique();
 
                     b.ToTable("Vouchers");
@@ -1069,7 +1233,7 @@ namespace HotelManagement.API.Migrations
                         .HasColumnName("permission_id");
 
                     b.HasKey("RoleId", "PermissionId")
-                        .HasName("PK__Role_Per__C85A54638EDA7B05");
+                        .HasName("PK__Role_Per__C85A5463E34CA258");
 
                     b.HasIndex("PermissionId");
 
@@ -1087,7 +1251,7 @@ namespace HotelManagement.API.Migrations
                         .HasColumnName("amenity_id");
 
                     b.HasKey("RoomTypeId", "AmenityId")
-                        .HasName("PK__RoomType__8CA9DAD69AA20238");
+                        .HasName("PK__RoomType__8CA9DAD63F22BE2C");
 
                     b.HasIndex("AmenityId");
 
@@ -1099,12 +1263,12 @@ namespace HotelManagement.API.Migrations
                     b.HasOne("HotelManagement.API.Models.User", "Author")
                         .WithMany("Articles")
                         .HasForeignKey("AuthorId")
-                        .HasConstraintName("FK__Articles__author__6E01572D");
+                        .HasConstraintName("FK__Articles__author__17F790F9");
 
                     b.HasOne("HotelManagement.API.Models.ArticleCategory", "Category")
                         .WithMany("Articles")
                         .HasForeignKey("CategoryId")
-                        .HasConstraintName("FK__Articles__catego__6EF57B66");
+                        .HasConstraintName("FK__Articles__catego__18EBB532");
 
                     b.Navigation("Author");
 
@@ -1116,7 +1280,7 @@ namespace HotelManagement.API.Migrations
                     b.HasOne("HotelManagement.API.Models.User", "User")
                         .WithMany("AuditLogs")
                         .HasForeignKey("UserId")
-                        .HasConstraintName("FK__Audit_Log__user___6FE99F9F");
+                        .HasConstraintName("FK__Audit_Log__user___19DFD96B");
 
                     b.Navigation("User");
                 });
@@ -1126,12 +1290,12 @@ namespace HotelManagement.API.Migrations
                     b.HasOne("HotelManagement.API.Models.User", "User")
                         .WithMany("Bookings")
                         .HasForeignKey("UserId")
-                        .HasConstraintName("FK__Bookings__user_i__73BA3083");
+                        .HasConstraintName("FK__Bookings__user_i__1DB06A4F");
 
                     b.HasOne("HotelManagement.API.Models.Voucher", "Voucher")
                         .WithMany("Bookings")
                         .HasForeignKey("VoucherId")
-                        .HasConstraintName("FK__Bookings__vouche__74AE54BC");
+                        .HasConstraintName("FK__Bookings__vouche__1EA48E88");
 
                     b.Navigation("User");
 
@@ -1143,17 +1307,17 @@ namespace HotelManagement.API.Migrations
                     b.HasOne("HotelManagement.API.Models.Booking", "Booking")
                         .WithMany("BookingDetails")
                         .HasForeignKey("BookingId")
-                        .HasConstraintName("FK__Booking_D__booki__70DDC3D8");
+                        .HasConstraintName("FK__Booking_D__booki__1AD3FDA4");
 
                     b.HasOne("HotelManagement.API.Models.Room", "Room")
                         .WithMany("BookingDetails")
                         .HasForeignKey("RoomId")
-                        .HasConstraintName("FK__Booking_D__room___71D1E811");
+                        .HasConstraintName("FK__Booking_D__room___1BC821DD");
 
                     b.HasOne("HotelManagement.API.Models.RoomType", "RoomType")
                         .WithMany("BookingDetails")
                         .HasForeignKey("RoomTypeId")
-                        .HasConstraintName("FK__Booking_D__room___72C60C4A");
+                        .HasConstraintName("FK__Booking_D__room___1CBC4616");
 
                     b.Navigation("Booking");
 
@@ -1167,7 +1331,7 @@ namespace HotelManagement.API.Migrations
                     b.HasOne("HotelManagement.API.Models.Booking", "Booking")
                         .WithMany("Invoices")
                         .HasForeignKey("BookingId")
-                        .HasConstraintName("FK__Invoices__bookin__75A278F5");
+                        .HasConstraintName("FK__Invoices__bookin__1F98B2C1");
 
                     b.Navigation("Booking");
                 });
@@ -1177,16 +1341,26 @@ namespace HotelManagement.API.Migrations
                     b.HasOne("HotelManagement.API.Models.BookingDetail", "BookingDetail")
                         .WithMany("LossAndDamages")
                         .HasForeignKey("BookingDetailId")
-                        .HasConstraintName("FK__Loss_And___booki__76969D2E");
+                        .HasConstraintName("FK__Loss_And___booki__208CD6FA");
 
                     b.HasOne("HotelManagement.API.Models.RoomInventory", "RoomInventory")
                         .WithMany("LossAndDamages")
                         .HasForeignKey("RoomInventoryId")
-                        .HasConstraintName("FK__Loss_And___room___778AC167");
+                        .HasConstraintName("FK__Loss_And___room___2180FB33");
 
                     b.Navigation("BookingDetail");
 
                     b.Navigation("RoomInventory");
+                });
+
+            modelBuilder.Entity("HotelManagement.API.Models.Notification", b =>
+                {
+                    b.HasOne("HotelManagement.API.Models.User", "User")
+                        .WithMany("Notifications")
+                        .HasForeignKey("UserId")
+                        .HasConstraintName("FK_Notifications_Users");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("HotelManagement.API.Models.OrderService", b =>
@@ -1194,7 +1368,7 @@ namespace HotelManagement.API.Migrations
                     b.HasOne("HotelManagement.API.Models.BookingDetail", "BookingDetail")
                         .WithMany("OrderServices")
                         .HasForeignKey("BookingDetailId")
-                        .HasConstraintName("FK__Order_Ser__booki__7A672E12");
+                        .HasConstraintName("FK__Order_Ser__booki__25518C17");
 
                     b.Navigation("BookingDetail");
                 });
@@ -1204,12 +1378,12 @@ namespace HotelManagement.API.Migrations
                     b.HasOne("HotelManagement.API.Models.OrderService", "OrderService")
                         .WithMany("OrderServiceDetails")
                         .HasForeignKey("OrderServiceId")
-                        .HasConstraintName("FK__Order_Ser__order__787EE5A0");
+                        .HasConstraintName("FK__Order_Ser__order__236943A5");
 
                     b.HasOne("HotelManagement.API.Models.Service", "Service")
                         .WithMany("OrderServiceDetails")
                         .HasForeignKey("ServiceId")
-                        .HasConstraintName("FK__Order_Ser__servi__797309D9");
+                        .HasConstraintName("FK__Order_Ser__servi__245D67DE");
 
                     b.Navigation("OrderService");
 
@@ -1221,7 +1395,7 @@ namespace HotelManagement.API.Migrations
                     b.HasOne("HotelManagement.API.Models.Invoice", "Invoice")
                         .WithMany("Payments")
                         .HasForeignKey("InvoiceId")
-                        .HasConstraintName("FK__Payments__invoic__7B5B524B");
+                        .HasConstraintName("FK__Payments__invoic__2645B050");
 
                     b.Navigation("Invoice");
                 });
@@ -1231,12 +1405,12 @@ namespace HotelManagement.API.Migrations
                     b.HasOne("HotelManagement.API.Models.RoomType", "RoomType")
                         .WithMany("Reviews")
                         .HasForeignKey("RoomTypeId")
-                        .HasConstraintName("FK__Reviews__room_ty__7C4F7684");
+                        .HasConstraintName("FK__Reviews__room_ty__2739D489");
 
                     b.HasOne("HotelManagement.API.Models.User", "User")
                         .WithMany("Reviews")
                         .HasForeignKey("UserId")
-                        .HasConstraintName("FK__Reviews__user_id__7D439ABD");
+                        .HasConstraintName("FK__Reviews__user_id__282DF8C2");
 
                     b.Navigation("RoomType");
 
@@ -1248,7 +1422,7 @@ namespace HotelManagement.API.Migrations
                     b.HasOne("HotelManagement.API.Models.RoomType", "RoomType")
                         .WithMany("Rooms")
                         .HasForeignKey("RoomTypeId")
-                        .HasConstraintName("FK__Rooms__room_type__02084FDA");
+                        .HasConstraintName("FK__Rooms__room_type__2DE6D218");
 
                     b.Navigation("RoomType");
                 });
@@ -1258,7 +1432,7 @@ namespace HotelManagement.API.Migrations
                     b.HasOne("HotelManagement.API.Models.RoomType", "RoomType")
                         .WithMany("RoomImages")
                         .HasForeignKey("RoomTypeId")
-                        .HasConstraintName("FK__Room_Imag__room___00200768");
+                        .HasConstraintName("FK__Room_Imag__room___2B0A656D");
 
                     b.Navigation("RoomType");
                 });
@@ -1266,15 +1440,15 @@ namespace HotelManagement.API.Migrations
             modelBuilder.Entity("HotelManagement.API.Models.RoomInventory", b =>
                 {
                     b.HasOne("HotelManagement.API.Models.Equipment", "Equipment")
-                        .WithMany()
+                        .WithMany("RoomInventories")
                         .HasForeignKey("EquipmentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("FK_RoomInventory_Equipments");
 
                     b.HasOne("HotelManagement.API.Models.Room", "Room")
                         .WithMany("RoomInventories")
                         .HasForeignKey("RoomId")
-                        .HasConstraintName("FK__Room_Inve__room___01142BA1");
+                        .HasConstraintName("FK__Room_Inve__room___2BFE89A6");
 
                     b.Navigation("Equipment");
 
@@ -1286,7 +1460,7 @@ namespace HotelManagement.API.Migrations
                     b.HasOne("HotelManagement.API.Models.ServiceCategory", "Category")
                         .WithMany("Services")
                         .HasForeignKey("CategoryId")
-                        .HasConstraintName("FK__Services__catego__04E4BC85");
+                        .HasConstraintName("FK__Services__catego__30C33EC3");
 
                     b.Navigation("Category");
                 });
@@ -1296,12 +1470,12 @@ namespace HotelManagement.API.Migrations
                     b.HasOne("HotelManagement.API.Models.Membership", "Membership")
                         .WithMany("Users")
                         .HasForeignKey("MembershipId")
-                        .HasConstraintName("FK__Users__membershi__05D8E0BE");
+                        .HasConstraintName("FK__Users__membershi__31B762FC");
 
                     b.HasOne("HotelManagement.API.Models.Role", "Role")
                         .WithMany("Users")
                         .HasForeignKey("RoleId")
-                        .HasConstraintName("FK__Users__role_id__06CD04F7");
+                        .HasConstraintName("FK__Users__role_id__32AB8735");
 
                     b.Navigation("Membership");
 
@@ -1314,13 +1488,13 @@ namespace HotelManagement.API.Migrations
                         .WithMany()
                         .HasForeignKey("PermissionId")
                         .IsRequired()
-                        .HasConstraintName("FK__Role_Perm__permi__7E37BEF6");
+                        .HasConstraintName("FK__Role_Perm__permi__29221CFB");
 
                     b.HasOne("HotelManagement.API.Models.Role", null)
                         .WithMany()
                         .HasForeignKey("RoleId")
                         .IsRequired()
-                        .HasConstraintName("FK__Role_Perm__role___7F2BE32F");
+                        .HasConstraintName("FK__Role_Perm__role___2A164134");
                 });
 
             modelBuilder.Entity("RoomTypeAmenity", b =>
@@ -1329,13 +1503,13 @@ namespace HotelManagement.API.Migrations
                         .WithMany()
                         .HasForeignKey("AmenityId")
                         .IsRequired()
-                        .HasConstraintName("FK__RoomType___ameni__02FC7413");
+                        .HasConstraintName("FK__RoomType___ameni__2EDAF651");
 
                     b.HasOne("HotelManagement.API.Models.RoomType", null)
                         .WithMany()
                         .HasForeignKey("RoomTypeId")
                         .IsRequired()
-                        .HasConstraintName("FK__RoomType___room___03F0984C");
+                        .HasConstraintName("FK__RoomType___room___2FCF1A8A");
                 });
 
             modelBuilder.Entity("HotelManagement.API.Models.ArticleCategory", b =>
@@ -1355,6 +1529,11 @@ namespace HotelManagement.API.Migrations
                     b.Navigation("LossAndDamages");
 
                     b.Navigation("OrderServices");
+                });
+
+            modelBuilder.Entity("HotelManagement.API.Models.Equipment", b =>
+                {
+                    b.Navigation("RoomInventories");
                 });
 
             modelBuilder.Entity("HotelManagement.API.Models.Invoice", b =>
@@ -1417,6 +1596,8 @@ namespace HotelManagement.API.Migrations
                     b.Navigation("AuditLogs");
 
                     b.Navigation("Bookings");
+
+                    b.Navigation("Notifications");
 
                     b.Navigation("Reviews");
                 });

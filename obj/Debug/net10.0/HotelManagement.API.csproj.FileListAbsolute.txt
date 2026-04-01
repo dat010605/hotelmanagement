@@ -1045,3 +1045,4 @@ D:\web\hotelmanagement\obj\Debug\net10.0\refint\HotelManagement.API.dll
 D:\web\hotelmanagement\obj\Debug\net10.0\HotelManagement.API.pdb
 D:\web\hotelmanagement\obj\Debug\net10.0\HotelManagement.API.genruntimeconfig.cache
 D:\web\hotelmanagement\obj\Debug\net10.0\ref\HotelManagement.API.dll
+D:\datpronak1234\hotelmanagement\bin\Debug\net10.0\CloudinaryDotNet.dll
