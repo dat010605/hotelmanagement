@@ -9,5 +9,7 @@ public partial class ArticleCategory
 
     public string Name { get; set; } = null!;
 
+    public bool? IsActive { get; set; }
+
     public virtual ICollection<Article> Articles { get; set; } = new List<Article>();
 }

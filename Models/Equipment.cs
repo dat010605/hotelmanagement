@@ -1,53 +1,43 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
 
-namespace HotelManagement.API.Models
+namespace HotelManagement.API.Models;
+
+public partial class Equipment
 {
-    [Table("Equipments")]
-    public class Equipment
-    {
-        [Key]
-        public int Id { get; set; }
+    public int Id { get; set; }
 
-        [Column("ItemCode")]
-        public string? ItemCode { get; set; } 
+    public string ItemCode { get; set; } = null!;
 
-        [Required]
-        [Column("Name")]
-        public string Name { get; set; }
+    public string Name { get; set; } = null!;
 
-        [Column("Category")]
-        public string? Category { get; set; }
+    public string Category { get; set; } = null!;
 
-        [Column("Unit")]
-        public string? Unit { get; set; }
+    public string Unit { get; set; } = null!;
 
-        [Column("TotalQuantity")]
-        public int TotalQuantity { get; set; }
+    public int TotalQuantity { get; set; }
 
-        [Column("InUseQuantity")]
-        public int InUseQuantity { get; set; }
+    public int InUseQuantity { get; set; }
 
-        [Column("DamagedQuantity")]
-        public int DamagedQuantity { get; set; }
+    public int DamagedQuantity { get; set; }
 
-        [Column("LiquidatedQuantity")]
-        public int LiquidatedQuantity { get; set; } 
+    public int LiquidatedQuantity { get; set; }
 
-        [Column("InStockQuantity")]
-        [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
-        public int InStockQuantity { get; set; } 
+    public int? InStockQuantity { get; set; }
 
-        [Column("BasePrice")]
-        public decimal BasePrice { get; set; } 
+    public decimal BasePrice { get; set; }
 
-        [Column("DefaultPriceIfLost")]
-        public decimal DefaultPriceIfLost { get; set; } 
+    public decimal DefaultPriceIfLost { get; set; }
 
-        [Column("ImageUrl")]
-        public string? ImageUrl { get; set; }
+    public string? Supplier { get; set; }
 
-        [Column("Supplier")]
-        public string? Supplier { get; set; }
-    }
+    public bool IsActive { get; set; }
+
+    public DateTime? CreatedAt { get; set; }
+
+    public DateTime? UpdatedAt { get; set; }
+
+    public string? ImageUrl { get; set; }
+
+    public virtual ICollection<RoomInventory> RoomInventories { get; set; } = new List<RoomInventory>();
 }

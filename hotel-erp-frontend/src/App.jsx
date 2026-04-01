@@ -8,6 +8,7 @@ import AdminLayout from './layouts/AdminLayout';
 import EquipmentManagementPage from './pages/EquipmentManagementPage';
 import UserManagementPage from './pages/UserManagementPage';
 import RoleManagementPage from './pages/RoleManagementPage';
+import RoomManagementPage from './pages/RoomManagementPage';
 
 // Trang Dashboard con
 const DashboardPage = () => (
@@ -21,12 +22,14 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Các trang public */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         
         <Route path="/" element={<Navigate to="/login" replace />} />
 
+        {/* Các trang yêu cầu đăng nhập và có giao diện Admin */}
         <Route element={<ProtectedRoute />}>
           <Route element={<AdminLayout />}> 
             <Route path="/admin/dashboard" element={<DashboardPage />} />
@@ -34,11 +37,15 @@ function App() {
             <Route path="/admin/inventory" element={<EquipmentManagementPage />} />
             <Route path="/admin/profile" element={<ProfilePage />} />
             <Route path="/admin/roles" element={<RoleManagementPage />} />
-            <Route path="/admin/rooms" element={<div>🏠 Trang quản lý Phòng</div>} />
+            
+            {/* ĐÃ SỬA: Đưa RoomManagementPage vào đây để có Menu */}
+            <Route path="/admin/rooms" element={<RoomManagementPage />} />
+            
             <Route path="/admin/settings" element={<div>⚙️ Cấu hình hệ thống</div>} />
           </Route>
         </Route>
 
+        {/* Trang 404 */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>

@@ -13,5 +13,7 @@ public partial class RoomImage
 
     public bool? IsPrimary { get; set; }
 
+    public bool? IsActive { get; set; }
+
     public virtual RoomType? RoomType { get; set; }
 }

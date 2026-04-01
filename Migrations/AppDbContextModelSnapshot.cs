@@ -318,41 +318,62 @@ namespace HotelManagement.API.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("AvailableQuantity")
-                        .HasColumnType("int")
-                        .HasColumnName("available_quantity");
-
                     b.Property<decimal>("BasePrice")
                         .HasColumnType("decimal(18,2)")
-                        .HasColumnName("base_price");
+                        .HasColumnName("BasePrice");
 
                     b.Property<string>("Category")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("category");
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("Category");
+
+                    b.Property<int>("DamagedQuantity")
+                        .HasColumnType("int")
+                        .HasColumnName("DamagedQuantity");
 
                     b.Property<decimal>("DefaultPriceIfLost")
                         .HasColumnType("decimal(18,2)")
-                        .HasColumnName("default_price_if_lost");
+                        .HasColumnName("DefaultPriceIfLost");
 
                     b.Property<string>("ImageUrl")
                         .HasColumnType("nvarchar(max)")
-                        .HasColumnName("image_url");
+                        .HasColumnName("ImageUrl");
+
+                    b.Property<int>("InStockQuantity")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("int")
+                        .HasColumnName("InStockQuantity");
 
                     b.Property<int>("InUseQuantity")
                         .HasColumnType("int")
-                        .HasColumnName("in_use_quantity");
+                        .HasColumnName("InUseQuantity");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ItemCode")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("ItemCode");
+
+                    b.Property<int>("LiquidatedQuantity")
+                        .HasColumnType("int")
+                        .HasColumnName("LiquidatedQuantity");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
-                        .HasColumnName("name");
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("Name");
+
+                    b.Property<string>("Supplier")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("Supplier");
 
                     b.Property<int>("TotalQuantity")
                         .HasColumnType("int")
-                        .HasColumnName("total_quantity");
+                        .HasColumnName("TotalQuantity");
+
+                    b.Property<string>("Unit")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("Unit");
 
                     b.HasKey("Id");
 
@@ -781,11 +802,27 @@ namespace HotelManagement.API.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("EquipmentId")
+                        .HasColumnType("int")
+                        .HasColumnName("EquipmentId");
+
+                    b.Property<bool?>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
                     b.Property<string>("ItemName")
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)")
                         .HasColumnName("item_name");
+
+                    b.Property<string>("ItemType")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("item_type");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("note");
 
                     b.Property<decimal?>("PriceIfLost")
                         .ValueGeneratedOnAdd()
@@ -805,6 +842,8 @@ namespace HotelManagement.API.Migrations
 
                     b.HasKey("Id")
                         .HasName("PK__Room_Inv__3213E83FA41F31EE");
+
+                    b.HasIndex("EquipmentId");
 
                     b.HasIndex("RoomId");
 
@@ -1226,10 +1265,18 @@ namespace HotelManagement.API.Migrations
 
             modelBuilder.Entity("HotelManagement.API.Models.RoomInventory", b =>
                 {
+                    b.HasOne("HotelManagement.API.Models.Equipment", "Equipment")
+                        .WithMany()
+                        .HasForeignKey("EquipmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("HotelManagement.API.Models.Room", "Room")
                         .WithMany("RoomInventories")
                         .HasForeignKey("RoomId")
                         .HasConstraintName("FK__Room_Inve__room___01142BA1");
+
+                    b.Navigation("Equipment");
 
                     b.Navigation("Room");
                 });

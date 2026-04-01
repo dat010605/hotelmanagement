@@ -19,6 +19,8 @@ public partial class LossAndDamage
 
     public DateTime? CreatedAt { get; set; }
 
+    public string? ImageUrl { get; set; }
+
     public virtual BookingDetail? BookingDetail { get; set; }
 
     public virtual RoomInventory? RoomInventory { get; set; }

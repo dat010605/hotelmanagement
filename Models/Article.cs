@@ -21,6 +21,8 @@ public partial class Article
 
     public DateTime? PublishedAt { get; set; }
 
+    public bool? IsActive { get; set; }
+
     public virtual User? Author { get; set; }
 
     public virtual ArticleCategory? Category { get; set; }
