@@ -13,7 +13,9 @@ import {
   HomeOutlined,
   LockOutlined,
   AlertOutlined, 
-  CheckSquareOutlined
+  CheckSquareOutlined,
+  CalendarOutlined,
+  GiftOutlined,
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAdminAuthStore } from '../store/adminAuthStore';
@@ -71,8 +73,11 @@ const AdminLayout = () => {
     { key: '/admin/housekeeping', icon: <CheckSquareOutlined />, label: 'Dọn Phòng' },
     { key: '/admin/loss-damage', icon: <AlertOutlined />, label: 'Thất thoát & Đền bù' }, // Đã có icon
     { key: '/admin/inventory', icon: <DashboardOutlined />, label: 'Quản lý kho vật tư' },
+    { key: '/admin/booking', icon: <CalendarOutlined />, label: 'Đặt phòng' },
+    { key: '/admin/vouchers', icon: <GiftOutlined />, label: 'Khuyến mãi' },
     { key: '/admin/profile', icon: <UserOutlined />, label: 'Hồ sơ cá nhân' },
     { key: '/admin/settings', icon: <SettingOutlined />, label: 'Cấu hình hệ thống' },
+    
   ];
 
   const userDropdownItems = [

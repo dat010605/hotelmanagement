@@ -12,6 +12,8 @@ import RoomManagementPage from './pages/RoomManagementPage';
 import LossAndDamagePage from './pages/LossAndDamagePage';
 import HousekeepingChecklist from './pages/HousekeepingChecklist';
 import HousekeepingListPage from './pages/HousekeepingListPage';
+import CreateBooking from "./pages/CreateBooking";
+import VoucherManagement from "./pages/VoucherManagement";
 // Component thông báo hiện tại đã được tách ra hoặc để trong AdminLayout sẽ tốt hơn
 // Nếu vẫn muốn để ở App.jsx, hãy tạo một Component bao bọc riêng
 
@@ -53,6 +55,8 @@ function App() {
             <Route path="/admin/settings" element={<div>⚙️ Cấu hình hệ thống</div>} />
             <Route path="/admin/housekeeping" element={<HousekeepingListPage />} />
             <Route path="/admin/housekeeping/:roomId" element={<HousekeepingChecklist />} />
+            <Route path="/admin/booking" element={<CreateBooking />} />
+            <Route path="/admin/vouchers" element={<VoucherManagement />} />
           </Route>
         </Route>
 

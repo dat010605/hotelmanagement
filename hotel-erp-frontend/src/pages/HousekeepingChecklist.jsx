@@ -24,7 +24,7 @@ const HousekeepingChecklist = () => {
       setRoomData(roomRes.data);
 
       // Lấy vật tư từ bảng Room_Inventory
-      const invRes = await axiosClient.get(`/Rooms/${roomId}/inventory`);
+      const invRes = await axiosClient.get(`/LossAndDamages/room/${roomId}`);
       setInventory(invRes.data);
     } catch (error) {
       message.error("Không thể tải dữ liệu phòng!");
@@ -58,11 +58,11 @@ const HousekeepingChecklist = () => {
       onOk: async () => {
         try {
           await axiosClient.post('/LossAndDamages', {
-            room_inventory_id: item.id,
-            quantity: reportQty,
-            penalty_amount: (item.price_if_lost || 0) * reportQty,
-            description: 'Nhân viên báo hỏng khi dọn dẹp',
-            ImageUrl: '' 
+            RoomInventoryId: item.id,
+            Quantity: reportQty,
+            PenaltyAmount: calculatedPenalty, 
+            Description: `Nhân viên báo hỏng ${item.equipmentName} tại phòng`,
+            ImageUrl: ''
           });
           message.warning(`Đã gửi báo cáo đền bù thành công!`);
         } catch (err) {
