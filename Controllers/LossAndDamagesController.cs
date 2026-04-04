@@ -5,6 +5,9 @@ using Microsoft.EntityFrameworkCore;
 using HotelManagement.API.Models;
 using HotelManagement.API.Hubs;
 using HotelManagement.API.DTOs;
+using System.Linq;
+using System.Threading.Tasks;
+using System;
 
 namespace HotelManagement.API.Controllers
 {
@@ -52,6 +55,85 @@ namespace HotelManagement.API.Controllers
             return Ok(data);
         }
 
+        // =========================================================================
+        // ĐÂY LÀ HÀM BỔ SUNG ĐỂ FIX LỖI 404 KHI MỞ TRANG KIỂM KÊ PHÒNG
+        // =========================================================================
+        [HttpGet("room/{roomId}")]
+        public async Task<IActionResult> GetDamagesByRoom(int roomId)
+        {
+            try
+            {
+                var damages = await _context.LossAndDamages
+                    .Include(ld => ld.RoomInventory)
+                    .ThenInclude(ri => ri!.Equipment)
+                    .Where(ld => ld.RoomInventory != null && ld.RoomInventory.RoomId == roomId)
+                    .Select(ld => new
+                    {
+                        id = ld.Id,
+                        roomInventoryId = ld.RoomInventoryId,
+                        equipmentName = (ld.RoomInventory != null && ld.RoomInventory.Equipment != null) 
+                                        ? ld.RoomInventory.Equipment.Name : "Vật tư lẻ",
+                        quantity = ld.Quantity,
+                        penaltyAmount = ld.PenaltyAmount,
+                        description = ld.Description ?? "",
+                        createdAt = ld.CreatedAt
+                    })
+                    .ToListAsync();
+
+                return Ok(damages);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Lỗi khi tải danh sách hỏng hóc: " + ex.Message });
+            }
+        }
+        // =========================================================================
+
+        // =========================================================================
+        // ĐÂY LÀ HÀM BỔ SUNG ĐỂ FIX LỖI 405 (NHẬN DỮ LIỆU BÁO HỎNG TỪ REACT)
+        // =========================================================================
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] CreateLossAndDamageDto request)
+        {
+            try
+            {
+                // 1. Tìm vật tư trong phòng dựa vào ID gửi lên
+                var inventoryItem = await _context.RoomInventories
+                    .Include(ri => ri.Equipment)
+                    .FirstOrDefaultAsync(ri => ri.Id == request.RoomInventoryId);
+
+                if (inventoryItem == null) 
+                    return NotFound(new { message = "Không tìm thấy vật tư này trong phòng!" });
+
+                // 2. Chuyển đổi số lượng kho (Trừ số đang dùng, cộng vào số bị hỏng)
+                if (inventoryItem.Equipment != null)
+                {
+                    inventoryItem.Equipment.InUseQuantity -= request.Quantity;
+                    inventoryItem.Equipment.DamagedQuantity += request.Quantity;
+                }
+
+                // 3. Tạo bản ghi lưu vào bảng Thất Thoát & Đền Bù
+                var newDamage = new LossAndDamage
+                {
+                    RoomInventoryId = request.RoomInventoryId,
+                    Quantity = request.Quantity,
+                    PenaltyAmount = request.PenaltyAmount,
+                    Description = request.Description,
+                    CreatedAt = DateTime.Now
+                };
+
+                _context.LossAndDamages.Add(newDamage);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Báo hỏng và cập nhật kho thành công!" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Lỗi hệ thống khi lưu: " + (ex.InnerException?.Message ?? ex.Message) });
+            }
+        }
+        // =========================================================================
+
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, [FromBody] UpdateLossAndDamageDto dto)
         {
@@ -94,5 +176,17 @@ namespace HotelManagement.API.Controllers
             await _context.SaveChangesAsync();
             return Ok(new { message = "Xóa thành công" });
         }
+    }
+
+    // =========================================================================
+    // DTO ĐỂ NHẬN DỮ LIỆU TỪ REACT GỬI LÊN (Nằm ngoài Controller)
+    // =========================================================================
+    public class CreateLossAndDamageDto
+    {
+        public int RoomInventoryId { get; set; }
+        public int Quantity { get; set; }
+        public decimal PenaltyAmount { get; set; }
+        public string? Description { get; set; }
+        public string? ImageUrl { get; set; }
     }
 }

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Table, Button, Modal, Form, Input, Select, message, 
-  Tag, Space, Card, InputNumber, Tabs, Popconfirm, Row, Col, Alert 
+  Tag, Space, Card, InputNumber, Tabs, Popconfirm, Row, Col 
 } from 'antd';
 import { 
   SearchOutlined, EditOutlined, PlusOutlined, 
-  DeleteOutlined, DatabaseOutlined, CopyOutlined,CheckSquareOutlined 
+  DeleteOutlined, DatabaseOutlined, CopyOutlined, CheckSquareOutlined 
 } from '@ant-design/icons';
 import axiosClient from '../api/axiosClient';
 import { useNavigate } from 'react-router-dom';
@@ -121,23 +121,46 @@ const RoomManagementPage = () => {
       setIsModalOpen(false);
       fetchInitialData();
     } catch (error) { 
-      message.error(error.response?.data?.message || 'Kiểm tra lại thông tin!'); 
+      message.error(error.response?.data?.message || 'Kiểm tra lại thôngquan!'); 
     }
   };
-const handleCheckOut = async (roomId) => {
-  try {
-    // 1. Gọi API Checkout (đổi trạng thái đơn đặt phòng)
-    // 2. CẬP NHẬT TRẠNG THÁI PHÒNG (Đây là bước ra lệnh dọn dẹp)
-    await axiosClient.put(`/Rooms/${roomId}`, {
-      ...roomData,
-      cleaningStatus: 'Dirty', // Đổi sang Chưa dọn để nó hiện bên trang của Duy
-      status: 'Maintenance'    // Khóa phòng lại không cho đặt
-    });
-    message.success("Đã trả phòng và gửi lệnh dọn dẹp!");
-  } catch (error) {
-    message.error("Lỗi khi trả phòng!");
-  }
-};
+
+  // --- HÀM TRẢ PHÒNG ĐÃ ĐƯỢC FIX LỖI 100% ---
+  const handleCheckOut = async (roomId) => {
+    try {
+      // 1. Lục tìm thông tin gốc của phòng đang được chọn trong danh sách
+      const targetRoom = rooms.find(r => (r.id || r.Id) === roomId);
+      
+      if (!targetRoom) {
+        message.error("Không tìm thấy dữ liệu phòng này!");
+        return;
+      }
+
+      // 2. Chốt dữ liệu gửi lên Backend (Phải giữ đúng chữ cái đầu viết Hoa)
+      const payload = {
+        Id: roomId,
+        RoomNumber: targetRoom.roomNumber || targetRoom.RoomNumber,
+        Floor: targetRoom.floor || targetRoom.Floor,
+        RoomTypeId: targetRoom.roomTypeId || targetRoom.RoomTypeId,
+        Status: 'Maintenance', // Khóa phòng để bảo trì/dọn dẹp
+        CleaningStatus: 'Dirty' // Báo dơ để lễ tân gọi người dọn
+      };
+
+      // 3. Gọi API cập nhật
+      await axiosClient.put(`/Rooms/${roomId}`, payload);
+      message.success("Đã trả phòng và gửi lệnh dọn dẹp!");
+      
+      // 4. Refresh lại bảng để thấy trạng thái thay đổi ngay lập tức
+      fetchInitialData();
+
+    } catch (error) {
+      // Moi móc bằng được câu lỗi thật sự từ Backend (nếu có)
+      const errorMessage = error.response?.data?.message || error.message || 'Lỗi không xác định';
+      message.error(`Lỗi trả phòng: ${errorMessage}`);
+      console.error("Chi tiết lỗi:", error);
+    }
+  };
+
   // --- SỬA LỖI KHO KHÔNG ĐỦ: Map lại tên trường và ép kiểu số ---
   const handleAddInventory = async (values) => {
     try {
@@ -203,66 +226,62 @@ const handleCheckOut = async (roomId) => {
         const s = r.status || r.Status;
         return <Tag color={s === 'Available' ? 'green' : 'red'}>{s}</Tag>
     }},
-    
     {
-  title: 'Buồng phòng',
-  render: (_, r) => {
-    // SỬA: Ép về chữ thường để so sánh cho chính xác (tránh lỗi Clean vs clean)
-    const s = (r.cleaningStatus || r.cleaning_status || r.CleaningStatus || "").toLowerCase();
-    
-    // Map nhãn hiển thị
-    const labels = { 
-      'clean': 'Sạch sẽ', 
-      'dirty': 'Chưa dọn', 
-      'cleaning': 'Đang dọn' 
-    };
+      title: 'Buồng phòng',
+      render: (_, r) => {
+        // SỬA: Ép về chữ thường để so sánh cho chính xác (tránh lỗi Clean vs clean)
+        const s = (r.cleaningStatus || r.cleaning_status || r.CleaningStatus || "").toLowerCase();
+        
+        // Map nhãn hiển thị
+        const labels = { 
+          'clean': 'Sạch sẽ', 
+          'dirty': 'Chưa dọn', 
+          'cleaning': 'Đang dọn' 
+        };
 
-    // Map màu sắc Tag
-    const colors = {
-      'clean': 'green',
-      'dirty': 'red',
-      'cleaning': 'blue'
-    };
+        // Map màu sắc Tag
+        const colors = {
+          'clean': 'green',
+          'dirty': 'red',
+          'cleaning': 'blue'
+        };
 
-    return (
-      <Tag color={colors[s] || 'default'}>
-        {labels[s] || s || 'Chưa xác định'}
-      </Tag>
-    );
-  }
-},
-    
-   {
-  title: 'Thao tác',
-  align: 'center',
-  render: (_, record) => ( // <--- Đảm bảo có chữ 'record' ở đây
-    <Space>
-      <Button 
-        type="primary" 
-        ghost 
-        icon={<EditOutlined />} 
-        onClick={() => openModal(record)} 
-      >
-        Cấu hình
-      </Button>
-        <Button 
-        danger 
-        onClick={() => handleCheckOut(record.id)} 
-      >
-        Trả phòng
-      </Button>
-      {/* NÚT DỌN PHÒNG CỦA DUY ĐANG LỖI Ở ĐÂY: */}
-      <Button 
-        style={{ color: '#fa8c16', borderColor: '#fa8c16' }}
-        icon={<CheckSquareOutlined />} 
-        // SỬA DÒNG NÀY: Phải là record.id (hoặc record.Id tùy Backend Duy trả về)
-        onClick={() => navigate(`/admin/housekeeping/${record.id || record.Id}`)}
-      >
-        Dọn phòng 
-      </Button>
-    </Space>
-  ),
-},
+        return (
+          <Tag color={colors[s] || 'default'}>
+            {labels[s] || s || 'Chưa xác định'}
+          </Tag>
+        );
+      }
+    },
+    {
+      title: 'Thao tác',
+      align: 'center',
+      render: (_, record) => ( 
+        <Space>
+          <Button 
+            type="primary" 
+            ghost 
+            icon={<EditOutlined />} 
+            onClick={() => openModal(record)} 
+          >
+            Cấu hình
+          </Button>
+            <Button 
+            danger 
+            onClick={() => handleCheckOut(record.id || record.Id)} 
+          >
+            Trả phòng
+          </Button>
+          <Button 
+            style={{ color: '#fa8c16', borderColor: '#fa8c16' }}
+            icon={<CheckSquareOutlined />} 
+            onClick={() => navigate(`/admin/housekeeping/${record.id || record.Id}`)}
+          >
+            Dọn phòng 
+          </Button>
+        </Space>
+      ),
+    },
   ];
 
   const inventoryColumns = [

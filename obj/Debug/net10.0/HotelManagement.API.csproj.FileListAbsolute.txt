@@ -870,6 +870,9 @@ D:\Download\hotelmanagement\obj\Debug\net10.0\refint\HotelManagement.API.dll
 D:\Download\hotelmanagement\obj\Debug\net10.0\HotelManagement.API.pdb
 D:\Download\hotelmanagement\obj\Debug\net10.0\HotelManagement.API.genruntimeconfig.cache
 D:\Download\hotelmanagement\obj\Debug\net10.0\ref\HotelManagement.API.dll
+D:\datpronak1234\hotelmanagement\bin\Debug\net10.0\CloudinaryDotNet.dll
+C:\Users\trant\hotelmanagement\bin\Debug\net10.0\package-lock.json
+C:\Users\trant\hotelmanagement\bin\Debug\net10.0\CloudinaryDotNet.dll
 D:\web\hotelmanagement\bin\Debug\net10.0\appsettings.Development.json
 D:\web\hotelmanagement\bin\Debug\net10.0\appsettings.json
 D:\web\hotelmanagement\bin\Debug\net10.0\hotel-erp-frontend\package-lock.json
@@ -1045,6 +1048,3 @@ D:\web\hotelmanagement\obj\Debug\net10.0\refint\HotelManagement.API.dll
 D:\web\hotelmanagement\obj\Debug\net10.0\HotelManagement.API.pdb
 D:\web\hotelmanagement\obj\Debug\net10.0\HotelManagement.API.genruntimeconfig.cache
 D:\web\hotelmanagement\obj\Debug\net10.0\ref\HotelManagement.API.dll
-D:\datpronak1234\hotelmanagement\bin\Debug\net10.0\CloudinaryDotNet.dll
-C:\Users\trant\hotelmanagement\bin\Debug\net10.0\package-lock.json
-C:\Users\trant\hotelmanagement\bin\Debug\net10.0\CloudinaryDotNet.dll
