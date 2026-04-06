@@ -49,7 +49,9 @@ namespace HotelManagement.API.Controllers
                     l.RoomInventoryId, // Trả về để Frontend dùng khi Edit
                     RoomNumber = l.RoomInventory != null ? l.RoomInventory.RoomId.ToString() : "N/A",
                     EquipmentName = (l.RoomInventory != null && l.RoomInventory.Equipment != null) 
-                                    ? l.RoomInventory.Equipment.Name : "N/A"
+                                    ? l.RoomInventory.Equipment.Name : "N/A",
+                    //  BẢN VÁ SỐ 1: BỐC ẢNH TỪ DATABASE TRẢ VỀ CHO REACT 
+                    ImageUrl = l.ImageUrl 
                 })
                 .ToListAsync();
             return Ok(data);
@@ -90,7 +92,7 @@ namespace HotelManagement.API.Controllers
         // =========================================================================
 
         // =========================================================================
-        // ĐÂY LÀ HÀM BỔ SUNG ĐỂ FIX LỖI 405 (NHẬN DỮ LIỆU BÁO HỎNG TỪ REACT)
+        // NHẬN DỮ LIỆU BÁO HỎNG TỪ REACT
         // =========================================================================
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateLossAndDamageDto request)
@@ -119,7 +121,9 @@ namespace HotelManagement.API.Controllers
                     Quantity = request.Quantity,
                     PenaltyAmount = request.PenaltyAmount,
                     Description = request.Description,
-                    CreatedAt = DateTime.Now
+                    CreatedAt = DateTime.Now,
+                    //  BẢN VÁ SỐ 2: HỨNG ẢNH TỪ REACT VÀ NHÉT VÀO DATABASE 
+                    ImageUrl = request.ImageUrl 
                 };
 
                 _context.LossAndDamages.Add(newDamage);

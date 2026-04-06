@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Steps, DatePicker, Button, Table, Form, Input, message, Card, Typography, Space, Divider } from 'antd';
+import { Steps, DatePicker, Button, Table, Form, Input, message, Card, Typography, Space, Divider, InputNumber, Tag } from 'antd';
 import { UserOutlined, PhoneOutlined, MailOutlined, CheckCircleOutlined, DollarOutlined, GiftOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
@@ -11,74 +11,150 @@ const CreateBooking = () => {
   const [loading, setLoading] = useState(false);
 
   const [dates, setDates] = useState(null);
-  const [availableRooms, setAvailableRooms] = useState([]);
-  const [selectedRoomIds, setSelectedRoomIds] = useState([]);
+  
+  //  MA PHÁP MỚI: State lưu Hạng phòng thay vì từng phòng lẻ
+  const [availableRoomTypes, setAvailableRoomTypes] = useState([]);
+  const [selectedQuantities, setSelectedQuantities] = useState({}); // VD: { "Phòng Deluxe": 2 }
+  
   const [form] = Form.useForm();
 
-  // ==========================================
-  // STATE MỚI CHO VOUCHER
-  // ==========================================
+  // STATE VOUCHER
   const [voucherCode, setVoucherCode] = useState('');
   const [appliedVoucher, setAppliedVoucher] = useState(null);
   const [checkingVoucher, setCheckingVoucher] = useState(false);
 
   // ==========================================
-  // LOGIC TÍNH TỔNG TIỀN (ĐÃ TÍCH HỢP VOUCHER)
+  // BƯỚC 1: TÌM PHÒNG & GOM NHÓM THEO HẠNG
+  // ==========================================
+  const handleSearchRooms = async () => {
+    if (!dates || dates.length !== 2) return message.warning('Vui lòng chọn ngày!');
+    setLoading(true);
+    const checkIn = dates[0].format('YYYY-MM-DD');
+    const checkOut = dates[1].format('YYYY-MM-DD');
+    
+    try {
+      const response = await fetch(`http://localhost:5057/api/Bookings/AvailableRooms?checkIn=${checkIn}&checkOut=${checkOut}`);
+      if (!response.ok) throw new Error(await response.text());
+      const rawRooms = await response.json();
+
+      // 🔮 THUẬT TOÁN GOM NHÓM TỰ ĐỘNG
+      const grouped = rawRooms.reduce((acc, room) => {
+        if (!acc[room.roomTypeName]) {
+          acc[room.roomTypeName] = {
+            roomTypeName: room.roomTypeName,
+            price: room.price,
+            maxAdults: room.maxAdults,
+            maxChildren: room.maxChildren,
+            rooms: [] // Chứa danh sách các phòng cụ thể thuộc hạng này
+          };
+        }
+        acc[room.roomTypeName].rooms.push(room);
+        return acc;
+      }, {});
+
+      setAvailableRoomTypes(Object.values(grouped));
+      setSelectedQuantities({}); // Reset lựa chọn cũ
+      setCurrentStep(1); 
+    } catch (error) {
+      message.error('Lỗi khi tìm phòng: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ==========================================
+  // BƯỚC 2: CHỌN SỐ LƯỢNG (DẠNG RESORT)
+  // ==========================================
+  const handleQuantityChange = (roomTypeName, value) => {
+    setSelectedQuantities(prev => ({
+      ...prev,
+      [roomTypeName]: value
+    }));
+  };
+
+  const roomTypeColumns = [
+    { title: 'Hạng phòng', dataIndex: 'roomTypeName', render: text => <Text strong style={{ fontSize: '15px' }}>{text}</Text> },
+    { title: 'Giá / Đêm', dataIndex: 'price', render: (price) => <Text strong style={{ color: '#cf1322' }}>{price.toLocaleString()} đ</Text> },
+    { title: 'Sức chứa', render: (_, r) => `${r.maxAdults} Lớn, ${r.maxChildren} Bé` },
+    { 
+      title: 'Còn trống', 
+      align: 'center',
+      render: (_, r) => <Tag color="green" style={{ fontSize: '14px', padding: '4px 8px' }}>{r.rooms.length} phòng</Tag> 
+    },
+    { 
+      title: 'Số lượng đặt', 
+      align: 'center',
+      render: (_, r) => (
+        <InputNumber
+          min={0}
+          max={r.rooms.length} // Không cho đặt lố số phòng trống
+          value={selectedQuantities[r.roomTypeName] || 0}
+          onChange={(val) => handleQuantityChange(r.roomTypeName, val)}
+          size="large"
+          style={{ width: '80px' }}
+        />
+      )
+    }
+  ];
+
+  const handleConfirmRooms = () => {
+    const totalSelected = Object.values(selectedQuantities).reduce((a, b) => a + b, 0);
+    if (totalSelected === 0) return message.warning('Vui lòng chọn số lượng ít nhất 1 phòng!');
+    setCurrentStep(2); 
+  };
+
+  // ==========================================
+  // LOGIC TÍNH TỔNG TIỀN 
   // ==========================================
   const bookingSummary = useMemo(() => {
-    if (!dates || dates.length !== 2 || selectedRoomIds.length === 0) {
-      return { nights: 0, totalAmount: 0, discount: 0, finalAmount: 0 };
-    }
+    if (!dates || dates.length !== 2) return { nights: 0, totalRoomsCount: 0, totalAmount: 0, discount: 0, finalAmount: 0 };
 
     const checkIn = dates[0];
     const checkOut = dates[1];
     const nights = checkOut.diff(checkIn, 'day');
 
-    const selectedRoomsData = availableRooms.filter(room => selectedRoomIds.includes(room.roomId));
-    const totalRoomPricePerNight = selectedRoomsData.reduce((sum, room) => sum + room.price, 0);
+    let totalRoomPricePerNight = 0;
+    let totalRoomsCount = 0;
 
-    const totalAmount = totalRoomPricePerNight * nights; // Tiền gốc
+    availableRoomTypes.forEach(type => {
+      const qty = selectedQuantities[type.roomTypeName] || 0;
+      if (qty > 0) {
+        totalRoomPricePerNight += (type.price * qty);
+        totalRoomsCount += qty;
+      }
+    });
+
+    const totalAmount = totalRoomPricePerNight * nights;
     let discount = 0;
 
-    // Nếu có voucher thì bắt đầu tính toán trừ tiền
     if (appliedVoucher) {
       if (appliedVoucher.discountType === 'PERCENT') {
         discount = (totalAmount * appliedVoucher.discountValue) / 100;
       } else if (appliedVoucher.discountType === 'AMOUNT') {
         discount = appliedVoucher.discountValue;
       }
-      // Tránh việc mã giảm giá trừ quá cả tiền phòng (ví dụ phòng 500k mà nhập mã trừ 1 triệu)
       if (discount > totalAmount) discount = totalAmount; 
     }
 
-    const finalAmount = totalAmount - discount; // Tiền cuối cùng khách phải trả
+    const finalAmount = totalAmount - discount;
 
-    return { nights, totalAmount, discount, finalAmount };
-  }, [dates, selectedRoomIds, availableRooms, appliedVoucher]);
+    return { nights, totalRoomsCount, totalAmount, discount, finalAmount };
+  }, [dates, selectedQuantities, availableRoomTypes, appliedVoucher]);
 
   // ==========================================
-  // HÀM KIỂM TRA VOUCHER TỪ BACKEND
+  // XỬ LÝ VOUCHER
   // ==========================================
   const handleApplyVoucher = async () => {
-    if (!voucherCode.trim()) {
-      message.warning('Vui lòng nhập mã Voucher!');
-      return;
-    }
-    
+    if (!voucherCode.trim()) return message.warning('Vui lòng nhập mã!');
     setCheckingVoucher(true);
     try {
       const response = await fetch(`http://localhost:5057/api/Vouchers/check?code=${voucherCode.trim()}`);
-      
-      if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(errText);
-      }
-      
+      if (!response.ok) throw new Error(await response.text());
       const data = await response.json();
-      setAppliedVoucher(data); // Lưu voucher xịn vào State
-      message.success(`Áp dụng thành công mã: ${data.code}`);
+      setAppliedVoucher(data);
+      message.success(`Áp dụng mã ${data.code} thành công!`);
     } catch (error) {
-      message.error(error.message || 'Mã giảm giá không hợp lệ hoặc đã hết hạn.');
+      message.error('Mã giảm giá không hợp lệ hoặc đã hết hạn.');
       setAppliedVoucher(null);
     } finally {
       setCheckingVoucher(false);
@@ -92,56 +168,33 @@ const CreateBooking = () => {
   };
 
   // ==========================================
-  // BƯỚC 1 & 2: TÌM & CHỌN PHÒNG (GIỮ NGUYÊN)
-  // ==========================================
-  const handleSearchRooms = async () => {
-    if (!dates || dates.length !== 2) return message.warning('Vui lòng chọn ngày!');
-    setLoading(true);
-    const checkIn = dates[0].format('YYYY-MM-DD');
-    const checkOut = dates[1].format('YYYY-MM-DD');
-    try {
-      const response = await fetch(`http://localhost:5057/api/Bookings/AvailableRooms?checkIn=${checkIn}&checkOut=${checkOut}`);
-      if (!response.ok) throw new Error(await response.text());
-      setAvailableRooms(await response.json());
-      setCurrentStep(1); 
-    } catch (error) {
-      message.error('Lỗi khi tìm phòng: ' + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const roomColumns = [
-    { title: 'Số phòng', dataIndex: 'roomNumber', key: 'roomNumber', width: 120 },
-    { title: 'Hạng phòng', dataIndex: 'roomTypeName' },
-    { title: 'Giá / Đêm', dataIndex: 'price', render: (price) => <Text strong style={{ color: '#cf1322' }}>{price.toLocaleString()} VNĐ</Text> },
-    { title: 'Sức chứa', render: (_, r) => `${r.maxAdults} NL, ${r.maxChildren} TE` }
-  ];
-
-  const rowSelection = { selectedRowKeys: selectedRoomIds, onChange: (keys) => setSelectedRoomIds(keys) };
-
-  const handleConfirmRooms = () => {
-    if (selectedRoomIds.length === 0) return message.warning('Chọn ít nhất 1 phòng!');
-    setCurrentStep(2); 
-  };
-
-  // ==========================================
-  // BƯỚC 3: ĐẶT PHÒNG
+  // BƯỚC 3: ĐẶT PHÒNG VỀ BACKEND
   // ==========================================
   const handleFinishBooking = async (values) => {
     setLoading(true);
+    
+    // 🔮 MA PHÁP GÁN PHÒNG NGẦM: Bốc đại ID của các phòng trống đúng với số lượng khách chọn
+    const roomsToBook = [];
+    availableRoomTypes.forEach(type => {
+      const qty = selectedQuantities[type.roomTypeName] || 0;
+      if (qty > 0) {
+        // Cắt lấy đúng số lượng ID phòng trống từ mảng (VD: Lấy 2 ID đầu tiên)
+        const assignedRooms = type.rooms.slice(0, qty);
+        assignedRooms.forEach(r => {
+          roomsToBook.push({
+            roomId: r.roomId,
+            checkInDate: dates[0].format('YYYY-MM-DD'),
+            checkOutDate: dates[1].format('YYYY-MM-DD')
+          });
+        });
+      }
+    });
+
     const payload = {
       guestName: values.guestName,
       guestPhone: values.guestPhone,
       guestEmail: values.guestEmail,
-      // Backend C# của bạn hiện tại chưa có cột VoucherCode trong bảng Booking,
-      // nên chúng ta vẫn gửi list phòng bình thường. Nếu muốn lưu vết mã giảm giá vào DB, 
-      // bạn cần bảo đồng đội thêm cột VoucherCode vào Model C# nhé!
-      rooms: selectedRoomIds.map(id => ({
-        roomId: id,
-        checkInDate: dates[0].format('YYYY-MM-DD'),
-        checkOutDate: dates[1].format('YYYY-MM-DD')
-      }))
+      rooms: roomsToBook
     };
 
     try {
@@ -155,14 +208,12 @@ const CreateBooking = () => {
 
       message.success(`Đặt phòng thành công! Mã đơn: ${result.bookingCode}`);
       
-      // Reset sạch sẽ
       form.resetFields();
       setDates(null);
-      setSelectedRoomIds([]);
+      setSelectedQuantities({});
       setAppliedVoucher(null);
       setVoucherCode('');
       setCurrentStep(0);
-      
     } catch (error) {
       message.error('Lỗi đặt phòng: ' + error.message);
     } finally {
@@ -171,8 +222,8 @@ const CreateBooking = () => {
   };
 
   return (
-    <Card title={<Title level={3}>Tạo Đơn Đặt Phòng Mới</Title>} bordered={false}>
-      <Steps current={currentStep} items={[{ title: 'Chọn ngày' }, { title: 'Chọn phòng' }, { title: 'Xác nhận' }]} style={{ marginBottom: 30 }} />
+    <Card title={<Title level={3}>Tạo Đơn Đặt Phòng Mới (Chế độ Resort)</Title>} bordered={false}>
+      <Steps current={currentStep} items={[{ title: 'Chọn ngày' }, { title: 'Chọn hạng phòng' }, { title: 'Xác nhận' }]} style={{ marginBottom: 30 }} />
 
       {currentStep === 0 && (
         <div style={{ textAlign: 'center', padding: '40px 0' }}>
@@ -186,10 +237,18 @@ const CreateBooking = () => {
 
       {currentStep === 1 && (
         <div>
-          <Table rowKey="roomId" rowSelection={rowSelection} columns={roomColumns} dataSource={availableRooms} pagination={{ pageSize: 5 }} />
+          <Table 
+            rowKey="roomTypeName" 
+            columns={roomTypeColumns} 
+            dataSource={availableRoomTypes} 
+            pagination={false} // Tắt phân trang cho dễ nhìn tổng quát
+            bordered
+          />
           <Space style={{ marginTop: 20 }}>
             <Button onClick={() => setCurrentStep(0)}>Quay lại</Button>
-            <Button type="primary" onClick={handleConfirmRooms}>Tiếp tục ({selectedRoomIds.length} phòng)</Button>
+            <Button type="primary" onClick={handleConfirmRooms}>
+              Tiếp tục ({bookingSummary.totalRoomsCount} phòng)
+            </Button>
           </Space>
         </div>
       )}
@@ -197,12 +256,18 @@ const CreateBooking = () => {
       {currentStep === 2 && (
         <div style={{ maxWidth: 700, margin: '0 auto' }}>
           
-          {/* KHUNG TÓM TẮT CÓ GIẢM GIÁ */}
           <div style={{ background: '#f6ffed', border: '1px solid #b7eb8f', padding: '20px', borderRadius: '8px', marginBottom: '24px' }}>
             <Title level={5} style={{ color: '#389e0d', marginTop: 0 }}>Tóm tắt đơn đặt phòng</Title>
             <Space direction="vertical" style={{ width: '100%' }}>
               <Text>📅 Thời gian: {dates[0].format('DD/MM/YYYY')} - {dates[1].format('DD/MM/YYYY')} ({bookingSummary.nights} đêm)</Text>
-              <Text>🛏️ Số lượng phòng: {selectedRoomIds.length} phòng</Text>
+              
+              <Text strong>🛏️ Hạng phòng đã chọn:</Text>
+              <ul style={{ margin: '0 0 10px 20px' }}>
+                {availableRoomTypes.filter(t => selectedQuantities[t.roomTypeName] > 0).map(t => (
+                   <li key={t.roomTypeName}>{t.roomTypeName}: <Text strong color="blue">{selectedQuantities[t.roomTypeName]} phòng</Text></li>
+                ))}
+              </ul>
+
               <Divider style={{ margin: '10px 0' }} />
               
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -230,7 +295,6 @@ const CreateBooking = () => {
           </div>
 
           <Form form={form} layout="vertical" onFinish={handleFinishBooking}>
-            {/* KHU VỰC NHẬP VOUCHER */}
             <div style={{ padding: '15px', background: '#e6f7ff', border: '1px solid #91d5ff', borderRadius: '8px', marginBottom: '24px' }}>
               <Text strong><GiftOutlined style={{ marginRight: 8 }}/> Áp dụng Mã khuyến mãi</Text>
               <div style={{ display: 'flex', marginTop: '10px' }}>
@@ -242,13 +306,9 @@ const CreateBooking = () => {
                   style={{ textTransform: 'uppercase' }}
                 />
                 {!appliedVoucher ? (
-                  <Button type="primary" onClick={handleApplyVoucher} loading={checkingVoucher} style={{ marginLeft: '10px' }}>
-                    Kiểm tra
-                  </Button>
+                  <Button type="primary" onClick={handleApplyVoucher} loading={checkingVoucher} style={{ marginLeft: '10px' }}>Kiểm tra</Button>
                 ) : (
-                  <Button danger onClick={handleRemoveVoucher} style={{ marginLeft: '10px' }}>
-                    Gỡ bỏ
-                  </Button>
+                  <Button danger onClick={handleRemoveVoucher} style={{ marginLeft: '10px' }}>Gỡ bỏ</Button>
                 )}
               </div>
             </div>

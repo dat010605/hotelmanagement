@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.SignalR; 
 using HotelManagement.API.Models;
+using HotelManagement.API.Hubs;   
 using System.Linq;
 using System.Threading.Tasks;
 using System;
@@ -12,10 +14,13 @@ namespace HotelManagement.API.Controllers
     public class RoomInventoryController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IHubContext<NotificationHub> _hubContext; // 🌟 KHAI BÁO CÁI LOA PHÁT THANH
 
-        public RoomInventoryController(AppDbContext context)
+        // 🌟 BƠM LOA PHÁT THANH VÀO CONSTRUCTOR
+        public RoomInventoryController(AppDbContext context, IHubContext<NotificationHub> hubContext)
         {
             _context = context;
+            _hubContext = hubContext;
         }
 
         // ==========================================
@@ -26,7 +31,6 @@ namespace HotelManagement.API.Controllers
         {
             try
             {
-                // Dùng Include để lấy tên Vật Tư một cách an toàn và chuẩn xác nhất
                 var inventory = await _context.RoomInventories
                     .AsNoTracking()
                     .Include(ri => ri.Equipment) 
@@ -53,9 +57,6 @@ namespace HotelManagement.API.Controllers
             }
         }
 
-        // ==========================================
-        // DTO - Tuyệt chiêu "Lách luật" lỗi 400 Bad Request
-        // ==========================================
         public class AddInventoryDto
         {
             public int RoomId { get; set; }
@@ -65,7 +66,7 @@ namespace HotelManagement.API.Controllers
         }
 
         // ==========================================
-        // 2. THÊM VẬT TƯ VÀO PHÒNG (Fix lỗi 400)
+        // 2. THÊM VẬT TƯ VÀO PHÒNG
         // ==========================================
         [HttpPost]
         public async Task<IActionResult> AddToRoom([FromBody] AddInventoryDto request)
@@ -79,7 +80,6 @@ namespace HotelManagement.API.Controllers
                 if (equipment == null) 
                     return NotFound(new { message = "Vật tư không tồn tại trong kho!" });
 
-                // Tự tính số lượng tồn kho để không phụ thuộc vào cột Computed của SQL
                 int inStock = equipment.TotalQuantity - equipment.InUseQuantity - equipment.DamagedQuantity - equipment.LiquidatedQuantity;
 
                 if (inStock < request.Quantity)
@@ -87,7 +87,6 @@ namespace HotelManagement.API.Controllers
                     return BadRequest(new { message = $"Kho không đủ! Hiện tại chỉ còn {inStock} {equipment.Unit}." });
                 }
 
-                // Cập nhật số lượng đang sử dụng
                 equipment.InUseQuantity += request.Quantity;
 
                 var newInventory = new RoomInventory
@@ -142,7 +141,7 @@ namespace HotelManagement.API.Controllers
         }
 
         // ==========================================
-        // 4. SAO CHÉP (CLONE) VẬT TƯ
+        // 4. SAO CHÉP (CLONE) VẬT TƯ (🌟 ĐÃ GẮN CHUÔNG)
         // ==========================================
         [HttpPost("Clone")]
         public async Task<IActionResult> CloneInventory([FromQuery] int sourceRoomId, [FromQuery] int targetRoomId)
@@ -187,11 +186,94 @@ namespace HotelManagement.API.Controllers
                 }
 
                 await _context.SaveChangesAsync();
+
+                // =================================================================
+                // 🔔 MA PHÁP KÍCH HOẠT CHUÔNG BÁO TẠI FRONTEND 🔔
+                // =================================================================
+                string message = $"📦 Đã sao chép thành công {count} vật tư từ Phòng {sourceRoomId} sang Phòng {targetRoomId}!";
+                await _hubContext.Clients.All.SendAsync("ReceiveNotification", message);
+                // =================================================================
+
                 return Ok(new { message = $"Đã sao chép thành công {count} món đồ!" });
             }
             catch (Exception ex)
             {
                 return StatusCode(500, new { message = "Lỗi hệ thống khi Clone: " + (ex.InnerException?.Message ?? ex.Message) });
+            }
+        }
+
+        // ==========================================
+        // 5. CẬP NHẬT SỐ LƯỢNG VẬT TƯ TRỰC TIẾP 
+        // ==========================================
+        [HttpPut("{id}/Quantity")]
+        public async Task<IActionResult> UpdateQuantity(int id, [FromBody] int newQuantity)
+        {
+            try
+            {
+                if (newQuantity < 1) 
+                    return BadRequest(new { message = "Số lượng phải ít nhất là 1" });
+
+                var inventory = await _context.RoomInventories.FindAsync(id);
+                if (inventory == null) 
+                    return NotFound(new { message = "Không tìm thấy vật tư này trong phòng" });
+
+                var equipment = await _context.Equipments.FindAsync(inventory.EquipmentId);
+                if (equipment == null) 
+                    return NotFound(new { message = "Không tìm thấy vật tư trong kho gốc" });
+
+                int currentQty = inventory.Quantity ?? 0;
+                int difference = newQuantity - currentQty;
+
+                if (difference > 0)
+                {
+                    int inStock = equipment.TotalQuantity - equipment.InUseQuantity - equipment.DamagedQuantity - equipment.LiquidatedQuantity;
+                    if (inStock < difference)
+                    {
+                        return BadRequest(new { message = $"Kho không đủ! Chỉ còn {inStock} {equipment.Unit}." });
+                    }
+                }
+
+                inventory.Quantity = newQuantity;
+                equipment.InUseQuantity += difference;
+
+                await _context.SaveChangesAsync();
+                return Ok(new { message = "Cập nhật số lượng thành công", newQuantity = inventory.Quantity });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Lỗi hệ thống: " + (ex.InnerException?.Message ?? ex.Message) });
+            }
+        }
+
+        // ==========================================
+        // 6. XÓA TẤT CẢ VẬT TƯ TRONG PHÒNG (Hoàn kho 1 lần)
+        // ==========================================
+        [HttpDelete("Room/{roomId}")]
+        public async Task<IActionResult> DeleteAllFromRoom(int roomId)
+        {
+            try
+            {
+                var items = await _context.RoomInventories.Where(ri => ri.RoomId == roomId).ToListAsync();
+                if (!items.Any()) return Ok(new { message = "Phòng đã trống sẵn!" });
+
+                int count = 0;
+                foreach (var item in items)
+                {
+                    var equipment = await _context.Equipments.FindAsync(item.EquipmentId);
+                    if (equipment != null)
+                    {
+                        equipment.InUseQuantity -= (item.Quantity ?? 0);
+                    }
+                    _context.RoomInventories.Remove(item);
+                    count++;
+                }
+
+                await _context.SaveChangesAsync();
+                return Ok(new { message = $"Đã dọn sạch phòng và hoàn trả {count} món đồ về kho!" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Lỗi hệ thống: " + (ex.InnerException?.Message ?? ex.Message) });
             }
         }
     }

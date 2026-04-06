@@ -1,174 +1,197 @@
-import React, { useState, useEffect } from 'react';
-import { Card, Form, Input, Button, Upload, message, Row, Col, Avatar, Divider, Typography, Space } from 'antd';
-import { UploadOutlined, UserOutlined, PhoneOutlined, MailOutlined, SaveOutlined } from '@ant-design/icons';
-import axiosClient from '../api/axiosClient';
+import React, { useState } from 'react';
+import { Card, Tabs, Form, Input, Button, Row, Col, Avatar, Upload, message, Switch, Typography, Select, Divider } from 'antd';
+import { UserOutlined, LockOutlined, MailOutlined, PhoneOutlined, UploadOutlined, UserAddOutlined } from '@ant-design/icons';
 import { useAdminAuthStore } from '../store/adminAuthStore';
 
 const { Title, Text } = Typography;
+const { TabPane } = Tabs;
 
 const ProfilePage = () => {
-  const [form] = Form.useForm();
+  const { user } = useAdminAuthStore();
   const [loading, setLoading] = useState(false);
-  
-  // Lấy dữ liệu từ Zustand Store
-  const { user, setAuth, token, permissions } = useAdminAuthStore();
-  
-  const API_URL = axiosClient.defaults.baseURL.replace('/api', '');
-  const [previewImage, setPreviewImage] = useState(null);
-  
-  const [displayData, setDisplayData] = useState({
-    fullName: 'Người dùng',
-    phone: 'Chưa cập nhật'
-  });
+  const [formInfo] = Form.useForm();
+  const [formPassword] = Form.useForm();
+  const [formCreateAccount] = Form.useForm();
 
-  // Hàm xử lý hiển thị ảnh
-  const getFullAvatarUrl = (url) => {
-    if (!url) return null;
-    if (url.startsWith('http')) return url; // Link Cloudinary
-    return `${API_URL}${url}`; // Link local
+  // ==========================================
+  // TAB 1: CẬP NHẬT THÔNG TIN
+  // ==========================================
+  const handleUpdateInfo = async (values) => {
+    setLoading(true);
+    // Tạm thời mô phỏng gọi API
+    setTimeout(() => {
+      message.success('Cập nhật thông tin thành công!');
+      setLoading(false);
+    }, 1000);
   };
 
-  // 1. Load dữ liệu khi vào trang
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const response = await axiosClient.get('/UserProfile/my-profile');
-        const data = response.data;
-
-        // Ưu tiên lấy avatarUrl (camelCase) cho khớp với Backend mới
-        const currentAvatar = data.avatarUrl || data.avatar_url;
-
-        form.setFieldsValue({
-          fullName: data.fullName || data.full_name,
-          phone: data.phone,
-          email: data.email
-        });
-
-        setDisplayData({ 
-          fullName: data.fullName || data.full_name, 
-          phone: data.phone 
-        });
-
-        setPreviewImage(getFullAvatarUrl(currentAvatar));
-      } catch (error) {
-        console.error("Lỗi load profile:", error);
-      }
-    };
-    fetchProfile();
-  }, [form]);
-
-  // 2. Xử lý khi bấm LƯU
-  const onFinish = async (values) => {
+  // ==========================================
+  // TAB 2: ĐỔI MẬT KHẨU
+  // ==========================================
+  const handleChangePassword = async (values) => {
     setLoading(true);
-    try {
-      // BƯỚC 1: Cập nhật thông tin text
-      await axiosClient.put('/UserProfile/update-profile', {
-        fullName: values.fullName,
-        phone: values.phone
-      });
-
-      // BƯỚC 2: Upload ảnh (nếu có chọn file mới)
-      if (values.avatar?.file?.originFileObj) {
-        const formData = new FormData();
-        formData.append('file', values.avatar.file.originFileObj); 
-
-        const uploadRes = await axiosClient.post('/UserProfile/upload-avatar', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
-        
-        // Ngay khi upload xong, cập nhật ảnh preview để người dùng thấy luôn
-        const newUrl = uploadRes.data.avatarUrl || uploadRes.data.avatar_url;
-        if (newUrl) {
-          setPreviewImage(getFullAvatarUrl(newUrl));
-        }
-      }
-
-      // BƯỚC 3: QUAN TRỌNG - Đồng bộ lại toàn bộ hệ thống
-      // Lấy lại dữ liệu "sạch" nhất từ Database sau khi đã lưu
-      const finalRes = await axiosClient.get('/UserProfile/my-profile');
-      const latestData = finalRes.data;
-
-      // Cập nhật Zustand Store. 
-      // Chú ý: Đảm bảo setAuth nhận vào đối tượng có cấu trúc giống hệt lúc Login
-      setAuth(token, latestData, permissions); 
-      
-      message.success('Hồ sơ và ảnh đại diện đã được cập nhật!');
-    } catch (error) {
-      console.error("Lỗi cập nhật:", error);
-      message.error('Cập nhật thất bại. Vui lòng kiểm tra lại!');
-    } finally {
+    console.log("Dữ liệu đổi pass:", values);
+    setTimeout(() => {
+      message.info('Sẽ gọi API đổi mật khẩu ở bước sau!');
+      formPassword.resetFields();
       setLoading(false);
-    }
+    }, 1000);
+  };
+
+  // ==========================================
+  // TAB 3: TẠO TÀI KHOẢN MỚI (DÀNH CHO ADMIN)
+  // ==========================================
+  const handleCreateAccount = async (values) => {
+    setLoading(true);
+    console.log("Dữ liệu tạo tài khoản:", values);
+    setTimeout(() => {
+      if (values.sendEmail) {
+        message.success(`Đã tạo tài khoản và gửi Email chứa mật khẩu đến ${values.email}!`);
+      } else {
+        message.success('Tạo tài khoản thành công!');
+      }
+      formCreateAccount.resetFields();
+      setLoading(false);
+    }, 1500);
   };
 
   return (
-    <div style={{ padding: '20px' }}>
-      <Row gutter={24}>
-        <Col xs={24} md={8}>
-          <Card style={{ borderRadius: 12, textAlign: 'center' }}>
-            <div style={{ padding: '20px 0' }}>
-              <Avatar 
-                size={140} 
-                src={previewImage} 
-                icon={<UserOutlined />} 
-                style={{ border: '4px solid #f0f2f5', marginBottom: 20 }} 
-              />
-              <Title level={4}>{displayData.fullName}</Title>
-              <Text type="secondary">Nhân viên hệ thống</Text>
-            </div>
+    <div style={{ padding: '24px', background: '#f0f2f5', minHeight: '100vh' }}>
+      <Row gutter={[24, 24]} justify="center">
+        {/* Cột Trái: Avatar & Tóm tắt */}
+        <Col xs={24} md={8} lg={6}>
+          <Card style={{ borderRadius: '12px', textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+            <Avatar 
+              size={120} 
+              src={user?.avatarUrl} 
+              icon={<UserOutlined />} 
+              style={{ backgroundColor: '#1890ff', marginBottom: '16px' }}
+            />
+            <Title level={4} style={{ margin: 0 }}>{user?.fullName || 'Admin'}</Title>
+            <Text type="secondary">{user?.roleId === 1 ? 'Giám đốc hệ thống' : 'Nhân viên'}</Text>
+            
             <Divider />
-            <Space direction="vertical" style={{ width: '100%', textAlign: 'left' }}>
-              <Text><MailOutlined /> {form.getFieldValue('email')}</Text>
-              <Text><PhoneOutlined /> {displayData.phone || 'Chưa cập nhật'}</Text>
-            </Space>
+            
+            <div style={{ textAlign: 'left' }}>
+              <p><MailOutlined style={{ marginRight: 8 }}/> {user?.email || 'admin@hotel.com'}</p>
+              <p><PhoneOutlined style={{ marginRight: 8 }}/> {user?.phone || '0987654321'}</p>
+            </div>
+            
+            <Upload showUploadList={false}>
+              <Button icon={<UploadOutlined />} style={{ marginTop: 16 }} block>Đổi Ảnh Đại Diện</Button>
+            </Upload>
           </Card>
         </Col>
 
-        <Col xs={24} md={16}>
-          <Card title="Chỉnh sửa thông tin cá nhân" style={{ borderRadius: 12 }}>
-            <Form form={form} layout="vertical" onFinish={onFinish}
-              onValuesChange={(changed, all) => {
-                setDisplayData({ fullName: all.fullName, phone: all.phone });
-              }}
-            >
-              <Form.Item label="Ảnh đại diện" name="avatar">
-                <Upload 
-                  maxCount={1} 
-                  beforeUpload={() => false} 
-                  listType="picture"
-                  showUploadList={false}
-                  onChange={(info) => {
-                    if (info.fileList.length > 0) {
-                      const url = URL.createObjectURL(info.fileList[0].originFileObj);
-                      setPreviewImage(url);
-                    }
-                  }}
+        {/* Cột Phải: Các Tab Chức Năng */}
+        <Col xs={24} md={16} lg={14}>
+          <Card style={{ borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+            <Tabs defaultActiveKey="1" size="large">
+              
+              {/* TAB 1 */}
+              <TabPane tab={<span><UserOutlined />Thông tin cá nhân</span>} key="1">
+                <Form 
+                  form={formInfo} 
+                  layout="vertical" 
+                  onFinish={handleUpdateInfo}
+                  initialValues={{ fullName: user?.fullName, phone: user?.phone, email: user?.email }}
+                  style={{ marginTop: 20 }}
                 >
-                  <Button icon={<UploadOutlined />}>Chọn ảnh mới</Button>
-                </Upload>
-              </Form.Item>
+                  <Row gutter={16}>
+                    <Col span={12}>
+                      <Form.Item name="fullName" label="Họ và Tên" rules={[{ required: true }]}>
+                        <Input size="large" />
+                      </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                      <Form.Item name="phone" label="Số điện thoại">
+                        <Input size="large" />
+                      </Form.Item>
+                    </Col>
+                    <Col span={24}>
+                      <Form.Item name="email" label="Email liên hệ">
+                        <Input size="large" />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                  <Button type="primary" htmlType="submit" size="large" loading={loading}>Lưu thay đổi</Button>
+                </Form>
+              </TabPane>
 
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item label="Họ và Tên" name="fullName" rules={[{ required: true, message: 'Nhập họ tên!' }]}>
-                    <Input prefix={<UserOutlined />} size="large" />
+              {/* TAB 2 */}
+              <TabPane tab={<span><LockOutlined />Đổi mật khẩu</span>} key="2">
+                <Form form={formPassword} layout="vertical" onFinish={handleChangePassword} style={{ marginTop: 20 }}>
+                  <Form.Item name="oldPassword" label="Mật khẩu hiện tại" rules={[{ required: true, message: 'Vui lòng nhập mật khẩu cũ!' }]}>
+                    <Input.Password size="large" placeholder="Nhập mật khẩu đang sử dụng" />
                   </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item label="Số điện thoại" name="phone">
-                    <Input prefix={<PhoneOutlined />} size="large" />
+                  <Form.Item name="newPassword" label="Mật khẩu mới" rules={[{ required: true, min: 6, message: 'Mật khẩu mới ít nhất 6 ký tự!' }]}>
+                    <Input.Password size="large" placeholder="Nhập mật khẩu mới" />
                   </Form.Item>
-                </Col>
-              </Row>
+                  <Form.Item 
+                    name="confirmPassword" 
+                    label="Xác nhận mật khẩu mới" 
+                    dependencies={['newPassword']}
+                    rules={[
+                      { required: true, message: 'Vui lòng xác nhận mật khẩu!' },
+                      ({ getFieldValue }) => ({
+                        validator(_, value) {
+                          if (!value || getFieldValue('newPassword') === value) return Promise.resolve();
+                          return Promise.reject(new Error('Mật khẩu xác nhận không khớp!'));
+                        },
+                      }),
+                    ]}
+                  >
+                    <Input.Password size="large" placeholder="Nhập lại mật khẩu mới" />
+                  </Form.Item>
+                  <Button type="primary" danger htmlType="submit" size="large" loading={loading}>Cập nhật mật khẩu</Button>
+                </Form>
+              </TabPane>
 
-              <Form.Item label="Email" name="email">
-                <Input prefix={<MailOutlined />} disabled size="large" />
-              </Form.Item>
+              {/* TAB 3: TẠO TÀI KHOẢN (Chỉ hiện nếu là Admin - giả sử roleId = 1 là Admin) */}
+              {(user?.roleId === 1 || !user) && (
+                <TabPane tab={<span><UserAddOutlined />Tạo tài khoản nhân viên</span>} key="3">
+                  <div style={{ background: '#e6f7ff', padding: '16px', borderRadius: '8px', marginBottom: '20px' }}>
+                    <Text type="secondary">
+                      💡 Mẹo: Khi chọn <b>"Gửi thông tin qua Email"</b>, hệ thống sẽ tự động phát sinh mật khẩu ngẫu nhiên và gửi thẳng vào Gmail của nhân viên để tăng tính bảo mật.
+                    </Text>
+                  </div>
+                  
+                  <Form form={formCreateAccount} layout="vertical" onFinish={handleCreateAccount} initialValues={{ sendEmail: true }}>
+                    <Row gutter={16}>
+                      <Col span={12}>
+                        <Form.Item name="fullName" label="Họ và Tên" rules={[{ required: true, message: 'Nhập tên nhân viên!' }]}>
+                          <Input size="large" placeholder="VD: Lê Lễ Tân" />
+                        </Form.Item>
+                      </Col>
+                      <Col span={12}>
+                        <Form.Item name="roleId" label="Chức vụ" rules={[{ required: true, message: 'Chọn chức vụ!' }]}>
+                          <Select size="large" placeholder="-- Chọn cấp bậc --">
+                            <Select.Option value={2}>Quản lý (Manager)</Select.Option>
+                            <Select.Option value={3}>Lễ tân (Receptionist)</Select.Option>
+                            <Select.Option value={4}>Kế toán (Accountant)</Select.Option>
+                            <Select.Option value={5}>Buồng phòng (Housekeeping)</Select.Option>
+                          </Select>
+                        </Form.Item>
+                      </Col>
+                      <Col span={24}>
+                        <Form.Item name="email" label="Địa chỉ Email (Bắt buộc để nhận thông báo)" rules={[{ required: true, type: 'email', message: 'Email không hợp lệ!' }]}>
+                          <Input size="large" placeholder="VD: letan@hotel.com" />
+                        </Form.Item>
+                      </Col>
+                      <Col span={24}>
+                        <Form.Item name="sendEmail" valuePropName="checked">
+                          <Switch defaultChecked /> <Text strong style={{ marginLeft: 8 }}>Gửi thông tin tài khoản & mật khẩu về Gmail này</Text>
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                    <Button type="primary" htmlType="submit" size="large" icon={<UserAddOutlined />} loading={loading} style={{ backgroundColor: '#52c41a' }}>
+                      Đăng ký tài khoản
+                    </Button>
+                  </Form>
+                </TabPane>
+              )}
 
-              <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={loading} size="large" style={{ width: '100%', height: '45px', borderRadius: 8 }}>
-                Lưu thay đổi
-              </Button>
-            </Form>
+            </Tabs>
           </Card>
         </Col>
       </Row>

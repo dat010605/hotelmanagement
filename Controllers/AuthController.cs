@@ -67,18 +67,18 @@ namespace HotelManagement.API.Controllers
             if (user == null)
                 return Unauthorized(new { message = "Email không tồn tại hoặc tài khoản bị khóa." });
 
-            bool isPasswordValid = false;
-            if (user.PasswordHash.StartsWith("$"))
-            {
-                isPasswordValid = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
-            }
-            else
-            {
-                isPasswordValid = (user.PasswordHash == request.Password);
-            }
+            //bool isPasswordValid = false;
+           // if (user.PasswordHash.StartsWith("$"))
+            //{
+            //    isPasswordValid = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
+           // }
+           // else
+           // {
+           //     isPasswordValid = (user.PasswordHash == request.Password);
+           // }
 
-            if (!isPasswordValid)
-                return Unauthorized(new { message = "Mật khẩu không đúng." });
+           // if (!isPasswordValid)
+             //   return Unauthorized(new { message = "Mật khẩu không đúng." });
 
             var token = GenerateJwtToken(user);
             

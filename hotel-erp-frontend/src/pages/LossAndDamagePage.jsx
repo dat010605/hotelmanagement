@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Table, Card, Tag, message, Typography, Row, Col, Statistic, 
-  DatePicker, Button, Space, Popconfirm, Input, Tooltip, Modal, Form,
-  InputNumber, Image 
+  DatePicker, Button, Space, Popconfirm, Input, Modal, Form,
+  InputNumber, Image, Tooltip 
 } from 'antd';
 import { 
   ReloadOutlined, DeleteOutlined, EditOutlined, 
   ExclamationCircleOutlined, DollarCircleOutlined, HistoryOutlined,
-  SearchOutlined, FileImageOutlined 
+  SearchOutlined, FileImageOutlined, CheckCircleOutlined 
 } from '@ant-design/icons';
 import axiosClient from '../api/axiosClient';
 import dayjs from 'dayjs';
@@ -17,10 +17,11 @@ const { RangePicker } = DatePicker;
 
 const LossAndDamagePage = () => {
   const [data, setData] = useState([]);
-  const [filteredData, setFilteredData] = useState([]); // THÊM: Để xử lý tìm kiếm
+  const [filteredData, setFilteredData] = useState([]); 
+  const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(false);
   const [dateRange, setDateRange] = useState(null);
-  const [searchText, setSearchText] = useState(''); // THÊM: Lưu text tìm kiếm
+  const [searchText, setSearchText] = useState(''); 
   const [lastUpdated, setLastUpdated] = useState(dayjs().format('HH:mm:ss DD/MM/YYYY'));
   
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -37,9 +38,15 @@ const LossAndDamagePage = () => {
         const end = dateRange[1].format('YYYY-MM-DD');
         url += `?startDate=${start}&endDate=${end}`;
       }
-      const res = await axiosClient.get(url);
-      setData(res.data);
-      setFilteredData(res.data); // Cập nhật cả mảng filter
+      
+      const [lossRes, roomRes] = await Promise.all([
+        axiosClient.get(url),
+        axiosClient.get('/Rooms')
+      ]);
+
+      setData(lossRes.data);
+      setFilteredData(lossRes.data); 
+      setRooms(roomRes.data);
       setLastUpdated(dayjs().format('HH:mm:ss DD/MM/YYYY'));
     } catch (error) {
       message.error('Không thể tải dữ liệu!');
@@ -48,7 +55,7 @@ const LossAndDamagePage = () => {
 
   useEffect(() => { fetchData(); }, [dateRange]);
 
-  // 2. Xử lý TÌM KIẾM (Search) - THÊM MỚI
+  // 2. Xử lý TÌM KIẾM
   const handleSearch = (value) => {
     setSearchText(value);
     const searchLower = value.toLowerCase();
@@ -60,14 +67,29 @@ const LossAndDamagePage = () => {
     setFilteredData(filtered);
   };
 
-  // 3. Tính toán các chỉ số thống kê (Dùng trên mảng đã lọc)
+  // 3. Tính toán thống kê
   const stats = useMemo(() => {
     const totalIncidents = filteredData.length;
     const totalPenalty = filteredData.reduce((sum, item) => sum + (item.penaltyAmount || 0), 0);
     return { totalIncidents, totalPenalty };
   }, [filteredData]);
 
-  // 4. Xử lý Xóa & Sửa (Giữ nguyên logic của Duy)
+  //  MỚI: Xử lý THU TIỀN (Thanh toán)
+  const handlePayment = async (id) => {
+    try {
+      setLoading(true);
+      // Gửi Status = 1 (Đã thanh toán) lên server
+      await axiosClient.put(`/LossAndDamages/${id}`, { status: 1 });
+      message.success('Xác nhận: Khách đã thanh toán đền bù thành công!');
+      fetchData();
+    } catch (error) {
+      message.error('Lỗi khi cập nhật thanh toán!');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 4. Xử lý Xóa & Sửa
   const handleDelete = async (id) => {
     try {
       await axiosClient.delete(`/LossAndDamages/${id}`);
@@ -109,18 +131,40 @@ const LossAndDamagePage = () => {
   };
 
   const columns = [
-    { title: 'ID', dataIndex: 'id', width: 70 },
+    { title: 'ID', dataIndex: 'id', width: 70, align: 'center' },
     { 
         title: 'Ảnh minh chứng', 
-        dataIndex: 'imageUrl', 
+        key: 'imageUrl', 
         width: 120,
-        render: (url) => url ? (
-          <Image src={url} width={80} style={{ borderRadius: 4 }} fallback="https://placehold.co/80x80?text=No+Image" />
-        ) : <Text type="secondary"><FileImageOutlined /> No Photo</Text>
+        align: 'center',
+        render: (_, record) => {
+          const url = record.imageUrl || record.ImageUrl || record.image_url;
+          return url ? (
+            <Image src={url} width={80} style={{ borderRadius: 4, objectFit: 'cover' }} fallback="https://placehold.co/80x80?text=Lỗi+Ảnh" />
+          ) : <Text type="secondary"><FileImageOutlined /> Chưa chụp</Text>
+        }
     },
-    { title: 'Phòng', dataIndex: 'roomNumber', render: (val) => <b>{val}</b> },
+    { 
+      title: 'Phòng', 
+      key: 'room', 
+      align: 'center',
+      render: (_, record) => {
+        const rId = record.roomId || record.room_id || record.roomNumber; 
+        const room = rooms.find(r => r.id == rId || r.Id == rId);
+        const displayName = room ? (room.roomNumber || room.RoomNumber) : rId;
+        return <Tag color="blue" style={{fontSize: '14px'}}><b>{displayName}</b></Tag>;
+      }
+    },
     { title: 'Vật tư', dataIndex: 'equipmentName' },
-    { title: 'Số lượng', dataIndex: 'quantity', align: 'center' },
+    { 
+      title: 'Trạng thái', 
+      dataIndex: 'status',
+      width: 130,
+      align: 'center',
+      render: (s) => s === 1 
+        ? <Tag color="green" icon={<CheckCircleOutlined />}>Đã thu tiền</Tag> 
+        : <Tag color="volcano" icon={<ExclamationCircleOutlined />}>Chờ thanh toán</Tag>
+    },
     { 
       title: 'Tiền phạt', 
       dataIndex: 'penaltyAmount', 
@@ -131,9 +175,29 @@ const LossAndDamagePage = () => {
       title: 'Thao tác',
       key: 'actions',
       fixed: 'right',
-      width: 120,
+      width: 160,
+      align: 'center',
       render: (_, record) => (
         <Space size="middle">
+          {/* NÚT THU TIỀN: Chỉ hiện nếu Status chưa phải là 1 (Đã thu) */}
+          {record.status !== 1 && (
+            <Tooltip title="Thu tiền đền bù">
+              <Popconfirm 
+                title="Xác nhận khách đã nộp tiền đền bù?" 
+                onConfirm={() => handlePayment(record.id)}
+                okText="Đã thu"
+                cancelText="Hủy"
+              >
+                <Button 
+                  type="primary" 
+                  size="small" 
+                  style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }} 
+                  icon={<DollarCircleOutlined />} 
+                />
+              </Popconfirm>
+            </Tooltip>
+          )}
+
           <Button type="text" icon={<EditOutlined style={{color: '#1890ff'}} />} onClick={() => handleEdit(record)} />
           <Popconfirm title="Xóa phiếu này?" onConfirm={() => handleDelete(record.id)}>
             <Button type="text" danger icon={<DeleteOutlined />} />
@@ -183,7 +247,6 @@ const LossAndDamagePage = () => {
 
       <Modal title="Chỉnh sửa phiếu đền bù" open={isEditModalOpen} onOk={handleUpdate} onCancel={() => setIsEditModalOpen(false)} confirmLoading={loading}>
         <Form form={form} layout="vertical" style={{ marginTop: 20 }}>
-          {/* ... Phần Form của Duy giữ nguyên ... */}
           <Row gutter={16}>
              <Col span={12}><Form.Item name="roomInventoryId" label="ID Vật tư"><InputNumber style={{ width: '100%' }} disabled /></Form.Item></Col>
              <Col span={12}><Form.Item name="quantity" label="Số lượng hỏng" rules={[{ required: true }]}><InputNumber min={1} style={{ width: '100%' }} /></Form.Item></Col>

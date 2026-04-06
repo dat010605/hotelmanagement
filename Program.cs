@@ -91,7 +91,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = new SymmetricSecurityKey(secretKey)
         };
     });
-
 var app = builder.Build();
 app.UseStaticFiles();
 // ==========================================
@@ -115,6 +114,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-app.MapHub<NotificationHub>("/notificationHub");
+app.MapHub<HotelManagement.API.Hubs.NotificationHub>("/notificationHub");
 
 app.Run();

@@ -4,7 +4,10 @@ import RegisterPage from './pages/RegisterPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ProfilePage from './pages/ProfilePage'; 
 import ProtectedRoute from './routes/ProtectedRoute';
-import AdminLayout from './layouts/AdminLayout'; //
+import AdminLayout from './layouts/AdminLayout'; 
+import RoomGridPage from './pages/RoomGridPage';
+import CheckoutPage from './pages/CheckoutPage';
+import BookingListPage from './pages/BookingListPage';
 import EquipmentManagementPage from './pages/EquipmentManagementPage';
 import UserManagementPage from './pages/UserManagementPage';
 import RoleManagementPage from './pages/RoleManagementPage';
@@ -51,6 +54,9 @@ function App() {
             <Route path="/admin/profile" element={<ProfilePage />} />
             <Route path="/admin/roles" element={<RoleManagementPage />} />
             <Route path="/admin/rooms" element={<RoomManagementPage />} />
+            <Route path="/admin/room-grid" element={<RoomGridPage />} />
+            <Route path="/admin/checkout" element={<CheckoutPage />} />
+            <Route path="/admin/bookings" element={<BookingListPage />} />
             <Route path="/admin/loss-damage" element={<LossAndDamagePage />} />
             <Route path="/admin/settings" element={<div>⚙️ Cấu hình hệ thống</div>} />
             <Route path="/admin/housekeeping" element={<HousekeepingListPage />} />

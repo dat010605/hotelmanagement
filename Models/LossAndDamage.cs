@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace HotelManagement.API.Models;
 
@@ -18,7 +19,7 @@ public partial class LossAndDamage
     public string? Description { get; set; }
 
     public DateTime? CreatedAt { get; set; }
-
+[Column("ImageUrl")]
     public string? ImageUrl { get; set; }
 
     public virtual BookingDetail? BookingDetail { get; set; }
