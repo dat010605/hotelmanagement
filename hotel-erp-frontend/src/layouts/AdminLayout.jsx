@@ -6,7 +6,7 @@ import {
   LogoutOutlined, SettingOutlined, BellOutlined, HomeOutlined, LockOutlined,
   AlertOutlined, CheckSquareOutlined, CalendarOutlined, GiftOutlined,
   AppstoreOutlined, CreditCardOutlined, FileTextOutlined,
-  SunOutlined, MoonOutlined 
+  SunOutlined, MoonOutlined, EnvironmentOutlined 
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAdminAuthStore } from '../store/adminAuthStore';
@@ -75,6 +75,7 @@ const AdminLayout = () => {
     { key: '/admin/vouchers', icon: <GiftOutlined />, label: 'Khuyến mãi' },
     { key: '/admin/employees', icon: <TeamOutlined />, label: 'Quản lý nhân sự' },
     { key: '/admin/roles', icon: <LockOutlined />, label: 'Phân quyền (RBAC)' },
+    {key: '/admin/attractions',icon: <EnvironmentOutlined />,label: 'Điểm tham quan'},
     { key: '/admin/profile', icon: <UserOutlined />, label: 'Hồ sơ cá nhân' },
     { key: '/admin/settings', icon: <SettingOutlined />, label: 'Cấu hình hệ thống' },
   ];
@@ -116,12 +117,18 @@ const AdminLayout = () => {
   return (
     <ConfigProvider theme={fbDarkTheme}>
       <Layout style={{ minHeight: '100vh', background: isDarkMode ? '#18191a' : '#f0f2f5' }}>
-        <Sider trigger={null} collapsible collapsed={collapsed} theme="dark" width={250} style={{ background: isDarkMode ? '#242526' : '#001529' }}>
+        <Sider trigger={null} collapsible collapsed={collapsed} theme="dark" width={250} style={{ background: isDarkMode ? '#242526' : '#001529',overflow: 'auto', 
+    height: '100vh',     
+    position: 'sticky', 
+    top: 0,              
+    left: 0,             
+    background: isDarkMode ? '#18191a' : '#001529' }}>
           <div style={{ height: 64, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', background: isDarkMode ? '#242526' : '#001529', borderBottom: `1px solid ${isDarkMode ? '#3e4042' : 'rgba(255,255,255,0.1)'}` }}>
             <Text style={{ color: 'white', fontWeight: 'bold', fontSize: collapsed ? 14 : 20 }}>
               {collapsed ? 'ERP' : 'HOTEL ERP'}
             </Text>
           </div>
+          
           <Menu theme="dark" mode="inline" selectedKeys={[location.pathname]} items={sidebarItems} onClick={({ key }) => navigate(key)} style={{ paddingTop: 10, background: 'transparent' }} />
         </Sider>
 
