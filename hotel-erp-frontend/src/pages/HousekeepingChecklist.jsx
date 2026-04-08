@@ -91,6 +91,29 @@ const HousekeepingChecklist = () => {
     } catch (err) { message.error("Lỗi khi gửi báo cáo đền bù!"); }
   };
 
+  // 🌟 TÍNH NĂNG MỚI: Xử lý hủy báo hỏng 🌟
+  const handleCancelDamage = (item) => {
+    Modal.confirm({
+      title: 'Hủy báo hỏng thiết bị?',
+      content: `Bạn có chắc chắn muốn HỦY báo cáo hỏng hóc cho vật tư: ${item.equipmentName}?`,
+      okText: 'Đồng ý hủy',
+      okType: 'danger',
+      cancelText: 'Đóng',
+      onOk: async () => {
+        try {
+          // CHÚ Ý CHO KHÁNH: Ở đây sau này bạn cần gọi thêm API để xóa record trong bảng LossAndDamages ở Backend (C#).
+          // Ví dụ: await axiosClient.delete(`/LossAndDamages/RevertByInventoryId/${item.id}`);
+          
+          // Tạm thời trên giao diện sẽ hoàn tác trạng thái ngay lập tức
+          markItemStatus(item.id, 'pending');
+          message.success(`Đã hủy báo hỏng cho: ${item.equipmentName}`);
+        } catch (error) {
+          message.error('Có lỗi xảy ra khi hủy báo hỏng!');
+        }
+      }
+    });
+  };
+
   const markItemStatus = (itemId, status) => {
     const updatedInventory = inventory.map(item => 
       item.id === itemId ? { ...item, checkStatus: status } : item
@@ -171,14 +194,23 @@ const HousekeepingChecklist = () => {
                 
                 <Col xs={24} md={12} style={{ textAlign: 'right', marginTop: '10px' }}>
                   <Space>
+                    
+                    {/* 🌟 NÚT BÁO HỎNG ĐƯỢC NÂNG CẤP 🌟 */}
                     <Button 
                       size="large"
-                      icon={<AlertOutlined />} 
+                      icon={item.checkStatus === 'damaged' ? <CloseCircleOutlined /> : <AlertOutlined />} 
                       className={`btn-report-loss ${item.checkStatus === 'damaged' ? 'active' : ''}`} 
                       danger={item.checkStatus !== 'damaged'} 
-                      onClick={() => openReportModal(item)}
+                      onClick={() => {
+                        // Nút hoạt động linh hoạt: Bị hỏng thì Hủy, Bình thường thì mở popup Báo hỏng
+                        if (item.checkStatus === 'damaged') {
+                          handleCancelDamage(item);
+                        } else {
+                          openReportModal(item);
+                        }
+                      }}
                     >
-                      Báo hỏng
+                      {item.checkStatus === 'damaged' ? 'Hủy báo hỏng' : 'Báo hỏng'}
                     </Button>
 
                     <Button 
@@ -235,21 +267,19 @@ const HousekeepingChecklist = () => {
             
             {/* 🔮 MA PHÁP HIỂN THỊ ẢNH XEM TRƯỚC 🔮 */}
             {previewImageUrl ? (
-              // Nếu đã có ảnh -> Hiện ảnh to, BO GÓC, giớí hạn chiều cao
               <div style={{ position: 'relative', marginBottom: '16px' }}>
                 <img 
                   src={previewImageUrl} 
                   alt="Bằng chứng hỏng hóc" 
                   style={{ 
                     maxWidth: '100%', 
-                    maxHeight: '250px', // Không cho ảnh quá dài
+                    maxHeight: '250px', 
                     borderRadius: '8px', 
                     boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                    objectFit: 'contain' // Giữ nguyên tỷ lệ ảnh
+                    objectFit: 'contain' 
                   }} 
                 />
                 <Divider style={{margin: '12px 0'}} />
-                {/* Nút nhỏ để chụp lại/đổi ảnh */}
                 <Button 
                   icon={<CameraOutlined />} 
                   onClick={handleCameraClick}
@@ -259,7 +289,6 @@ const HousekeepingChecklist = () => {
                 </Button>
               </div>
             ) : (
-              // Nếu chưa có ảnh -> Hiện nút to chà bá như cũ
               <Button 
                 size="large" 
                 icon={<CameraOutlined />} 

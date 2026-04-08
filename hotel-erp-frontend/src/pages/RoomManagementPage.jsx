@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Table, Button, Modal, Form, Input, Select, message, 
-  Tag, Space, Card, InputNumber, Tabs, Popconfirm, Row, Col, Drawer, Badge, Typography 
+  Tag, Space, Card, InputNumber, Tabs, Popconfirm, Row, Col, Drawer, Typography 
 } from 'antd';
 import { 
   SearchOutlined, EditOutlined, PlusOutlined, 
@@ -11,7 +11,7 @@ import axiosClient from '../api/axiosClient';
 import { useNavigate } from 'react-router-dom';
 
 const { TabPane } = Tabs;
-const { Text } = Typography; //  ĐÃ CHUYỂN LÊN ĐÂY CHUẨN MỰC, KHÔNG DÙNG REQUIRE NỮA 
+const { Text } = Typography; 
 
 const RoomManagementPage = () => {
   const navigate = useNavigate();
@@ -112,10 +112,24 @@ const RoomManagementPage = () => {
         Status: values.status,
         CleaningStatus: values.cleaningStatus
       };
-      if (currentId) await axiosClient.put(`/Rooms/${currentId}`, payload);
-      else await axiosClient.post('/Rooms', payload);
+
+      if (currentId) {
+        await axiosClient.put(`/Rooms/${currentId}`, payload);
+        message.success('Cập nhật thông phòng thành công!');
+      } else {
+        const res = await axiosClient.post('/Rooms', payload);
+        const newRoomId = res.data?.id || res.data?.Id; 
+        
+        if (newRoomId) {
+          try {
+            await axiosClient.post(`/Rooms/sync-from-warehouse/${newRoomId}`);
+          } catch (syncErr) {
+            console.log('Lỗi khi tự động đồng bộ vật tư:', syncErr);
+          }
+        }
+        message.success('Đã tạo phòng và tự động thêm vật tư mẫu!');
+      }
       
-      message.success('Lưu phòng thành công!');
       setIsModalOpen(false);
       fetchInitialData();
     } catch (error) { message.error('Kiểm tra lại thông tin (Số phòng có thể bị trùng)!'); }
@@ -141,11 +155,22 @@ const RoomManagementPage = () => {
           Status: 'Available',
           CleaningStatus: 'Clean'
         };
-        promises.push(axiosClient.post('/Rooms', payload).then(() => successCount++).catch(() => {}));
+        
+        const createAndSyncAction = axiosClient.post('/Rooms', payload)
+          .then(async (res) => {
+            const newRoomId = res.data?.id || res.data?.Id;
+            if (newRoomId) {
+               await axiosClient.post(`/Rooms/sync-from-warehouse/${newRoomId}`);
+            }
+            successCount++;
+          })
+          .catch((err) => console.log('Bỏ qua phòng lỗi/trùng:', finalRoomNumber));
+
+        promises.push(createAndSyncAction);
       }
 
       await Promise.all(promises);
-      message.success(`Đã tạo thành công ${successCount} phòng mới!`);
+      message.success(`Đã tạo và tự động setup vật tư cho ${successCount} phòng mới!`);
       setIsBulkModalOpen(false);
       bulkForm.resetFields();
       fetchInitialData(); 
@@ -228,10 +253,20 @@ const RoomManagementPage = () => {
   const roomListColumns = [
     { title: 'Số phòng', width: 100, align: 'center', render: (_, r) => <b>{r.roomNumber || r.RoomNumber}</b> },
     { title: 'Hạng phòng', render: (_, r) => <Text strong>{roomTypes.find(t => t.id === (r.roomTypeId || r.RoomTypeId))?.name}</Text> },
-    { title: 'Trạng thái', width: 150, align: 'center', render: (_, r) => {
+    { 
+      title: 'Trạng thái', 
+      width: 150, 
+      align: 'center', 
+      render: (_, r) => {
         const s = r.status || r.Status;
-        return <Badge status={s === 'Available' ? 'success' : s === 'Occupied' ? 'processing' : 'error'} text={s === 'Available' ? 'Sẵn sàng' : s === 'Occupied' ? 'Có khách' : 'Bảo trì'} />
-    }},
+        let color = 'default';
+        let label = s;
+        if (s === 'Available') { color = 'green'; label = 'Sẵn sàng'; }
+        else if (s === 'Occupied') { color = 'red'; label = 'Có khách'; }
+        else if (s === 'Maintenance') { color = 'orange'; label = 'Bảo trì'; }
+        return <Tag color={color}>{label}</Tag>;
+      }
+    },
     {
       title: 'Buồng phòng', width: 150, align: 'center',
       render: (_, r) => {
@@ -243,13 +278,32 @@ const RoomManagementPage = () => {
     },
     {
       title: 'Thao tác', align: 'center', width: 350,
-      render: (_, record) => ( 
-        <Space>
-          <Button size="small" type="primary" ghost icon={<EditOutlined />} onClick={() => openModal(record)}>Cấu hình</Button>
-          <Button size="small" danger onClick={() => handleCheckOut(record.id || record.Id)}>Trả phòng</Button>
-          <Button size="small" style={{ color: '#fa8c16', borderColor: '#fa8c16' }} icon={<CheckSquareOutlined />} onClick={() => navigate(`/admin/housekeeping/${record.id || record.Id}`)}>Dọn phòng</Button>
-        </Space>
-      ),
+      render: (_, record) => {
+        // --- LOGIC XỬ LÝ NÚT DỌN PHÒNG ---
+        const cStatus = record.cleaningStatus || record.CleaningStatus || '';
+        
+        // ĐÃ SỬA: Điều kiện để vô hiệu hóa: Nút sẽ bị disabled nếu phòng Sạch sẽ (Clean).
+        // Chỉ hiện sáng khi phòng Bẩn (Dirty) hoặc Đang dọn (Cleaning).
+        const isHousekeepingDisabled = !(cStatus === 'Dirty' || cStatus === 'Cleaning');
+
+        return (
+          <Space>
+            <Button size="small" type="primary" ghost icon={<EditOutlined />} onClick={() => openModal(record)}>Cấu hình</Button>
+            <Button size="small" danger onClick={() => handleCheckOut(record.id || record.Id)}>Trả phòng</Button>
+            
+            {/* Nút dọn phòng đã được áp dụng logic */}
+            <Button 
+              size="small" 
+              style={isHousekeepingDisabled ? {} : { color: '#fa8c16', borderColor: '#fa8c16' }} 
+              icon={<CheckSquareOutlined />} 
+              disabled={isHousekeepingDisabled}
+              onClick={() => navigate(`/admin/housekeeping/${record.id || record.Id}`)}
+            >
+              Dọn phòng
+            </Button>
+          </Space>
+        );
+      },
     },
   ];
 
@@ -262,7 +316,7 @@ const RoomManagementPage = () => {
     )},
   ];
 
-  const uniqueFloors = [...new Set(filteredRooms.map(r => r.floor || r.Floor))].sort((a, b) => a - b);
+  const uniqueFloors = [...new Set(filteredRooms.map(r => r.floor || r.Floor).filter(f => f != null))].sort((a, b) => a - b);
 
   return (
     <div style={{ padding: '24px' }}>
@@ -293,7 +347,7 @@ const RoomManagementPage = () => {
           {uniqueFloors.map(floor => (
             <TabPane 
               tab={<span style={{fontWeight: 'bold', color: '#1890ff'}}>Tầng {floor}</span>} 
-              key={floor.toString()}
+              key={String(floor)}
             >
               <Table 
                 dataSource={filteredRooms.filter(r => (r.floor || r.Floor) === floor)} 
