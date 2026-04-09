@@ -27,6 +27,7 @@ builder.Services.AddControllers()
     });
 
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddHostedService<HotelManagement.API.Services.AuditLogCleanupService>();
 
 // ==========================================
 // 2. CẤU HÌNH SWAGGER (HỖ TRỢ JWT)
@@ -57,8 +58,15 @@ builder.Services.AddSwaggerGen(options =>
 // ==========================================
 // 3. DATABASE & CORS
 // ==========================================
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<AuditLogInterceptor>();
+
+builder.Services.AddDbContext<AppDbContext>((sp, options) =>
+{
+    var interceptor = sp.GetRequiredService<AuditLogInterceptor>();
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+           .AddInterceptors(interceptor);
+});
 
 builder.Services.AddCors(options =>
 {

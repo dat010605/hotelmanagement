@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 
@@ -171,7 +171,7 @@ public partial class AppDbContext : DbContext
         {
             entity.HasKey(e => e.Id).HasName("PK__Audit_Lo__3213E83F7099AC85");
 
-            entity.ToTable("Audit_Logs");
+            entity.ToTable("Audit_Logs", tb => tb.HasTrigger("TR_AuditLogs_PreventDelete"));
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Action)
@@ -535,6 +535,7 @@ public partial class AppDbContext : DbContext
         modelBuilder.Entity<Room>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK__Rooms__3213E83FBA4CFDE9");
+            entity.ToTable(tb => tb.HasTrigger("trg_Rooms_Audit"));
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.CleaningStatus)

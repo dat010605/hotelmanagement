@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Form, Input, Button, Card, notification, Typography } from 'antd';
+import { Form, Input, Button, Card, App, Typography } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useNavigate, Link } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
@@ -11,6 +11,7 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();// Lấy hàm setAuth từ store để cập nhật trạng thái đăng nhập
   const setAuth = useAdminAuthStore((state) => state.setAuth);
+  const { notification } = App.useApp();
 
   const onFinish = async (values) => {
     setLoading(true);

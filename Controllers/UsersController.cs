@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.SignalR;
 using System.Security.Claims;
-using System.Net;           // 🌟 Thêm thư viện Mạng
-using System.Net.Mail;      // 🌟 Thêm thư viện gửi Mail
+using System.Net;
+using System.Net.Mail;
 using HotelManagement.API.Models;
+using HotelManagement.API.Hubs;
 using HotelManagement.DTOs;
 
 namespace HotelManagement.API.Controllers // Nhớ bọc trong namespace
@@ -25,7 +27,13 @@ namespace HotelManagement.API.Controllers // Nhớ bọc trong namespace
     public class UsersController : ControllerBase
     {
         private readonly AppDbContext _context;
-        public UsersController(AppDbContext context) => _context = context;
+        private readonly IHubContext<NotificationHub> _hubContext;
+        
+        public UsersController(AppDbContext context, IHubContext<NotificationHub> hubContext) 
+        {
+            _context = context;
+            _hubContext = hubContext;
+        }
 
         // 1. LẤY DANH SÁCH TÀI KHOẢN + TÌM KIẾM + LỌC
         [HttpGet]
@@ -138,6 +146,8 @@ namespace HotelManagement.API.Controllers // Nhớ bọc trong namespace
                     return Ok(new { Message = $"Đã tạo TK (Mật khẩu: {rawPassword}), nhưng GỬI EMAIL THẤT BẠI: {ex.Message}", UserId = newUser.Id });
                 }
             }
+
+            await _hubContext.Clients.All.SendAsync("ReceiveNotification", $"Tài khoản hệ thống mới: {request.FullName} ({request.Email})!");
 
             return Ok(new { Message = "Tạo tài khoản thành công" + (request.SendEmail ? " và đã gửi Email!" : ""), UserId = newUser.Id });
         }

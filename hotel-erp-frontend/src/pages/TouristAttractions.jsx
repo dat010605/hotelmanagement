@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Card, Row, Col, Typography, Divider, Button, Modal, Form, Input, message, Popconfirm, Upload } from 'antd';
 import { EditOutlined, GlobalOutlined, PlusOutlined, DeleteOutlined, EnvironmentOutlined, UploadOutlined } from '@ant-design/icons';
+import axiosClient from '../api/axiosClient';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -95,10 +96,12 @@ const TouristAttractions = () => {
       if (editingItem) {
         setAttractions(attractions.map(attr => attr.id === editingItem.id ? { ...attr, ...finalData } : attr));
         message.success("Đã cập nhật địa điểm!");
+        axiosClient.post('/SystemNotifications/broadcast', { message: `Cập nhật thông tin điểm tham quan: ${finalData.title}` });
       } else {
         const newId = attractions.length > 0 ? Math.max(...attractions.map(a => a.id)) + 1 : 1;
         setAttractions([...attractions, { id: newId, ...finalData }]);
         message.success("Đã thêm địa điểm mới!");
+        axiosClient.post('/SystemNotifications/broadcast', { message: `Đã thêm điểm tham quan mới: ${finalData.title}` });
       }
       setIsModalOpen(false);
     } catch (error) {
@@ -107,8 +110,12 @@ const TouristAttractions = () => {
   };
 
   const handleDelete = (id) => {
+    const deletedItem = attractions.find(attr => attr.id === id);
     setAttractions(attractions.filter(attr => attr.id !== id));
     message.warning(" Đã xóa địa điểm!");
+    if (deletedItem) {
+        axiosClient.post('/SystemNotifications/broadcast', { message: `Đã xóa điểm tham quan: ${deletedItem.title}` });
+    }
   };
 
   return (

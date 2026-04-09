@@ -1,5 +1,7 @@
 using HotelManagement.API.Models;
+using HotelManagement.API.Hubs;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
 namespace HotelManagement.API.Controllers
@@ -9,8 +11,13 @@ namespace HotelManagement.API.Controllers
     public class EquipmentsController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IHubContext<NotificationHub> _hubContext;
 
-        public EquipmentsController(AppDbContext context) { _context = context; }
+        public EquipmentsController(AppDbContext context, IHubContext<NotificationHub> hubContext) 
+        { 
+            _context = context; 
+            _hubContext = hubContext;
+        }
 
         [HttpGet]
         public async Task<IActionResult> GetAll() => Ok(await _context.Equipments.ToListAsync());
@@ -21,6 +28,7 @@ namespace HotelManagement.API.Controllers
        //   Đã tự động tính: Tồn kho = Tổng - Đang dùng - Hỏng - Thanh lý
             _context.Equipments.Add(equipment);
             await _context.SaveChangesAsync();
+            await _hubContext.Clients.All.SendAsync("ReceiveNotification", $"Kho vật tư: Vừa nhập mới '{equipment.Name}'");
             return Ok(equipment);
         }
 
@@ -42,6 +50,7 @@ namespace HotelManagement.API.Controllers
             equipment.ImageUrl = equipmentUpdate.ImageUrl;
             equipment.Supplier = equipmentUpdate.Supplier;
             await _context.SaveChangesAsync();
+            await _hubContext.Clients.All.SendAsync("ReceiveNotification", $"Kho vật tư: Cập nhật thông tin '{equipment.Name}'");
             return Ok(equipment);
         }
 
@@ -55,6 +64,7 @@ namespace HotelManagement.API.Controllers
             {
                 _context.Equipments.Remove(equipment);
                 await _context.SaveChangesAsync();
+                await _hubContext.Clients.All.SendAsync("ReceiveNotification", $"Kho vật tư: Đã xuất/xóa hoàn toàn một vật tư khỏi hệ thống!");
                 return Ok(new { message = "Đã xóa thành công!" });
             }
             catch (DbUpdateException)

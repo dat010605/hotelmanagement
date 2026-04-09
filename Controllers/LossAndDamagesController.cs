@@ -129,6 +129,8 @@ namespace HotelManagement.API.Controllers
                 _context.LossAndDamages.Add(newDamage);
                 await _context.SaveChangesAsync();
 
+                await _hubContext.Clients.All.SendAsync("ReceiveNotification", $"⚠️ Có 1 hóa đơn thất thoát/báo hỏng mới (Số lượng: {request.Quantity})!");
+
                 return Ok(new { message = "Báo hỏng và cập nhật kho thành công!" });
             }
             catch (Exception ex)
@@ -178,6 +180,7 @@ namespace HotelManagement.API.Controllers
 
             _context.LossAndDamages.Remove(record);
             await _context.SaveChangesAsync();
+            await _hubContext.Clients.All.SendAsync("ReceiveNotification", $"Đã xóa 1 biên bản đền bù thất thoát!");
             return Ok(new { message = "Xóa thành công" });
         }
     }

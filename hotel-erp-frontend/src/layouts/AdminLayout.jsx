@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr'; 
-import { Layout, Menu, Button, theme, Avatar, Dropdown, Space, Badge, Typography, notification, ConfigProvider } from 'antd';
+import { Layout, Menu, Button, theme, Avatar, Dropdown, Space, Badge, Typography, App, ConfigProvider } from 'antd';
 import {
   MenuFoldOutlined, MenuUnfoldOutlined, UserOutlined, DashboardOutlined, TeamOutlined,
   LogoutOutlined, SettingOutlined, BellOutlined, HomeOutlined, LockOutlined,
@@ -22,12 +22,14 @@ const signalRConnection = new HubConnectionBuilder()
   .build();
 
 const AdminLayout = () => {
+  const { notification } = App.useApp();
   const [notifications, setNotifications] = useState([]);
   const [collapsed, setCollapsed] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false); 
 
   const { user, clearAuth } = useAdminAuthStore();
   const navigate = useNavigate();
+
   const location = useLocation();
 
   const { token: { borderRadiusLG } } = theme.useToken();
@@ -76,6 +78,7 @@ const AdminLayout = () => {
     { key: '/admin/employees', icon: <TeamOutlined />, label: 'Quản lý nhân sự' },
     { key: '/admin/roles', icon: <LockOutlined />, label: 'Phân quyền (RBAC)' },
     {key: '/admin/attractions',icon: <EnvironmentOutlined />,label: 'Điểm tham quan'},
+    { key: '/admin/audit-logs', icon: <FileTextOutlined />, label: 'Lịch sử hệ thống' },
     { key: '/admin/profile', icon: <UserOutlined />, label: 'Hồ sơ cá nhân' },
     { key: '/admin/settings', icon: <SettingOutlined />, label: 'Cấu hình hệ thống' },
   ];
@@ -168,3 +171,4 @@ const AdminLayout = () => {
 };
 
 export default AdminLayout;
+

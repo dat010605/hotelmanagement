@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.SignalR;
 using HotelManagement.API.Models;
+using HotelManagement.API.Hubs;
 using HotelManagement.API.DTOs;
 
 namespace HotelManagement.API.Controllers
@@ -12,10 +14,12 @@ namespace HotelManagement.API.Controllers
     public class EmployeesController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IHubContext<NotificationHub> _hubContext;
 
-        public EmployeesController(AppDbContext context)
+        public EmployeesController(AppDbContext context, IHubContext<NotificationHub> hubContext)
         {
             _context = context;
+            _hubContext = hubContext;
         }
 
         // 1. LẤY DANH SÁCH NHÂN VIÊN (Lọc bỏ khách hàng)
@@ -78,6 +82,8 @@ namespace HotelManagement.API.Controllers
             _context.Users.Add(newEmployee);
             await _context.SaveChangesAsync();
 
+            await _hubContext.Clients.All.SendAsync("ReceiveNotification", $"Nhân sự mới gia nhập: {request.FullName}!");
+
             return Ok(new { message = "Thêm nhân viên mới thành công!" });
         }
         // 3. CẬP NHẬT THÔNG TIN NHÂN VIÊN (Dành cho Quản trị viên)
@@ -93,6 +99,7 @@ namespace HotelManagement.API.Controllers
             user.Status = request.Status;
 
             await _context.SaveChangesAsync();
+            await _hubContext.Clients.All.SendAsync("ReceiveNotification", $"Cập nhật hồ sơ nhân viên: {user.FullName}");
             return Ok(new { message = "Cập nhật hồ sơ nhân sự thành công." });
         }
 
@@ -106,6 +113,7 @@ namespace HotelManagement.API.Controllers
 
             user.Status = false; // Đánh dấu nghỉ việc/khóa tài khoản
             await _context.SaveChangesAsync();
+            await _hubContext.Clients.All.SendAsync("ReceiveNotification", $"Nhân sự {user.FullName} đã chuyển trạng thái ngừng hoạt động.");
 
             return Ok(new { message = "Đã chuyển trạng thái nhân viên sang Soft Delete (Status = false)." });
         }

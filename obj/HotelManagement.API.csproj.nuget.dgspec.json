@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "D:\\web\\hotelmanagement\\HotelManagement.API.csproj": {}
+    "C:\\Users\\thanh\\datpro\\hotelmanagement\\HotelManagement.API.csproj": {}
   },
   "projects": {
-    "D:\\web\\hotelmanagement\\HotelManagement.API.csproj": {
+    "C:\\Users\\thanh\\datpro\\hotelmanagement\\HotelManagement.API.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\web\\hotelmanagement\\HotelManagement.API.csproj",
+        "projectUniqueName": "C:\\Users\\thanh\\datpro\\hotelmanagement\\HotelManagement.API.csproj",
         "projectName": "HotelManagement.API",
-        "projectPath": "D:\\web\\hotelmanagement\\HotelManagement.API.csproj",
-        "packagesPath": "C:\\Users\\ASUS\\.nuget\\packages\\",
-        "outputPath": "D:\\web\\hotelmanagement\\obj\\",
+        "projectPath": "C:\\Users\\thanh\\datpro\\hotelmanagement\\HotelManagement.API.csproj",
+        "packagesPath": "C:\\Users\\thanh\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\thanh\\datpro\\hotelmanagement\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\ASUS\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\thanh\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [

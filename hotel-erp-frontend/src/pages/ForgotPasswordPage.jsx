@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Form, Input, Button, Card, notification, Typography } from 'antd';
+import { Form, Input, Button, Card, App, Typography } from 'antd';
 import { MailOutlined } from '@ant-design/icons';
 import { useNavigate, Link } from 'react-router-dom';
 
@@ -8,6 +8,7 @@ const { Title, Text } = Typography;
 const ForgotPasswordPage = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { notification } = App.useApp();
 
   const onFinish = async (values) => {
     setLoading(true);
@@ -66,3 +67,4 @@ const ForgotPasswordPage = () => {
 };
 
 export default ForgotPasswordPage;
+

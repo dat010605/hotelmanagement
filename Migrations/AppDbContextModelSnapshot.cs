@@ -510,7 +510,8 @@ namespace HotelManagement.API.Migrations
                         .HasColumnName("description");
 
                     b.Property<string>("ImageUrl")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("ImageUrl");
 
                     b.Property<decimal>("PenaltyAmount")
                         .HasColumnType("decimal(18, 2)")

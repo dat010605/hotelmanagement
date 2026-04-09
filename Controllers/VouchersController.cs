@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using HotelManagement.API.Models; // Đổi lại namespace Models cho khớp với dự án của bạn
+using Microsoft.AspNetCore.SignalR;
+using HotelManagement.API.Models;
+using HotelManagement.API.Hubs;
 
 namespace HotelManagement.API.Controllers
 {
@@ -9,10 +11,12 @@ namespace HotelManagement.API.Controllers
     public class VouchersController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IHubContext<NotificationHub> _hubContext;
 
-        public VouchersController(AppDbContext context)
+        public VouchersController(AppDbContext context, IHubContext<NotificationHub> hubContext)
         {
             _context = context;
+            _hubContext = hubContext;
         }
 
         // 1. LẤY DANH SÁCH VOUCHER
@@ -41,6 +45,8 @@ namespace HotelManagement.API.Controllers
             _context.Vouchers.Add(request);
             await _context.SaveChangesAsync();
 
+            await _hubContext.Clients.All.SendAsync("ReceiveNotification", $"Khuyến mãi mới vừa được tạo: {request.Code}!");
+
             return Ok(new { Message = "Tạo mã giảm giá thành công!", Voucher = request });
         }
 
@@ -57,6 +63,8 @@ namespace HotelManagement.API.Controllers
 
             _context.Vouchers.Remove(voucher);
             await _context.SaveChangesAsync();
+
+            await _hubContext.Clients.All.SendAsync("ReceiveNotification", $"Đã xóa một mã khuyến mãi khỏi hệ thống!");
 
             return Ok(new { Message = "Đã xóa Voucher thành công!" });
         }
