@@ -13,12 +13,22 @@ const ProfilePage = () => {
   const [formPassword] = Form.useForm();
   const [formCreateAccount] = Form.useForm();
 
+  // 🌟 THUẬT TOÁN NHẬN DIỆN CHỨC VỤ THÔNG MINH
+  const isAdmin = user?.role === 'Admin' || Number(user?.roleId) === 1;
+
+  const getRoleDisplayName = () => {
+    if (isAdmin) return 'Quản trị viên hệ thống (Admin)';
+    if (user?.role === 'Manager' || Number(user?.roleId) === 2) return 'Quản lý (Manager)';
+    if (user?.role === 'Receptionist' || Number(user?.roleId) === 3) return 'Lễ tân (Receptionist)';
+    if (user?.role === 'Accountant' || Number(user?.roleId) === 4) return 'Kế toán (Accountant)';
+    return user?.role || 'Nhân viên';
+  };
+
   // ==========================================
   // TAB 1: CẬP NHẬT THÔNG TIN
   // ==========================================
   const handleUpdateInfo = async (values) => {
     setLoading(true);
-    // Tạm thời mô phỏng gọi API
     setTimeout(() => {
       message.success('Cập nhật thông tin thành công!');
       setLoading(false);
@@ -39,7 +49,7 @@ const ProfilePage = () => {
   };
 
   // ==========================================
-  // TAB 3: TẠO TÀI KHOẢN MỚI (DÀNH CHO ADMIN)
+  // TAB 3: TẠO TÀI KHOẢN MỚI
   // ==========================================
   const handleCreateAccount = async (values) => {
     setLoading(true);
@@ -56,7 +66,7 @@ const ProfilePage = () => {
   };
 
   return (
-    <div style={{ padding: '24px', background: '#f0f2f5', minHeight: '100vh' }}>
+    <div style={{ padding: '24px', background: 'transparent', minHeight: '100vh' }}>
       <Row gutter={[24, 24]} justify="center">
         {/* Cột Trái: Avatar & Tóm tắt */}
         <Col xs={24} md={8} lg={6}>
@@ -67,14 +77,16 @@ const ProfilePage = () => {
               icon={<UserOutlined />} 
               style={{ backgroundColor: '#1890ff', marginBottom: '16px' }}
             />
-            <Title level={4} style={{ margin: 0 }}>{user?.fullName || 'Admin'}</Title>
-            <Text type="secondary">{user?.roleId === 1 ? 'Giám đốc hệ thống' : 'Nhân viên'}</Text>
+            <Title level={4} style={{ margin: 0 }}>{user?.fullName || 'Người dùng ẩn danh'}</Title>
+            
+            {/* 🌟 GỌI HÀM HIỂN THỊ CHỨC VỤ Ở ĐÂY */}
+            <Text type="secondary" strong>{getRoleDisplayName()}</Text>
             
             <Divider />
             
             <div style={{ textAlign: 'left' }}>
-              <p><MailOutlined style={{ marginRight: 8 }}/> {user?.email || 'admin@hotel.com'}</p>
-              <p><PhoneOutlined style={{ marginRight: 8 }}/> {user?.phone || '0987654321'}</p>
+              <p><MailOutlined style={{ marginRight: 8 }}/> {user?.email || 'Chưa cập nhật Email'}</p>
+              <p><PhoneOutlined style={{ marginRight: 8 }}/> {user?.phone || 'Chưa cập nhật SĐT'}</p>
             </div>
             
             <Upload showUploadList={false}>
@@ -147,8 +159,8 @@ const ProfilePage = () => {
                 </Form>
               </TabPane>
 
-              {/* TAB 3: TẠO TÀI KHOẢN (Chỉ hiện nếu là Admin - giả sử roleId = 1 là Admin) */}
-              {(user?.roleId === 1 || !user) && (
+              {/* TAB 3: TẠO TÀI KHOẢN (ĐÃ FIX: Chỉ hiện nếu là Admin) */}
+              {(isAdmin || !user) && (
                 <TabPane tab={<span><UserAddOutlined />Tạo tài khoản nhân viên</span>} key="3">
                   <div style={{ background: '#e6f7ff', padding: '16px', borderRadius: '8px', marginBottom: '20px' }}>
                     <Text type="secondary">
@@ -166,10 +178,16 @@ const ProfilePage = () => {
                       <Col span={12}>
                         <Form.Item name="roleId" label="Chức vụ" rules={[{ required: true, message: 'Chọn chức vụ!' }]}>
                           <Select size="large" placeholder="-- Chọn cấp bậc --">
+                            <Select.Option value={1}>Quản trị viên (Admin)</Select.Option>
                             <Select.Option value={2}>Quản lý (Manager)</Select.Option>
                             <Select.Option value={3}>Lễ tân (Receptionist)</Select.Option>
                             <Select.Option value={4}>Kế toán (Accountant)</Select.Option>
                             <Select.Option value={5}>Buồng phòng (Housekeeping)</Select.Option>
+                            <Select.Option value={6}>Bảo vệ (Security)</Select.Option>
+                            <Select.Option value={7}>Đầu bếp (Chef)</Select.Option>
+                            <Select.Option value={8}>Phục vụ (Waiter)</Select.Option>
+                            <Select.Option value={9}>Hỗ trợ IT (IT Support)</Select.Option>
+                            <Select.Option value={10}>Khách hàng (Guest)</Select.Option>
                           </Select>
                         </Form.Item>
                       </Col>
@@ -200,3 +218,4 @@ const ProfilePage = () => {
 };
 
 export default ProfilePage;
+

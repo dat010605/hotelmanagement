@@ -1,17 +1,16 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.SignalR;
 using System.Security.Claims;
-using System.Net;
-using System.Net.Mail;
+using System.Net;           
+using System.Net.Mail;      
+using Microsoft.AspNetCore.SignalR; // 🌟 Thêm thư viện SignalR
+using HotelManagement.API.Hubs;  
 using HotelManagement.API.Models;
-using HotelManagement.API.Hubs;
 using HotelManagement.DTOs;
 
-namespace HotelManagement.API.Controllers // Nhớ bọc trong namespace
+namespace HotelManagement.API.Controllers 
 {
-    // 🌟 THÊM DTO CHO TÍNH NĂNG TẠO TÀI KHOẢN KÈM EMAIL
     public class CreateUserWithEmailRequest
     {
         public string FullName { get; set; } = null!;
@@ -27,9 +26,9 @@ namespace HotelManagement.API.Controllers // Nhớ bọc trong namespace
     public class UsersController : ControllerBase
     {
         private readonly AppDbContext _context;
-        private readonly IHubContext<NotificationHub> _hubContext;
-        
-        public UsersController(AppDbContext context, IHubContext<NotificationHub> hubContext) 
+        private readonly IHubContext<NotificationHub> _hubContext; // 🌟 Tiêm SignalR Hub vào đây
+
+        public UsersController(AppDbContext context, IHubContext<NotificationHub> hubContext)
         {
             _context = context;
             _hubContext = hubContext;
@@ -81,7 +80,6 @@ namespace HotelManagement.API.Controllers // Nhớ bọc trong namespace
             if (await _context.Users.AnyAsync(u => u.Email == request.Email))
                 return BadRequest("Email đã tồn tại trong hệ thống.");
 
-            // 1. Sinh mật khẩu ngẫu nhiên nếu có bật tính năng gửi Mail, ngược lại mặc định là 123456
             string rawPassword = request.SendEmail ? Guid.NewGuid().ToString().Substring(0, 6).ToUpper() : "123456";
 
             var newUser = new User {
@@ -96,12 +94,10 @@ namespace HotelManagement.API.Controllers // Nhớ bọc trong namespace
             _context.Users.Add(newUser);
             await _context.SaveChangesAsync(); 
 
-            // 2. Tiến hành gửi Email
             if (request.SendEmail)
             {
                 try
                 {
-                    // ⚠️ THAY BẰNG EMAIL VÀ MẬT KHẨU ỨNG DỤNG (16 KÝ TỰ) CỦA NGÀI Ở ĐÂY
                     string fromEmail = "hotelnhungnguoiban@gmail.com"; 
                     string appPassword = "uigpxqvgkoyjkctb"; 
 
@@ -138,7 +134,7 @@ namespace HotelManagement.API.Controllers // Nhớ bọc trong namespace
                         IsBodyHtml = true
                     })
                     {
-                        await smtp.SendMailAsync(message); // Gửi mail xuyên không gian
+                        await smtp.SendMailAsync(message); 
                     }
                 }
                 catch (Exception ex)
@@ -147,11 +143,8 @@ namespace HotelManagement.API.Controllers // Nhớ bọc trong namespace
                 }
             }
 
-            await _hubContext.Clients.All.SendAsync("ReceiveNotification", $"Tài khoản hệ thống mới: {request.FullName} ({request.Email})!");
-
             return Ok(new { Message = "Tạo tài khoản thành công" + (request.SendEmail ? " và đã gửi Email!" : ""), UserId = newUser.Id });
         }
-        // =================================================================
 
         // 3. LẤY THÔNG TIN CÁ NHÂN (ME)
         [HttpGet("Me")]
@@ -196,16 +189,36 @@ namespace HotelManagement.API.Controllers // Nhớ bọc trong namespace
             return Ok($"Đã reset mật khẩu về 123456.");
         }
 
-        // 6. KHÓA / MỞ KHÓA (Toggle Status)
+        // =================================================================
+        // 🌟 6. KHÓA / MỞ KHÓA TÀI KHOẢN (VỚI TÍNH NĂNG ĐÁ VĂNG BẰNG SIGNALR)
+        // =================================================================
         [HttpPatch("{id}/ToggleStatus")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> ToggleStatus(int id)
         {
-            var user = await _context.Users.FindAsync(id);
-            if (user == null) return NotFound();
-            user.Status = !user.Status; 
+            var targetUser = await _context.Users.FindAsync(id);
+            if (targetUser == null) return NotFound();
+
+            // 🌟 THUẬT TOÁN BẢO VỆ ADMIN: Chống khóa Admin cuối cùng
+            if (targetUser.Status == true && targetUser.RoleId == 1) 
+            {
+                var activeAdminCount = await _context.Users.CountAsync(u => u.RoleId == 1 && u.Status == true);
+                if (activeAdminCount <= 1)
+                {
+                    return BadRequest("Hệ thống phải có ít nhất 1 Admin hoạt động. Không thể khóa tài khoản này!");
+                }
+            }
+
+            targetUser.Status = !targetUser.Status; 
             await _context.SaveChangesAsync();
-            return Ok(new { Message = "Cập nhật trạng thái thành công", Status = user.Status });
+
+            // 🌟 MA PHÁP SIGNALR: Đẩy văng người dùng bị khóa ra trang Login
+            if (targetUser.Status == false) 
+            {
+                await _hubContext.Clients.All.SendAsync("ForceLogout", targetUser.Id.ToString());
+            }
+
+            return Ok(new { Message = "Cập nhật trạng thái thành công", Status = targetUser.Status });
         }
 
         // 7. PHÂN QUYỀN LẠI (Đổi vai trò)
@@ -225,3 +238,4 @@ namespace HotelManagement.API.Controllers // Nhớ bọc trong namespace
         }
     }
 }
+ 
