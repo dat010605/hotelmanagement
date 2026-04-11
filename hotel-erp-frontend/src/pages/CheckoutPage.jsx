@@ -126,21 +126,35 @@ const CheckoutPage = () => {
   const processFinalCheckout = async () => {
     try {
       setLoading(true);
-      // Bạn có thể gửi thêm paymentMethod xuống API: { paymentMethod: paymentMethod }
-      await axiosClient.patch(`/Bookings/${selectedBookingId}/checkout`);
+      const checkoutId = selectedBookingId;
+      
+      // Tạo hóa đơn (Invoice) + ghi nhận thanh toán (Payment) + đổi trạng thái booking & phòng
+      // API process-payment đã làm tất cả: tạo Invoice, Payment, set booking=Completed, room=Cleaning
+      await axiosClient.post('/Invoices/process-payment', {
+        bookingId: checkoutId,
+        paymentMethod: paymentMethod === 'momo' ? 'MoMo' : 'Cash',
+        transactionCode: paymentMethod === 'momo' ? `MOMO_${Date.now()}` : null
+      });
+
       message.success(`Đã thanh toán ${grandTotal.toLocaleString()} VNĐ và trả phòng thành công!`);
       
+      // Xóa booking đã checkout khỏi danh sách ngay lập tức
+      setActiveBookings(prev => prev.filter(b => b.id !== checkoutId));
       setSelectedBookingId(null);
       setBookingDetail(null);
       setDamages([]);
       setExtraFees([]);
-      setIsMoMoModalOpen(false); // Tắt Modal QR nếu đang bật
-      
-      const res = await axiosClient.get('/Bookings');
-      setActiveBookings(res.data.filter(b => b.status === 'CheckedIn'));
+      setIsMoMoModalOpen(false);
+
+      // Tải lại danh sách từ server để đồng bộ
+      try {
+        const res = await axiosClient.get('/Bookings');
+        setActiveBookings(res.data.filter(b => b.status === 'CheckedIn'));
+      } catch (_) { /* Đã cập nhật local rồi, bỏ qua lỗi reload */ }
 
     } catch (error) {
-      message.error("Lỗi khi trả phòng!");
+      const errMsg = error?.response?.data || "Lỗi khi trả phòng!";
+      message.error(typeof errMsg === 'string' ? errMsg : "Lỗi khi trả phòng!");
     } finally {
       setLoading(false);
     }

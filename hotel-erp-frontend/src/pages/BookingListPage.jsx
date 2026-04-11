@@ -86,7 +86,7 @@ const BookingListPage = () => {
           {/*  Nút Chi tiết nay đã có linh hồn */}
           <Button size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record.id)}>Chi tiết</Button>
           
-          {record.status !== 'CheckedIn' && record.status !== 'Cancelled' && (
+          {record.status !== 'CheckedIn' && record.status !== 'Cancelled' && record.status !== 'Completed' && record.status !== 'Paid' && (
             <Button 
               size="small" type="primary" style={{ backgroundColor: '#52c41a' }}
               icon={<CheckCircleOutlined />} onClick={() => handleCheckIn(record.id)}

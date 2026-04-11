@@ -20,15 +20,7 @@ import VoucherManagement from "./pages/VoucherManagement";
 import { ConfigProvider, App as AntApp } from 'antd';
 import TouristAttractions from "./pages/TouristAttractions";
 import AuditLogsPage from "./pages/AuditLogsPage";
-// Component thông báo hiện tại đã được tách ra hoặc để trong AdminLayout sẽ tốt hơn
-// Nếu vẫn muốn để ở App.jsx, hãy tạo một Component bao bọc riêng
-
-const DashboardPage = () => (
-  <div>
-    <h2>📊 Tổng quan hệ thống</h2>
-    <p>Chào mừng ngài trở lại.</p>
-  </div>
-);
+import DashboardPage from "./pages/DashboardPage";
 
 function App() {
   return (
