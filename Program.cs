@@ -28,6 +28,7 @@ builder.Services.AddControllers()
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddHostedService<HotelManagement.API.Services.AuditLogCleanupService>();
+builder.Services.AddHostedService<HotelManagement.API.Services.BirthdayVoucherWorker>();
 
 // ==========================================
 // 2. CẤU HÌNH SWAGGER (HỖ TRỢ JWT)

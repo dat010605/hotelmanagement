@@ -10,6 +10,7 @@ public partial class Room
     public int? RoomTypeId { get; set; }
 
     public string RoomNumber { get; set; } = null!;
+    public int? ParentRoomId { get; set; }
 
     public int? Floor { get; set; }
 

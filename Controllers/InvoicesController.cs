@@ -168,8 +168,16 @@ public class InvoicesController : ControllerBase
             if (subTotal >= minVal)
             {
                 decimal discVal = (decimal?)booking.Voucher.DiscountValue ?? 0m;
-                if (booking.Voucher.DiscountType == "Percent") discountAmount += subTotal * (discVal / 100m);
-                else if (booking.Voucher.DiscountType == "Amount") discountAmount += discVal;
+                
+                // FIX LỖI Ở ĐÂY: Nhận diện cả "Percentage" và "Percent", "Fixed" và "Amount"
+                if (booking.Voucher.DiscountType == "Percentage" || booking.Voucher.DiscountType == "Percent") 
+                {
+                    discountAmount += subTotal * (discVal / 100m);
+                }
+                else if (booking.Voucher.DiscountType == "Fixed" || booking.Voucher.DiscountType == "Amount") 
+                {
+                    discountAmount += discVal;
+                }
             }
         }
 

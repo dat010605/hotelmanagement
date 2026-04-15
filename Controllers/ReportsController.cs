@@ -189,8 +189,8 @@ namespace HotelManagement.API.Controllers
                 .SumAsync(p => (decimal?)p.AmountPaid ?? 0);
 
             // Tổng doanh thu
-            var revenueTotal = await _context.Payments
-                .SumAsync(p => (decimal?)p.AmountPaid ?? 0);
+            var revenueTotal = await _context.Invoices
+                .SumAsync(i => (decimal?)i.FinalTotal ?? 0);
 
             // Tổng phòng
             var totalRooms = await _context.Rooms.CountAsync();

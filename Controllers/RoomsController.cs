@@ -5,6 +5,10 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
 using System;
+using CloudinaryDotNet.Actions;
+using CloudinaryDotNet;
+using Microsoft.AspNetCore.Http;
+
 
 namespace HotelManagement.API.Controllers
 {
@@ -37,7 +41,11 @@ namespace HotelManagement.API.Controllers
                         r.RoomTypeId,
                         r.Status,
                         r.CleaningStatus,
-                        r.ExtensionNumber
+                        r.ExtensionNumber,
+                        ParentRoomId = r.ParentRoomId, //  TRẢ VỀ ID CĂN MẸ CHO REACT BIẾT
+                        RoomImages = _context.RoomImages
+                                        .Where(img => img.RoomId == r.Id)
+                                        .ToList()
                     })
                     .ToListAsync();
                 return Ok(rooms);
@@ -65,30 +73,31 @@ namespace HotelManagement.API.Controllers
                     r.RoomTypeId,
                     r.Status,
                     r.CleaningStatus,
-                    r.ExtensionNumber
+                    r.ExtensionNumber,
+                    ParentRoomId = r.ParentRoomId // 🌟 BỔ SUNG Ở ĐÂY NỮA
                 })
                 .FirstOrDefaultAsync();
 
             if (room == null) return NotFound(new { message = "Không tìm thấy phòng này!" });
             return Ok(room);
         }
+
         [HttpGet("{id}/inventory")]
         public async Task<IActionResult> GetRoomInventory(int id)
         {
-            // Lấy danh sách vật tư từ bảng Room_Inventory dựa trên roomId
-           // Duy sửa lại đoạn Select trong RoomsController như sau:
-        var inventory = await _context.RoomInventory
-            .Where(ri => ri.RoomId == id) // Đảm bảo dùng RoomId (viết hoa R, I)
-            .Include(ri => ri.Equipment) // Phải có dòng này để lấy được tên vật tư
-            .Select(ri => new {
-               Id = ri.Id,              // Sửa id -> Id
-        Name = ri.Equipment.Name, // Sửa name -> Name
-        Quantity = ri.Quantity,   // Sửa quantity -> Quantity
-        PriceIfLost = ri.PriceIfLost, // Sửa priceIfLost -> PriceIfLost
-        ItemType = ri.ItemType    // Sửa item_type -> ItemType
-            }).ToListAsync();
+            var inventory = await _context.RoomInventory
+                .Where(ri => ri.RoomId == id) 
+                .Include(ri => ri.Equipment) 
+                .Select(ri => new {
+                   Id = ri.Id,              
+                   Name = ri.Equipment.Name, 
+                   Quantity = ri.Quantity,   
+                   PriceIfLost = ri.PriceIfLost, 
+                   ItemType = ri.ItemType    
+                }).ToListAsync();
             return Ok(inventory);
         }
+
         // ====================================================
         // 3. POST /api/Rooms : TẠO PHÒNG MỚI
         // ====================================================
@@ -107,11 +116,12 @@ namespace HotelManagement.API.Controllers
                 var newRoom = new Room
                 {
                     RoomNumber = request.RoomNumber,
-                    RoomTypeId = request.RoomTypeId ?? 1, // Mặc định là loại 1 nếu null
+                    RoomTypeId = request.RoomTypeId ?? 1, 
                     Floor = request.Floor ?? 1,
                     Status = string.IsNullOrEmpty(request.Status) ? "Available" : request.Status,
                     CleaningStatus = string.IsNullOrEmpty(request.CleaningStatus) ? "Clean" : request.CleaningStatus,
-                    ExtensionNumber = request.ExtensionNumber
+                    ExtensionNumber = request.ExtensionNumber,
+                    ParentRoomId = request.ParentRoomId //  LƯU ID CĂN MẸ VÀO DATABASE
                 };
 
                 _context.Rooms.Add(newRoom);
@@ -121,7 +131,6 @@ namespace HotelManagement.API.Controllers
             }
             catch (Exception ex)
             {
-                // Trả về lỗi chi tiết từ Database (InnerException) để dễ fix lỗi
                 var dbError = ex.InnerException?.Message ?? ex.Message;
                 return StatusCode(500, new { message = "Lỗi Database: " + dbError });
             }
@@ -145,12 +154,15 @@ namespace HotelManagement.API.Controllers
                     room.RoomNumber = request.RoomNumber;
                 }
 
-                // Cập nhật các trường khác (Nếu null thì giữ nguyên giá trị cũ)
+                // Cập nhật các trường khác 
                 room.RoomTypeId = request.RoomTypeId ?? room.RoomTypeId;
                 room.Floor = request.Floor ?? room.Floor;
                 room.Status = request.Status ?? room.Status;
                 room.CleaningStatus = request.CleaningStatus ?? room.CleaningStatus;
                 room.ExtensionNumber = request.ExtensionNumber ?? room.ExtensionNumber;
+                
+                //  CHO PHÉP ĐỔI SANG CĂN MẸ KHÁC HOẶC TÁCH RA THÀNH PHÒNG ĐỘC LẬP
+                room.ParentRoomId = request.ParentRoomId; 
 
                 await _context.SaveChangesAsync();
                 return Ok(new { message = "Cập nhật thành công!" });
@@ -169,21 +181,19 @@ namespace HotelManagement.API.Controllers
         {
             try
             {
-                // Kiểm tra phòng có tồn tại không
                 if (!await _context.Rooms.AnyAsync(r => r.Id == roomId))
                     return NotFound(new { message = "Không tìm thấy phòng!" });
 
                 var allEquipments = await _context.Equipments.AsNoTracking().ToListAsync();
                 if (!allEquipments.Any()) return BadRequest(new { message = "Kho đang trống!" });
 
-                // Lấy danh sách ID vật tư đã có trong phòng để tránh bị trùng
                 var existingEquipmentIds = await _context.RoomInventories
                     .Where(ri => ri.RoomId == roomId)
                     .Select(ri => ri.EquipmentId)
                     .ToListAsync();
 
                 var newInventories = allEquipments
-                    .Where(e => !existingEquipmentIds.Contains(e.Id)) // Chỉ thêm món chưa có
+                    .Where(e => !existingEquipmentIds.Contains(e.Id)) 
                     .Select(e => new RoomInventory
                     {
                         RoomId = roomId,
@@ -216,7 +226,6 @@ namespace HotelManagement.API.Controllers
         {
             try
             {
-                // 1. Lấy danh sách đồ từ phòng mẫu
                 var sourceItems = await _context.RoomInventories
                     .AsNoTracking()
                     .Where(ri => ri.RoomId == request.FromRoomId)
@@ -225,11 +234,9 @@ namespace HotelManagement.API.Controllers
                 if (!sourceItems.Any())
                     return BadRequest(new { message = "Phòng mẫu không có vật tư nào!" });
 
-                // 2. Xóa vật tư cũ ở phòng đích trước khi chép mới (Tùy chọn - để tránh rác dữ liệu)
                 var oldItems = await _context.RoomInventories.Where(ri => ri.RoomId == request.ToRoomId).ToListAsync();
                 _context.RoomInventories.RemoveRange(oldItems);
 
-                // 3. Tạo danh sách mới cho phòng đích
                 var newItems = sourceItems.Select(item => new RoomInventory
                 {
                     RoomId = request.ToRoomId,
@@ -261,8 +268,6 @@ namespace HotelManagement.API.Controllers
             var room = await _context.Rooms.FindAsync(id);
             if (room == null) return NotFound(new { message = "Không tìm thấy phòng!" });
 
-            // Lưu ý: Nếu có ràng buộc khóa ngoại (ví dụ: phòng đang có khách hoặc có vật tư), 
-            // lệnh này có thể lỗi nếu Database không để Cascade Delete.
             try {
                 _context.Rooms.Remove(room);
                 await _context.SaveChangesAsync();
@@ -271,6 +276,44 @@ namespace HotelManagement.API.Controllers
             catch (Exception) {
                 return BadRequest(new { message = "Không thể xóa phòng này vì đang có dữ liệu liên quan (Vật tư hoặc Hóa đơn)!" });
             }
+        }
+
+        // ====================================================
+        // 8. Upload hình ảnh phòng
+        // ====================================================
+        [HttpPost("{id}/upload-image")]
+        public async Task<IActionResult> UploadRoomImage(int id, IFormFile file)
+        {
+            if (file == null || file.Length == 0) return BadRequest("Vui lòng chọn một bức ảnh!");
+
+            var room = await _context.Rooms.FindAsync(id);
+            if (room == null) return NotFound("Không tìm thấy phòng này trong hệ thống.");
+
+            // KHẾ ƯỚC CLOUDINARY 
+            Account account = new Account("drqvarew0", "516395159994396", "0JoVGcEOvUDH99ockP_scKQbRWk");
+            Cloudinary cloudinary = new Cloudinary(account);
+
+            using var stream = file.OpenReadStream();
+            var uploadParams = new ImageUploadParams()
+            {
+                File = new FileDescription(file.FileName, stream),
+                Folder = "HotelERP_Rooms"
+            };
+
+            var uploadResult = await cloudinary.UploadAsync(uploadParams);
+            if (uploadResult.Error != null) return BadRequest($"Lỗi từ Cloudinary: {uploadResult.Error.Message}");
+
+            // Lấy link ảnh từ mây về, lưu vào Database
+            var roomImage = new RoomImage 
+            {
+                RoomId = id, 
+                ImageUrl = uploadResult.SecureUrl.ToString()
+            };
+            
+            _context.RoomImages.Add(roomImage);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { Message = "Đã tải ảnh lên mây thành công!", ImageUrl = roomImage.ImageUrl });
         }
 
         // --- DTOs ---
@@ -282,6 +325,7 @@ namespace HotelManagement.API.Controllers
             public string? Status { get; set; }
             public string? CleaningStatus { get; set; }
             public string? ExtensionNumber { get; set; }
+            public int? ParentRoomId { get; set; } 
         }
 
         public class CloneInventoryRequest

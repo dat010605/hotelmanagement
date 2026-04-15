@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, List, Button, Tag, Typography, message, Modal, InputNumber, Space, Divider, Row, Col } from 'antd';
+import { Card, List, Button, Tag, Typography, message, Modal, InputNumber, Space, Divider, Row, Col, theme } from 'antd';
 import { 
   AlertOutlined, CheckCircleOutlined, ArrowLeftOutlined, 
-  CameraOutlined, ShopOutlined, CheckOutlined, CloseCircleOutlined
+  CameraOutlined, ShopOutlined, CloseCircleOutlined
 } from '@ant-design/icons';
 import axiosClient from '../api/axiosClient';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -13,6 +13,9 @@ const HousekeepingChecklist = () => {
   const { roomId } = useParams();
   const navigate = useNavigate();
   
+  //  GỌI MA PHÁP THEME ĐỂ TỰ ĐỘNG ĐỔI MÀU SÁNG/TỐI
+  const { token } = theme.useToken();
+  
   const [loading, setLoading] = useState(false);
   const [inventory, setInventory] = useState([]);
   const [roomData, setRoomData] = useState(null); 
@@ -21,8 +24,6 @@ const HousekeepingChecklist = () => {
   const [reportingItem, setReportingItem] = useState(null);
   const [damageQuantity, setDamageQuantity] = useState(1);
   const [proofImage, setProofImage] = useState(null);
-  
-  // 🌟 MA PHÁP MỚI: State lưu đường dẫn ảnh tạm để xem trước 🌟
   const [previewImageUrl, setPreviewImageUrl] = useState(null); 
   
   const hiddenFileInput = useRef(null);
@@ -47,30 +48,24 @@ const HousekeepingChecklist = () => {
 
   const handleCameraClick = () => { hiddenFileInput.current.click(); };
   
-  // --- NÂNG CẤP HÀM XỬ LÝ ẢNH CÓ CHỨC NĂNG XEM TRƯỚC ---
   const handlePhotoChange = (event) => {
     const file = event.target.files[0];
     if (file) {
-      setProofImage(file); // Lưu file thật để gửi Backend (nếu cần FormData)
-
-      // 🔮 Bắt đầu ma pháp FileReader để tạo ảnh xem trước 🔮
+      setProofImage(file); 
       const reader = new FileReader();
       reader.onload = () => {
-        setPreviewImageUrl(reader.result); // kết quả là chuỗi base64 nạp vào src ảnh
+        setPreviewImageUrl(reader.result); 
         message.success('Đã tải ảnh bằng chứng lên!');
       };
-      reader.readAsDataURL(file); // Đọc file dưới dạng Data URL
+      reader.readAsDataURL(file); 
     }
   };
 
   const openReportModal = (item) => {
     setReportingItem(item);
     setDamageQuantity(1);
-    
-    // Reset toàn bộ state liên quan đến ảnh khi mở Modal mới
     setProofImage(null); 
-    setPreviewImageUrl(null); // 🌟 Reset ảnh xem trước
-    
+    setPreviewImageUrl(null); 
     setIsReportModalOpen(true);
   };
 
@@ -83,7 +78,7 @@ const HousekeepingChecklist = () => {
         Quantity: damageQuantity,
         PenaltyAmount: calculatedPenalty, 
         Description: `Nhân viên báo hỏng ${reportingItem.equipmentName} tại phòng`,
-        ImageUrl: previewImageUrl ? previewImageUrl : '' // Gửi đường dẫn ảnh xem trước 
+        ImageUrl: previewImageUrl ? previewImageUrl : '' 
       });
       message.success(`Đã gửi báo cáo đền bù: ${reportingItem.equipmentName}`);
       markItemStatus(reportingItem.id, 'damaged');
@@ -91,7 +86,6 @@ const HousekeepingChecklist = () => {
     } catch (err) { message.error("Lỗi khi gửi báo cáo đền bù!"); }
   };
 
-  // 🌟 TÍNH NĂNG MỚI: Xử lý hủy báo hỏng 🌟
   const handleCancelDamage = (item) => {
     Modal.confirm({
       title: 'Hủy báo hỏng thiết bị?',
@@ -101,10 +95,6 @@ const HousekeepingChecklist = () => {
       cancelText: 'Đóng',
       onOk: async () => {
         try {
-          // CHÚ Ý CHO KHÁNH: Ở đây sau này bạn cần gọi thêm API để xóa record trong bảng LossAndDamages ở Backend (C#).
-          // Ví dụ: await axiosClient.delete(`/LossAndDamages/RevertByInventoryId/${item.id}`);
-          
-          // Tạm thời trên giao diện sẽ hoàn tác trạng thái ngay lập tức
           markItemStatus(item.id, 'pending');
           message.success(`Đã hủy báo hỏng cho: ${item.equipmentName}`);
         } catch (error) {
@@ -138,9 +128,9 @@ const HousekeepingChecklist = () => {
   };
 
   return (
-    <div style={{ backgroundColor: '#f0f2f5', minHeight: '100vh', padding: '16px' }}>
+    //  SỬA: Dùng token.colorBgLayout thay vì gán '#f0f2f5' cứng
+    <div style={{ backgroundColor: token.colorBgLayout, minHeight: '100vh', padding: '16px' }}>
       
-      {/* Hiệu ứng Hover màu sắc */}
       <style>{`
         .btn-report-loss:hover { background-color: #ff4d4f !important; color: white !important; border-color: #ff4d4f !important; }
         .btn-check-ok:hover { background-color: #52c41a !important; color: white !important; border-color: #52c41a !important; }
@@ -148,13 +138,13 @@ const HousekeepingChecklist = () => {
         .btn-report-loss.active { background-color: #ff4d4f !important; border-color: #ff4d4f !important; color: white !important; }
       `}</style>
 
-      {/* Header gọn gàng */}
       <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/admin/rooms')} type="text" style={{ marginBottom: 12 }}>
         Quay lại danh sách phòng
       </Button>
 
       <Card 
         bordered={false}
+        //  SỬA: Bỏ border, dùng màu nền tự động của Card Ant Design
         style={{ borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', maxWidth: '1000px', margin: '0 auto' }}
         title={
           <Space>
@@ -176,8 +166,8 @@ const HousekeepingChecklist = () => {
               style={{ 
                 marginBottom: '12px', 
                 borderRadius: '8px',
-                borderLeft: item.checkStatus === 'ok' ? '5px solid #52c41a' : item.checkStatus === 'damaged' ? '5px solid #ff4d4f' : '5px solid #d9d9d9',
-                backgroundColor: '#fff'
+                borderLeft: item.checkStatus === 'ok' ? '5px solid #52c41a' : item.checkStatus === 'damaged' ? '5px solid #ff4d4f' : `5px solid ${token.colorBorder}`,
+                //  SỬA: Xóa backgroundColor: '#fff' để tự ăn theo theme
               }}
               bodyStyle={{ padding: '16px' }}
             >
@@ -194,15 +184,12 @@ const HousekeepingChecklist = () => {
                 
                 <Col xs={24} md={12} style={{ textAlign: 'right', marginTop: '10px' }}>
                   <Space>
-                    
-                    {/* 🌟 NÚT BÁO HỎNG ĐƯỢC NÂNG CẤP 🌟 */}
                     <Button 
                       size="large"
                       icon={item.checkStatus === 'damaged' ? <CloseCircleOutlined /> : <AlertOutlined />} 
                       className={`btn-report-loss ${item.checkStatus === 'damaged' ? 'active' : ''}`} 
                       danger={item.checkStatus !== 'damaged'} 
                       onClick={() => {
-                        // Nút hoạt động linh hoạt: Bị hỏng thì Hủy, Bình thường thì mở popup Báo hỏng
                         if (item.checkStatus === 'damaged') {
                           handleCancelDamage(item);
                         } else {
@@ -262,10 +249,8 @@ const HousekeepingChecklist = () => {
         <Space direction="vertical" style={{ width: '100%' }}>
           <InputNumber min={1} max={reportingItem?.quantity || 1} value={damageQuantity} onChange={setDamageQuantity} addonBefore="Số lượng hỏng/mất" style={{ width: '100%' }} size="large" />
           
-          {/* --- NÂNG CẤP KHU VỰC CAMERA MA PHÁP & XEM TRƯỚC --- */}
-          <div style={{ textAlign: 'center', marginTop: 10, padding: '16px', border: '1px dashed #d9d9d9', borderRadius: '8px', backgroundColor: '#fafafa' }}>
-            
-            {/* 🔮 MA PHÁP HIỂN THỊ ẢNH XEM TRƯỚC 🔮 */}
+          {/*  SỬA: Đổi màu nền chỗ ảnh xem trước theo theme */}
+          <div style={{ textAlign: 'center', marginTop: 10, padding: '16px', border: `1px dashed ${token.colorBorder}`, borderRadius: '8px', backgroundColor: token.colorBgContainerDisabled }}>
             {previewImageUrl ? (
               <div style={{ position: 'relative', marginBottom: '16px' }}>
                 <img 
@@ -299,8 +284,6 @@ const HousekeepingChecklist = () => {
                 📸 Bấm để Chụp bằng chứng
               </Button>
             )}
-
-            {/* Input tàng hình gọi Camera sau */}
             <input type="file" accept="image/*" capture="environment" ref={hiddenFileInput} style={{ display: 'none' }} onChange={handlePhotoChange} />
           </div>
         </Space>

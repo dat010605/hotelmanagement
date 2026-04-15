@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Select, Button, Typography, Divider, Table, Row, Col, message, Tag, Space, Modal, Form, Input, InputNumber, Radio, QRCode } from 'antd';
-import { PrinterOutlined, CreditCardOutlined, CheckCircleOutlined, ShopOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Card, Select, Button, Typography, Divider, Row, Col, message, Tag, Space, Modal, Form, Input, InputNumber, Radio, QRCode } from 'antd';
+import { PrinterOutlined, CreditCardOutlined, CheckCircleOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import axiosClient from '../api/axiosClient';
 import dayjs from 'dayjs';
 
@@ -11,19 +11,16 @@ const CheckoutPage = () => {
   const [activeBookings, setActiveBookings] = useState([]);
   const [selectedBookingId, setSelectedBookingId] = useState(null);
   const [bookingDetail, setBookingDetail] = useState(null);
-  const [damages, setDamages] = useState([]);
+  const [invoiceData, setInvoiceData] = useState(null); // Dữ liệu hóa đơn lấy từ C#
   const [loading, setLoading] = useState(false);
 
-  // === CÁC STATE CHO PHỤ THU ===
   const [extraFees, setExtraFees] = useState([]);
   const [isFeeModalOpen, setIsFeeModalOpen] = useState(false);
   const [feeForm] = Form.useForm();
 
-  // === CÁC STATE MỚI CHO THANH TOÁN MOMO ===
-  const [paymentMethod, setPaymentMethod] = useState('cash'); // 'cash' hoặc 'momo'
+  const [paymentMethod, setPaymentMethod] = useState('cash'); 
   const [isMoMoModalOpen, setIsMoMoModalOpen] = useState(false);
 
-  // Lấy các ĐƠN ĐẶT PHÒNG đang ở trạng thái CheckedIn
   useEffect(() => {
     const fetchActiveBookings = async () => {
       try {
@@ -41,21 +38,19 @@ const CheckoutPage = () => {
     setSelectedBookingId(bookingId);
     setLoading(true);
     setExtraFees([]); 
-    setPaymentMethod('cash'); // Reset lại phương thức thanh toán
+    setPaymentMethod('cash'); 
     try {
+      // 1. Lấy thông tin cơ bản của đơn đặt phòng
       const bRes = await axiosClient.get(`/Bookings/${bookingId}`);
       setBookingDetail(bRes.data);
 
-      const roomIds = bRes.data.rooms.map(r => r.roomId);
-      const dmgRes = await axiosClient.get('/LossAndDamages');
-      
-      const bookingDamages = dmgRes.data.filter(d => 
-        roomIds.includes(d.roomId || d.roomNumber) && d.status !== 1 
-      );
-      setDamages(bookingDamages);
+      // 2.  GỌI API C# ĐỂ LẤY BẢNG TÍNH TIỀN (BAO GỒM CẢ VOUCHER ĐÃ TRỪ)
+      const invRes = await axiosClient.get(`/Invoices/calculate-invoice/${bookingId}`);
+      setInvoiceData(invRes.data);
 
     } catch (error) {
       console.log(error);
+      message.error("Lỗi khi kéo dữ liệu tính tiền từ hệ thống!");
     } finally {
       setLoading(false);
     }
@@ -71,65 +66,29 @@ const CheckoutPage = () => {
     setExtraFees(extraFees.filter(fee => fee.id !== idToRemove));
   };
 
-  // Tính toán tiền phòng
-  const calculateRoomCharges = () => {
-    if (!bookingDetail) return { roomCharge: 0, penaltyCharge: 0, details: [] };
-
-    const today = dayjs().startOf('day');
-    let totalRoom = 0;
-    let totalPenalty = 0;
-    let calcDetails = [];
-
-    bookingDetail.rooms.forEach(r => {
-      const checkIn = dayjs(r.checkInDate).startOf('day');
-      const checkOut = dayjs(r.checkOutDate).startOf('day');
-
-      let stayedNights = today.diff(checkIn, 'day');
-      if (stayedNights <= 0) stayedNights = 1; 
-
-      let unstayedNights = checkOut.diff(today, 'day');
-      if (unstayedNights < 0) unstayedNights = 0; 
-
-      const stayedCost = stayedNights * r.pricePerNight;
-      const penaltyCost = unstayedNights * (r.pricePerNight * 0.5); 
-
-      totalRoom += stayedCost;
-      totalPenalty += penaltyCost;
-
-      calcDetails.push({ roomName: r.roomName, price: r.pricePerNight, stayedNights, unstayedNights, stayedCost, penaltyCost });
-    });
-
-    return { roomCharge: totalRoom, penaltyCharge: totalPenalty, details: calcDetails };
-  };
-
-  const { roomCharge, penaltyCharge, details: roomDetails } = calculateRoomCharges();
-  const totalDamages = damages.reduce((sum, item) => sum + (item.penaltyAmount || 0), 0);
+  //  TỔNG TIỀN = Tiền cuối cùng C# tính + Phụ phí thủ công trên Frontend
   const totalExtraFees = extraFees.reduce((sum, item) => sum + item.amount, 0); 
-  const grandTotal = roomCharge + penaltyCharge + totalDamages + totalExtraFees; 
+  const grandTotal = (invoiceData?.finalTotal || 0) + totalExtraFees; 
 
   const handlePrint = () => {
     window.print();
   };
 
-  // Hàm xử lý khi bấm Nút "Xác nhận thu tiền" ở ngoài
   const handleCheckoutClick = () => {
     if (!selectedBookingId) return;
     
     if (paymentMethod === 'momo') {
-      setIsMoMoModalOpen(true); // Bật QR Code lên
+      setIsMoMoModalOpen(true); 
     } else {
-      processFinalCheckout(); // Tiền mặt thì chạy luôn
+      processFinalCheckout(); 
     }
   };
 
-  // Hàm gọi API thực tế để hoàn tất
   const processFinalCheckout = async () => {
     try {
       setLoading(true);
       const checkoutId = selectedBookingId;
       
-      // Tạo hóa đơn (Invoice) + ghi nhận thanh toán (Payment) + đổi trạng thái booking & phòng
-      // API process-payment đã làm tất cả: tạo Invoice, Payment, set booking=Completed, room=Cleaning
       await axiosClient.post('/Invoices/process-payment', {
         bookingId: checkoutId,
         paymentMethod: paymentMethod === 'momo' ? 'MoMo' : 'Cash',
@@ -138,19 +97,17 @@ const CheckoutPage = () => {
 
       message.success(`Đã thanh toán ${grandTotal.toLocaleString()} VNĐ và trả phòng thành công!`);
       
-      // Xóa booking đã checkout khỏi danh sách ngay lập tức
       setActiveBookings(prev => prev.filter(b => b.id !== checkoutId));
       setSelectedBookingId(null);
       setBookingDetail(null);
-      setDamages([]);
+      setInvoiceData(null);
       setExtraFees([]);
       setIsMoMoModalOpen(false);
 
-      // Tải lại danh sách từ server để đồng bộ
       try {
         const res = await axiosClient.get('/Bookings');
         setActiveBookings(res.data.filter(b => b.status === 'CheckedIn'));
-      } catch (_) { /* Đã cập nhật local rồi, bỏ qua lỗi reload */ }
+      } catch (_) { }
 
     } catch (error) {
       const errMsg = error?.response?.data || "Lỗi khi trả phòng!";
@@ -160,7 +117,6 @@ const CheckoutPage = () => {
     }
   };
 
-  // Dữ liệu tạo mã QR (Chuẩn hóa dạng URL MoMo)
   const momoQrData = `2|99|0398628920|BO TAN PHAT|email|0|0|${grandTotal}|ThanhToan_${bookingDetail?.bookingCode}`;
 
   return (
@@ -183,7 +139,6 @@ const CheckoutPage = () => {
             title={<Title level={3} className="no-print" style={{ margin: 0, textAlign: 'center' }}>💳 Hóa Đơn Thanh Toán (Checkout)</Title>} 
             style={{ borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
           >
-            {/* Thanh tìm kiếm - Giấu khi in */}
             <div className="no-print" style={{ marginBottom: 24, textAlign: 'center' }}>
               <Text strong style={{ fontSize: '16px' }}>Chọn đơn cần thanh toán: </Text>
               <Select 
@@ -202,9 +157,8 @@ const CheckoutPage = () => {
               </Select>
             </div>
 
-            {bookingDetail ? (
+            {bookingDetail && invoiceData ? (
               <>
-                {/* KHU VỰC ĐƯỢC IN RA GIẤY */}
                 <div id="printable-invoice" style={{ padding: '20px', border: '1px dashed #d9d9d9', borderRadius: '8px', background: '#fafafa' }}>
                   
                   <div style={{ textAlign: 'center', marginBottom: 20 }}>
@@ -221,47 +175,56 @@ const CheckoutPage = () => {
                     <Col className="no-print"><Tag color="processing">Đang tiến hành Checkout</Tag></Col>
                   </Row>
                   
-                  <Text strong style={{ fontSize: '16px' }}>1. Tiền lưu trú thực tế:</Text>
+                  <Text strong style={{ fontSize: '16px' }}>1. Dịch vụ lưu trú & Tiện ích:</Text>
                   <div style={{ paddingLeft: 20, marginBottom: 15, marginTop: 5 }}>
-                    {roomDetails.map((r, idx) => (
-                      <Row justify="space-between" key={idx}>
-                        <Col>- Phòng {r.roomName} ({r.stayedNights} đêm x {r.price.toLocaleString()}đ)</Col>
-                        <Col strong>{r.stayedCost.toLocaleString()} đ</Col>
+                    <Row justify="space-between">
+                      <Col>- Tổng tiền phòng</Col>
+                      <Col strong>{(invoiceData.totalRoomAmount || 0).toLocaleString()} đ</Col>
+                    </Row>
+                    {invoiceData.totalServiceAmount > 0 && (
+                      <Row justify="space-between">
+                        <Col>- Phí dịch vụ đi kèm</Col>
+                        <Col>{invoiceData.totalServiceAmount.toLocaleString()} đ</Col>
                       </Row>
-                    ))}
+                    )}
+                    {invoiceData.totalDamageAmount > 0 && (
+                      <Row justify="space-between" style={{ color: '#cf1322' }}>
+                        <Col>- Phụ thu đền bù hư hỏng</Col>
+                        <Col>{invoiceData.totalDamageAmount.toLocaleString()} đ</Col>
+                      </Row>
+                    )}
                   </div>
 
-                  {penaltyCharge > 0 && (
+                  {/*  VOUCHER ĐÃ HIỂN THỊ TẠI ĐÂY */}
+                  {invoiceData.discountAmount > 0 && (
                     <>
-                      <Text strong style={{ fontSize: '16px', color: '#fa8c16' }}>2. Phụ thu trả phòng sớm:</Text>
+                      <Text strong style={{ fontSize: '16px', color: '#52c41a' }}>2. Khuyến mãi & Giảm giá:</Text>
                       <div style={{ paddingLeft: 20, marginBottom: 15, marginTop: 5 }}>
-                        {roomDetails.filter(r => r.unstayedNights > 0).map((r, idx) => (
-                          <Row justify="space-between" key={idx} style={{ color: '#fa8c16' }}>
-                            <Col>- Phòng {r.roomName} (Bỏ trống {r.unstayedNights} đêm)</Col>
-                            <Col>{r.penaltyCost.toLocaleString()} đ</Col>
-                          </Row>
-                        ))}
+                        <Row justify="space-between" style={{ color: '#52c41a' }}>
+                          <Col>- Trừ Voucher / Hạng thành viên</Col>
+                          <Col>- {invoiceData.discountAmount.toLocaleString()} đ</Col>
+                        </Row>
                       </div>
                     </>
                   )}
 
-                  {damages.length > 0 && (
+                  {/*  THUẾ */}
+                  {invoiceData.taxAmount > 0 && (
                     <>
-                      <Text strong style={{ fontSize: '16px', color: '#cf1322' }}>{penaltyCharge > 0 ? '3' : '2'}. Phụ thu đền bù (Từ App Dọn Phòng):</Text>
-                      <div style={{ paddingLeft: 20, marginBottom: 10, marginTop: 5 }}>
-                        {damages.map((d, index) => (
-                          <Row justify="space-between" key={index} style={{ color: '#cf1322' }}>
-                            <Col>- Phòng {d.roomNumber}: {d.equipmentName} (SL: {d.quantity})</Col>
-                            <Col>{(d.penaltyAmount || 0).toLocaleString()} đ</Col>
-                          </Row>
-                        ))}
+                      <Text strong style={{ fontSize: '16px', color: '#8c8c8c' }}>{invoiceData.discountAmount > 0 ? '3' : '2'}. Thuế VAT (10%):</Text>
+                      <div style={{ paddingLeft: 20, marginBottom: 15, marginTop: 5 }}>
+                        <Row justify="space-between" style={{ color: '#8c8c8c' }}>
+                          <Col>- Tiền thuế</Col>
+                          <Col>{invoiceData.taxAmount.toLocaleString()} đ</Col>
+                        </Row>
                       </div>
                     </>
                   )}
 
+                  {/* PHỤ THU THỦ CÔNG */}
                   {extraFees.length > 0 && (
                     <>
-                      <Text strong style={{ fontSize: '16px', color: '#13c2c2' }}>{penaltyCharge > 0 ? (damages.length > 0 ? '4' : '3') : (damages.length > 0 ? '3' : '2')}. Phụ thu khác:</Text>
+                      <Text strong style={{ fontSize: '16px', color: '#13c2c2' }}>{invoiceData.taxAmount > 0 ? (invoiceData.discountAmount > 0 ? '4' : '3') : 'X'}. Phụ thu khác:</Text>
                       <div style={{ paddingLeft: 20, marginBottom: 15, marginTop: 5 }}>
                         {extraFees.map((fee) => (
                           <Row justify="space-between" align="middle" style={{ color: '#13c2c2', marginBottom: 4 }} key={fee.id}>
@@ -277,7 +240,7 @@ const CheckoutPage = () => {
 
                   <Row justify="space-between" align="middle" style={{ marginBottom: 20 }}>
                     <Col><Title level={3} style={{ margin: 0 }}>TỔNG CẦN THANH TOÁN:</Title></Col>
-                    <Col><Title level={2} style={{ margin: 0, color: '#52c41a' }}>{grandTotal.toLocaleString()} VNĐ</Title></Col>
+                    <Col><Title level={2} style={{ margin: 0, color: '#fa8c16' }}>{grandTotal.toLocaleString()} VNĐ</Title></Col>
                   </Row>
                   
                   <Button 
@@ -288,7 +251,6 @@ const CheckoutPage = () => {
                   </Button>
                 </div>
 
-                {/* ===== PHẦN MỚI: CHỌN PHƯƠNG THỨC THANH TOÁN ===== */}
                 <div className="no-print" style={{ marginTop: 20, textAlign: 'right', background: '#f0f2f5', padding: '15px', borderRadius: '8px' }}>
                   <Text strong style={{ fontSize: '16px', marginRight: 16 }}>Phương thức thanh toán:</Text>
                   <Radio.Group value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} size="large">
@@ -304,7 +266,6 @@ const CheckoutPage = () => {
                     </Button>
                   </Col>
                   <Col span={12}>
-                    {/* Bấm vào đây sẽ chạy hàm handleCheckoutClick ở trên */}
                     <Button 
                       type="primary" block size="large" 
                       style={{ backgroundColor: paymentMethod === 'momo' ? '#a50064' : '#52c41a', fontWeight: 'bold' }} 
@@ -334,12 +295,12 @@ const CheckoutPage = () => {
         </Form>
       </Modal>
 
-      {/* ===== MODAL QUÉT MÃ MOMO ===== */}
+      {/* MODAL QUÉT MÃ MOMO */}
       <Modal
         title={null}
         open={isMoMoModalOpen}
         onCancel={() => setIsMoMoModalOpen(false)}
-        footer={null} // Tự tạo nút để giao diện đẹp hơn
+        footer={null}
         width={400}
         centered
       >
@@ -349,7 +310,6 @@ const CheckoutPage = () => {
           <Text type="secondary">Đơn hàng: {bookingDetail?.bookingCode}</Text>
           
           <div style={{ margin: '20px auto', padding: '15px', background: '#fff', borderRadius: '12px', border: '2px solid #a50064', display: 'inline-block' }}>
-            {/* COMPONENT QR CỦA ANT DESIGN */}
             <QRCode 
               value={momoQrData} 
               size={220} 
