@@ -236,5 +236,44 @@ const AuditLogsPage = () => {
         </div>
     );
 };
+const handleDownloadAuditLog = async (isAdmin = false) => {
+    const token = localStorage.getItem('token');
+    try {
+        const response = await fetch(`http://localhost:5057/api/Export/audit-log`, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
 
+        if (!response.ok) throw new Error('Tải file thất bại!');
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = isAdmin ? "Full_AuditLog.xlsx" : "My_AuditLog.xlsx";
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        message.success('Đã tải xong nhật ký hoạt động!');
+    } catch (err) {
+        message.error(err.message);
+    }
+};
+
+// 2. Cập nhật phần nút bấm trong giao diện (dòng ~175)
+<Space>
+    <Button 
+        icon={<FileExcelOutlined />} 
+        onClick={() => handleDownloadAuditLog(false)}
+    >
+        Xuất theo bộ lọc
+    </Button>
+    <Button 
+        type="primary" 
+        icon={<CloudDownloadOutlined />} 
+        onClick={() => handleDownloadAuditLog(true)}
+    >
+        Xuất toàn bộ (Server)
+    </Button>
+</Space>
 export default AuditLogsPage;

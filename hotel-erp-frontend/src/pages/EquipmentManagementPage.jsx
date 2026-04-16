@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Modal, Form, Input, InputNumber, Select, message, Card, Space, Upload, Image, Row, Col } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined, PictureOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined, PictureOutlined, FileExcelOutlined } from '@ant-design/icons';
 import axiosClient from '../api/axiosClient';
 import axios from 'axios'; 
 
@@ -14,7 +14,6 @@ const EquipmentManagementPage = () => {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [form] = Form.useForm();
 
-  // CLOUDINARY
   const CLOUD_NAME = 'drqvarew0'; 
   const UPLOAD_PRESET = 'hotel_kho_vat_tu'; 
 
@@ -65,6 +64,34 @@ const EquipmentManagementPage = () => {
     finally { setUploadingImage(false); }
   };
 
+  // --- HÀM XUẤT FILE (LOGIC MỚI CỦA DUY) ---
+  const handleExportInventory = async (type) => {
+    const token = localStorage.getItem('token');
+    const endpoint = type === 'excel' ? 'inventory-report' : 'export-inventory-zip';
+    const fileName = type === 'excel' ? 'Bao_Cao_Vat_Tu.xlsx' : 'Kho_Vat_Tu_Anh.zip';
+
+    try {
+        const response = await fetch(`http://localhost:5057/api/Export/${endpoint}`, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('Tải tệp thất bại!');
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        message.success(`Đã tải: ${fileName}`);
+    } catch (err) {
+        message.error(err.message);
+    }
+  };
+
   const handleSave = async (values) => {
     const payload = { ...values, imageUrl: imageUrl };
     try {
@@ -85,36 +112,20 @@ const EquipmentManagementPage = () => {
     } catch (error) { message.error(error.response?.data?.message || 'Không thể xóa vật tư này!'); }
   };
 
-  // 🔥 THUẬT TOÁN TỰ ĐỘNG TÍNH GIÁ ĐỀN BÙ
   const handleBasePriceChange = (value) => {
-    if (value === null || value === undefined) {
-      form.setFieldsValue({ defaultPriceIfLost: null });
-      return;
-    }
-
-    let defaultPrice = 0;
-    if (value < 100000) {
-      defaultPrice = value + 10000; // Dưới 100k -> tăng 10k
-    } else if (value < 1000000) {
-      defaultPrice = value + 100000; // Dưới 1 triệu -> tăng 100k
-    } else {
-      defaultPrice = value + 200000; // Từ 1 triệu trở lên -> tăng 200k
-    }
-
-    // Tự động điền kết quả vào ô "Giá đền bù"
+    if (!value) { form.setFieldsValue({ defaultPriceIfLost: null }); return; }
+    let defaultPrice = value < 100000 ? value + 10000 : value < 1000000 ? value + 100000 : value + 200000;
     form.setFieldsValue({ defaultPriceIfLost: defaultPrice });
   };
 
   const columns = [
     { title: 'Ảnh', dataIndex: 'imageUrl', key: 'imageUrl', render: (url) => url ? <Image width={40} height={40} src={url} style={{ borderRadius: '4px', objectFit: 'cover' }} /> : <PictureOutlined style={{ fontSize: '20px', color: '#ccc' }} /> },
     { title: 'Mã', dataIndex: 'itemCode', key: 'itemCode' },
-    { title: 'Tên vật tư', dataIndex: 'name', key: 'name', fontWeight: 'bold' },
+    { title: 'Tên vật tư', dataIndex: 'name', key: 'name' },
     { title: 'ĐVT', dataIndex: 'unit', key: 'unit' },
     { title: 'Tổng', dataIndex: 'totalQuantity', key: 'totalQuantity', render: (val) => <b style={{color: '#1890ff'}}>{val}</b> },
     { title: 'Sẵn kho', dataIndex: 'inStockQuantity', key: 'inStockQuantity', render: (val) => <span style={{color: '#52c41a'}}>{val}</span> },
-    { title: 'Đang dùng', dataIndex: 'inUseQuantity', key: 'inUseQuantity', render: (val) => <span style={{color: '#1890ff'}}>{val}</span> },
     { title: 'Hỏng', dataIndex: 'damagedQuantity', key: 'damagedQuantity', render: (val) => <span style={{color: '#ff4d4f'}}>{val || 0}</span> },
-    { title: 'Thanh lý', dataIndex: 'liquidatedQuantity', key: 'liquidatedQuantity', render: (val) => <span style={{color: 'gray'}}>{val || 0}</span> },
     { title: 'Thao tác', key: 'action', render: (_, record) => (
         <Space size="middle">
           <Button type="text" style={{color: '#1890ff'}} icon={<EditOutlined />} onClick={() => showEditModal(record)} />
@@ -126,63 +137,47 @@ const EquipmentManagementPage = () => {
   ];
 
   return (
-    <Card title={<span style={{fontSize: '20px', color: '#595959'}}>Danh mục Quản lý Kho vật tư</span>} extra={<Button type="primary" icon={<PlusOutlined />} onClick={showAddModal}>Thêm vật tư mới</Button>}>
+    <Card 
+      title={<span style={{fontSize: '20px', color: '#595959'}}>Quản lý Kho vật tư</span>} 
+      extra={
+        <Space>
+            <Button icon={<FileExcelOutlined />} onClick={() => handleExportInventory('excel')}>Xuất Excel</Button>
+            <Button danger icon={<UploadOutlined />} onClick={() => handleExportInventory('zip')}>Xuất ZIP (Ảnh)</Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={showAddModal}>Thêm mới</Button>
+        </Space>
+      }
+    >
       <Table dataSource={equipments} columns={columns} rowKey="id" loading={loading} pagination={{ pageSize: 10 }} />
-      <Modal title={isEditMode ? "Sửa thông tin vật tư" : "Thêm thông tin vật tư"} open={isModalVisible} onCancel={() => setIsModalVisible(false)} onOk={() => form.submit()} width={700}>
+      
+      <Modal title={isEditMode ? "Sửa vật tư" : "Thêm vật tư"} open={isModalVisible} onCancel={() => setIsModalVisible(false)} onOk={() => form.submit()} width={700}>
         <Form form={form} layout="vertical" onFinish={handleSave}>
           <Row gutter={24}>
             <Col span={16}>
               <Row gutter={16}>
-                <Col span={12}><Form.Item name="itemCode" label="* Mã vật tư"><Input placeholder="VD: SN-OR-01" /></Form.Item></Col>
-                <Col span={12}><Form.Item name="name" label="* Tên vật tư" rules={[{ required: true, message: 'Nhập tên' }]}><Input placeholder="Bánh Oreo 133g" /></Form.Item></Col>
+                <Col span={12}><Form.Item name="itemCode" label="Mã vật tư"><Input /></Form.Item></Col>
+                <Col span={12}><Form.Item name="name" label="Tên vật tư" rules={[{ required: true }]}><Input /></Form.Item></Col>
                 <Col span={12}>
-                  <Form.Item name="category" label="* Danh mục">
-                    <Select placeholder="Chọn danh mục">
+                  <Form.Item name="category" label="Danh mục">
+                    <Select>
                       <Select.Option value="Minibar">Minibar</Select.Option>
                       <Select.Option value="Điện tử">Điện tử</Select.Option>
-                      <Select.Option value="Nội thất">Nội thất</Select.Option>
-                      <Select.Option value="Đồ vải">Đồ vải</Select.Option>
                     </Select>
                   </Form.Item>
                 </Col>
-                <Col span={12}><Form.Item name="unit" label="* Đơn vị tính"><Input placeholder="Hộp, Ly, Lon..." /></Form.Item></Col>
-                <Col span={8}><Form.Item name="totalQuantity" label="* Số lượng tổng" rules={[{ required: true, message: 'Nhập SL' }]}><InputNumber min={0} style={{ width: '100%' }} /></Form.Item></Col>
-                
-                {/* 🌟 ĐÃ THÊM FORMATTER VÀ SỰ KIỆN ONCHANGE CHO GIÁ NHẬP */}
+                <Col span={12}><Form.Item name="unit" label="Đơn vị tính"><Input /></Form.Item></Col>
+                <Col span={8}><Form.Item name="totalQuantity" label="SL tổng" rules={[{ required: true }]}><InputNumber style={{ width: '100%' }} /></Form.Item></Col>
                 <Col span={8}>
-                  <Form.Item name="basePrice" label="* Giá nhập (VNĐ)" rules={[{ required: true, message: 'Nhập giá' }]}>
-                    <InputNumber 
-                      min={0} 
-                      style={{ width: '100%' }} 
-                      formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                      parser={(value) => value.replace(/\$\s?|(,*)/g, '')}
-                      onChange={handleBasePriceChange} 
-                    />
+                  <Form.Item name="basePrice" label="Giá nhập" rules={[{ required: true }]}>
+                    <InputNumber min={0} style={{ width: '100%' }} onChange={handleBasePriceChange} />
                   </Form.Item>
                 </Col>
-
-                {/* 🌟 ĐÃ THÊM FORMATTER CHO GIÁ ĐỀN BÙ */}
-                <Col span={8}>
-                  <Form.Item name="defaultPriceIfLost" label="* Giá đền bù" rules={[{ required: true, message: 'Nhập giá' }]}>
-                    <InputNumber 
-                      min={0} 
-                      style={{ width: '100%' }} 
-                      formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                      parser={(value) => value.replace(/\$\s?|(,*)/g, '')}
-                    />
-                  </Form.Item>
-                </Col>
-
-                {isEditMode && <Col span={12}><Form.Item name="damagedQuantity" label="Báo hỏng"><InputNumber min={0} style={{ width: '100%' }} /></Form.Item></Col>}
-                {isEditMode && <Col span={12}><Form.Item name="liquidatedQuantity" label="Thanh lý"><InputNumber min={0} style={{ width: '100%' }} /></Form.Item></Col>}
-                <Col span={24}><Form.Item name="supplier" label="Nhà cung cấp"><Input placeholder="VD: Mondelez" /></Form.Item></Col>
+                <Col span={8}><Form.Item name="defaultPriceIfLost" label="Giá đền bù"><InputNumber style={{ width: '100%' }} /></Form.Item></Col>
               </Row>
             </Col>
-            <Col span={8} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <div style={{ marginBottom: 8, fontSize: '14px', color: '#555' }}>Hình ảnh (Cloudinary)</div>
-              <Upload name="file" customRequest={handleImageUpload} showUploadList={false} accept="image/*">
-                {imageUrl ? <Image src={imageUrl} preview={false} style={{ width: 150, height: 150, objectFit: 'contain', border: '1px solid #d9d9d9', padding: '10px' }} /> : <div style={{ width: 150, height: 150, border: '1px dashed #d9d9d9', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#fafafa' }}><PictureOutlined style={{ fontSize: '30px', color: '#ccc' }} /></div>}
-                <Button icon={<UploadOutlined />} style={{ marginTop: 10, width: '100%' }} loading={uploadingImage}>Chọn ảnh mới</Button>
+            <Col span={8} style={{ textAlign: 'center' }}>
+              <Upload name="file" customRequest={handleImageUpload} showUploadList={false}>
+                {imageUrl ? <Image src={imageUrl} preview={false} style={{ width: 120, height: 120, objectFit: 'cover' }} /> : <div style={{ width: 120, height: 120, border: '1px dashed #d9d9d9', lineHeight: '120px' }}>Ảnh</div>}
+                <Button icon={<UploadOutlined />} style={{ marginTop: 10 }}>Chọn ảnh</Button>
               </Upload>
             </Col>
           </Row>
