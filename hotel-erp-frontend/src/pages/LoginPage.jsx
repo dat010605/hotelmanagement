@@ -9,7 +9,7 @@ const { Title, Text } = Typography;
 
 const LoginPage = () => {
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();// Lấy hàm setAuth từ store để cập nhật trạng thái đăng nhập
+  const navigate = useNavigate();
   const setAuth = useAdminAuthStore((state) => state.setAuth);
   const { notification } = App.useApp();
 
@@ -21,17 +21,35 @@ const LoginPage = () => {
         password: values.password,
       });
 
-      const { token, user, permissions } = response.data;// Lưu token và thông tin người dùng vào store
+      const { token, user, permissions } = response.data;
 
-      setAuth(token, user, permissions);// Hiển thị thông báo thành công và chuyển hướng đến dashboard
+      // =====================================================================
+      // 🌟 THUẬT TOÁN "BẮT TRỌN Ổ" CHỨC VỤ (ROLE)
+      // =====================================================================
+      // 1. Tìm bất kỳ thứ gì có chữ "role" mà API trả về
+      let rawRole = user?.roleId || user?.RoleId || user?.role_id || user?.role || user?.Role || response.data?.roleId || '1';
+      
+      // 2. Dịch chữ sang số để Dashboard hiểu được (nếu API trả về chữ)
+      let finalRoleId = String(rawRole).toLowerCase();
+      if (finalRoleId === 'admin') finalRoleId = '1';
+      else if (finalRoleId === 'manager') finalRoleId = '2';
+      else if (finalRoleId === 'receptionist') finalRoleId = '3';
+      else if (finalRoleId === 'accountant') finalRoleId = '4';
+      else if (finalRoleId === 'housekeeping') finalRoleId = '5';
+      
+      // 3. Lưu vào bộ nhớ
+      localStorage.setItem('userRole', finalRoleId);
+      // =====================================================================
+
+      setAuth(token, user, permissions);
       
       notification.success({
         message: 'Đăng nhập thành công!',
-        description: `Chào mừng ${user?.fullName || 'bạn'} quay trở lại.`,
+        description: `Chào mừng ${user?.fullName || user?.FullName || 'bạn'} quay trở lại.`,
         placement: 'topRight',
       });
 
-      navigate('/admin/dashboard');// Chuyển hướng đến dashboard sau khi đăng nhập thành công
+      navigate('/admin/dashboard'); 
     } catch (error) {
       notification.error({
         message: 'Đăng nhập thất bại',
@@ -43,7 +61,6 @@ const LoginPage = () => {
     }
   };
 
-  
   const bigInputStyle = {
     padding: '16px 20px', 
     fontSize: '18px', 
@@ -63,7 +80,7 @@ const LoginPage = () => {
         width: 580, 
         borderRadius: '12px', 
         boxShadow: '0 2px 4px rgba(0, 0, 0, .1), 0 8px 16px rgba(0, 0, 0, .1)', 
-        padding: '25px 15px' // Giãn cách lề trong Card
+        padding: '25px 15px' 
       }}>
         <div style={{ textAlign: 'center', marginBottom: 35 }}>
           <Title level={1} style={{ color: '#1c1e21', fontWeight: 'bold', marginBottom: 10 }}>
@@ -105,7 +122,6 @@ const LoginPage = () => {
             />
           </Form.Item>
 
-          {/* Dòng Quên mk và Đăng ký */}
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 30, padding: '0 5px' }}>
             <Link to="/forgot-password" style={{ color: '#1877f2', fontSize: '16px', fontWeight: '500' }}>Quên mật khẩu?</Link>
             <Link to="/register" style={{ color: '#1877f2', fontSize: '16px', fontWeight: '500' }}>Đăng ký tài khoản mới?</Link>

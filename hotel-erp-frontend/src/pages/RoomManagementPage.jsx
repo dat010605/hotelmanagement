@@ -5,7 +5,8 @@ import {
 } from 'antd';
 import { 
   SearchOutlined, EditOutlined, PlusOutlined, 
-  DeleteOutlined, DatabaseOutlined, CopyOutlined, CheckSquareOutlined, AppstoreAddOutlined, UploadOutlined 
+  DeleteOutlined, DatabaseOutlined, CopyOutlined, CheckSquareOutlined, 
+  AppstoreAddOutlined, UploadOutlined, WarningOutlined 
 } from '@ant-design/icons';
 import axiosClient from '../api/axiosClient';
 import { useNavigate } from 'react-router-dom';
@@ -240,11 +241,30 @@ const RoomManagementPage = () => {
     } catch (error) { message.error(`Lỗi trả phòng`); }
   };
 
+  // =======================================================
+  // 🌟 ĐÂY CHÍNH LÀ HÀM BÁO HỎNG ĐÃ CẬP NHẬT THEO YÊU CẦU 🌟
+  // =======================================================
+  const handleReportDamage = (room) => {
+    const currentStatus = room.status || room.Status;
+    // Kiểm tra xem phòng có khách hay không (chỉ phòng Occupied mới được báo hỏng)
+    if (currentStatus !== 'Occupied') {
+      // Đã sửa text theo đúng yêu cầu của bạn!
+      message.warning("Phòng hiện tại không có khách, không thể báo hỏng");
+      return;
+    }
+    
+    // Nếu có khách, sẽ mở module thất thoát (giả lập chuyển hướng hoặc mở modal tùy ý bạn)
+    message.info("Đang chuyển đến module Thất thoát & Đền bù...");
+    // Nếu bạn muốn nó tự động nhảy sang trang đền bù, hãy bỏ dấu // ở dòng dưới:
+    // navigate(`/admin/loss-and-damages`); 
+  };
+  // =======================================================
+
   const handleUploadImage = async (options) => {
     const { file, onSuccess, onError } = options;
     const roomId = currentRoom?.id || currentRoom?.Id;
     if (!roomId) {
-      message.error("Vui lòng lưu thông tin cơ bản trước khi tải ảnh lên!");
+      message.error("Vui lòng lưu thông cơ bản trước khi tải ảnh lên!");
       onError("No Room ID"); return;
     }
     const formData = new FormData();
@@ -334,7 +354,7 @@ const RoomManagementPage = () => {
       }
     },
     {
-      title: 'Thao tác', align: 'center', width: 300,
+      title: 'Thao tác', align: 'center', width: 360,
       render: (_, record) => {
         const cStatus = record.cleaningStatus || record.CleaningStatus || '';
         const isHousekeepingDisabled = !(cStatus === 'Dirty' || cStatus === 'Cleaning');
@@ -343,6 +363,8 @@ const RoomManagementPage = () => {
             <Button size="small" type="primary" ghost icon={<EditOutlined />} onClick={() => openModal(record)}>Cấu hình</Button>
             <Button size="small" danger onClick={() => handleCheckOut(record.id || record.Id)}>Trả phòng</Button>
             <Button size="small" style={isHousekeepingDisabled ? {} : { color: '#fa8c16', borderColor: '#fa8c16' }} icon={<CheckSquareOutlined />} disabled={isHousekeepingDisabled} onClick={() => navigate(`/admin/housekeeping/${record.id || record.Id}`)}>Dọn phòng</Button>
+            {/* 🌟 NÚT BÁO HỎNG MỚI ĐƯỢC THÊM VÀO ĐÂY */}
+            <Button size="small" danger ghost icon={<WarningOutlined />} onClick={() => handleReportDamage(record)}>Báo hỏng</Button>
           </Space>
         );
       },
@@ -415,7 +437,7 @@ const RoomManagementPage = () => {
                 <Col span={8}><Form.Item name="roomNumber" label={isVillaForm ? "Số Căn/Tên" : "Định danh"} rules={[{required: true}]}><Input placeholder={isVillaForm ? "Vd: Villa VIP 1" : "101"}/></Form.Item></Col>
                 <Col span={8}><Form.Item name="roomTypeId" label="Phân Loại"><Select options={roomTypes.map(t => ({ value: t.id, label: t.name }))} /></Form.Item></Col>
                 
-                {/*  MA PHÁP GIAO DIỆN VILLA VÀ CHỌN CĂN MẸ  */}
+                {/* MA PHÁP GIAO DIỆN VILLA VÀ CHỌN CĂN MẸ  */}
                 <Col span={8}>
                   {isVillaForm ? (
                      <Form.Item label="Quy mô"><Input disabled value="Nguyên Căn" style={{ color: '#52c41a', fontWeight: 'bold', backgroundColor: '#f6ffed' }} /></Form.Item>

@@ -1,31 +1,25 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\trant\\hotelmanagement\\HotelManagement.API.csproj": {}
+    "D:\\graviti\\hotelmanagement\\HotelManagement.API.csproj": {}
   },
   "projects": {
-    "C:\\Users\\trant\\hotelmanagement\\HotelManagement.API.csproj": {
+    "D:\\graviti\\hotelmanagement\\HotelManagement.API.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\trant\\hotelmanagement\\HotelManagement.API.csproj",
+        "projectUniqueName": "D:\\graviti\\hotelmanagement\\HotelManagement.API.csproj",
         "projectName": "HotelManagement.API",
-        "projectPath": "C:\\Users\\trant\\hotelmanagement\\HotelManagement.API.csproj",
-        "packagesPath": "C:\\Users\\trant\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\trant\\hotelmanagement\\obj\\",
+        "projectPath": "D:\\graviti\\hotelmanagement\\HotelManagement.API.csproj",
+        "packagesPath": "C:\\Users\\ASUS\\.nuget\\packages\\",
+        "outputPath": "D:\\graviti\\hotelmanagement\\obj\\",
         "projectStyle": "PackageReference",
-        "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-        ],
         "configFilePaths": [
-          "C:\\Users\\trant\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+          "C:\\Users\\ASUS\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net10.0"
         ],
         "sources": {
-          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
