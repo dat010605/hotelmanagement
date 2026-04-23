@@ -33,21 +33,19 @@ public class AuditLogInterceptor : SaveChangesInterceptor
     {
         if (context == null) return;
 
-        // Chỉ track những Entity bị thay đổi (Added, Modified, Deleted) và BỎ QUA bảng AuditLog để tránh lặp vô tận
+        // Chỉ track những Entity bị thay đổi, BỎ QUA bảng AuditLog để tránh lặp vô tận
         var entries = context.ChangeTracker.Entries()
-            .Where(e => e.Entity is not AuditLog && 
+            .Where(e => e.Entity is not AuditLog &&
                         (e.State == EntityState.Added || e.State == EntityState.Modified || e.State == EntityState.Deleted))
             .ToList();
 
         if (!entries.Any()) return;
 
-        // Lấy User Id từ HttpContext (nếu có đăng nhập JWT)
+        // Lấy UserId và RoleName từ JWT token
         int? currentUserId = null;
         var userIdString = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (int.TryParse(userIdString, out int uid))
-        {
-            currentUserId = uid;
-        }
+        if (int.TryParse(userIdString, out int uid)) currentUserId = uid;
+        string? currentRoleName = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.Role)?.Value;
 
         var jsonOptions = new JsonSerializerOptions
         {
@@ -55,40 +53,98 @@ public class AuditLogInterceptor : SaveChangesInterceptor
             WriteIndented = false
         };
 
+        // Tạo danh sách sự kiện mới từ các Entity thay đổi
+        var newEvents = new List<object>();
         foreach (var entry in entries)
         {
-            var auditLog = new AuditLog
-            {
-                TableName = entry.Metadata.GetTableName() ?? entry.Entity.GetType().Name,
-                Action = entry.State.ToString(),
-                CreatedAt = DateTime.UtcNow,
-                UserId = currentUserId
-            };
-
-            // Tìm khóa chính (Id)
-            var primaryKey = entry.Properties.FirstOrDefault(p => p.Metadata.IsPrimaryKey());
-            if (primaryKey != null && primaryKey.CurrentValue != null)
-            {
-                if (int.TryParse(primaryKey.CurrentValue.ToString(), out int recId))
-                    auditLog.RecordId = recId;
-            }
-
+            object? entitySnapshot = null;
             if (entry.State == EntityState.Added)
-            {
-                auditLog.NewValue = JsonSerializer.Serialize(entry.CurrentValues.ToObject(), jsonOptions);
-            }
+                entitySnapshot = entry.CurrentValues.ToObject();
             else if (entry.State == EntityState.Deleted)
-            {
-                auditLog.OldValue = JsonSerializer.Serialize(entry.OriginalValues.ToObject(), jsonOptions);
-            }
-            else if (entry.State == EntityState.Modified)
-            {
-                // Chỉ lấy những property thay đổi hoặc lấy cả dòng
-                auditLog.OldValue = JsonSerializer.Serialize(entry.OriginalValues.ToObject(), jsonOptions);
-                auditLog.NewValue = JsonSerializer.Serialize(entry.CurrentValues.ToObject(), jsonOptions);
-            }
+                entitySnapshot = entry.OriginalValues.ToObject();
+            else // Modified
+                entitySnapshot = new
+                {
+                    Before = entry.OriginalValues.ToObject(),
+                    After = entry.CurrentValues.ToObject()
+                };
 
-            context.Set<AuditLog>().Add(auditLog);
+            newEvents.Add(new
+            {
+                eventId = Guid.NewGuid().ToString(),
+                timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fffffff"),
+                actionType = entry.State == EntityState.Added ? "CREATE"
+                           : entry.State == EntityState.Deleted ? "DELETE"
+                           : "UPDATE",
+                tableName = entry.Metadata.GetTableName() ?? entry.Entity.GetType().Name,
+                entity = entitySnapshot
+            });
+        }
+
+        // Tìm log hiện tại của user trong ngày hôm nay (UTC)
+        var today = DateTime.UtcNow.Date;
+        var tomorrow = today.AddDays(1);
+
+        // Kiểm tra Local cache trước (đã load trong session này)
+        var existingLog = context.Set<AuditLog>()
+            .Local
+            .FirstOrDefault(a => a.UserId == currentUserId
+                              && a.LogDate.HasValue
+                              && a.LogDate.Value >= today
+                              && a.LogDate.Value < tomorrow);
+
+        // Nếu không có trong cache thì truy vấn DB
+        if (existingLog == null)
+        {
+            existingLog = context.Set<AuditLog>()
+                .FirstOrDefault(a => a.UserId == currentUserId
+                                  && a.LogDate.HasValue
+                                  && a.LogDate.Value >= today
+                                  && a.LogDate.Value < tomorrow);
+        }
+
+        if (existingLog != null)
+        {
+            // Merge: đọc Events cũ và thêm Events mới vào
+            try
+            {
+                var existingDoc = JsonSerializer.Deserialize<JsonElement>(existingLog.LogData ?? "{}");
+                var existingEvents = new List<JsonElement>();
+                if (existingDoc.TryGetProperty("Events", out var evArr))
+                    existingEvents = JsonSerializer.Deserialize<List<JsonElement>>(evArr.GetRawText()) ?? new();
+
+                var allEvents = existingEvents.Cast<object>().Concat(newEvents).ToList();
+                existingLog.LogData = JsonSerializer.Serialize(new
+                {
+                    TotalEvents = allEvents.Count,
+                    Events = allEvents
+                }, jsonOptions);
+            }
+            catch
+            {
+                // Nếu parse lỗi thì ghi đè
+                existingLog.LogData = JsonSerializer.Serialize(new
+                {
+                    TotalEvents = newEvents.Count,
+                    Events = newEvents
+                }, jsonOptions);
+            }
+            // existingLog đã được EF Core track, sẽ tự động UPDATE khi SaveChanges
+        }
+        else
+        {
+            // Tạo dòng mới cho ngày hôm nay
+            context.Set<AuditLog>().Add(new AuditLog
+            {
+                UserId = currentUserId,
+                RoleName = currentRoleName,
+                LogDate = DateTime.UtcNow,
+                LogData = JsonSerializer.Serialize(new
+                {
+                    TotalEvents = newEvents.Count,
+                    Events = newEvents
+                }, jsonOptions)
+            });
         }
     }
 }

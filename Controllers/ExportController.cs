@@ -28,20 +28,20 @@ namespace HotelManagement.API.Controllers
             int currentUserId = int.Parse(userIdClaim);
             bool isAdmin = roleClaim == "Admin" || roleClaim == "Manager";
 
-            var query = _context.AuditLogs.AsQueryable();
+            var query = _context.AuditLogs.Include(x => x.User).AsQueryable();
             if (!isAdmin) query = query.Where(x => x.UserId == currentUserId);
 
-            var data = await query.OrderByDescending(x => x.CreatedAt).ToListAsync();
+            var data = await query.OrderByDescending(x => x.LogDate).ToListAsync();
 
             using (var workbook = new XLWorkbook())
             {
                 var worksheet = workbook.Worksheets.Add("AuditLogs");
                 var headerRow = worksheet.Row(1);
                 headerRow.Cell(1).Value = "ID";
-                headerRow.Cell(2).Value = "Thao tác";
-                headerRow.Cell(3).Value = "Bảng dữ liệu";
-                headerRow.Cell(4).Value = "ID Bản ghi";
-                headerRow.Cell(5).Value = "Thời gian";
+                headerRow.Cell(2).Value = "Nhân viên";
+                headerRow.Cell(3).Value = "Chức vụ";
+                headerRow.Cell(4).Value = "Thời gian";
+                headerRow.Cell(5).Value = "Chi tiết (JSON)";
                 headerRow.Style.Font.Bold = true;
                 headerRow.Style.Fill.BackgroundColor = XLColor.LightGray;
 
@@ -49,10 +49,10 @@ namespace HotelManagement.API.Controllers
                 {
                     var row = i + 2;
                     worksheet.Cell(row, 1).Value = data[i].Id;
-                    worksheet.Cell(row, 2).Value = data[i].Action;
-                    worksheet.Cell(row, 3).Value = data[i].TableName;
-                    worksheet.Cell(row, 4).Value = data[i].RecordId;
-                    worksheet.Cell(row, 5).Value = data[i].CreatedAt?.ToString("dd/MM/yyyy HH:mm:ss");
+                    worksheet.Cell(row, 2).Value = data[i].User?.FullName ?? "System";
+                    worksheet.Cell(row, 3).Value = data[i].RoleName;
+                    worksheet.Cell(row, 4).Value = data[i].LogDate?.ToString("dd/MM/yyyy HH:mm:ss");
+                    worksheet.Cell(row, 5).Value = data[i].LogData;
                 }
                 worksheet.Columns().AdjustToContents();
 

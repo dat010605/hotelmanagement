@@ -202,35 +202,20 @@ namespace HotelManagement.API.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Action")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("action");
+                    b.Property<string>("LogData")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("log_data");
 
-                    b.Property<DateTime?>("CreatedAt")
+                    b.Property<DateTime?>("LogDate")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime")
-                        .HasColumnName("created_at")
+                        .HasColumnName("log_date")
                         .HasDefaultValueSql("(getdate())");
 
-                    b.Property<string>("NewValue")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("new_value");
-
-                    b.Property<string>("OldValue")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("old_value");
-
-                    b.Property<int>("RecordId")
-                        .HasColumnType("int")
-                        .HasColumnName("record_id");
-
-                    b.Property<string>("TableName")
-                        .IsRequired()
+                    b.Property<string>("RoleName")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)")
-                        .HasColumnName("table_name");
+                        .HasColumnName("role_name");
 
                     b.Property<int?>("UserId")
                         .HasColumnType("int")
@@ -241,7 +226,12 @@ namespace HotelManagement.API.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Audit_Logs", (string)null);
+                    b.ToTable("Audit_Logs", null, t =>
+                        {
+                            t.HasTrigger("TR_AuditLogs_PreventDelete");
+                        });
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
                 });
 
             modelBuilder.Entity("HotelManagement.API.Models.Booking", b =>
@@ -851,6 +841,9 @@ namespace HotelManagement.API.Migrations
                         .HasColumnType("int")
                         .HasColumnName("floor");
 
+                    b.Property<int?>("ParentRoomId")
+                        .HasColumnType("int");
+
                     b.Property<string>("RoomNumber")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -873,7 +866,12 @@ namespace HotelManagement.API.Migrations
 
                     b.HasIndex("RoomTypeId");
 
-                    b.ToTable("Rooms");
+                    b.ToTable("Rooms", t =>
+                        {
+                            t.HasTrigger("trg_Rooms_Audit");
+                        });
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
                 });
 
             modelBuilder.Entity("HotelManagement.API.Models.RoomImage", b =>
@@ -901,6 +899,9 @@ namespace HotelManagement.API.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(false)
                         .HasColumnName("is_primary");
+
+                    b.Property<int>("RoomId")
+                        .HasColumnType("int");
 
                     b.Property<int?>("RoomTypeId")
                         .HasColumnType("int")

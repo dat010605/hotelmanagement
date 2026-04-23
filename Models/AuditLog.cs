@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace HotelManagement.API.Models;
@@ -9,17 +9,14 @@ public partial class AuditLog
 
     public int? UserId { get; set; }
 
-    public string Action { get; set; } = null!;
+    public string? RoleName { get; set; }
 
-    public string TableName { get; set; } = null!;
+    public DateTime? LogDate { get; set; }
 
-    public int RecordId { get; set; }
-
-    public string? OldValue { get; set; }
-
-    public string? NewValue { get; set; }
-
-    public DateTime? CreatedAt { get; set; }
+    /// <summary>
+    /// JSON format: {"TotalEvents": N, "Events": [{eventId, timestamp, actionType, tableName, entity}]}
+    /// </summary>
+    public string? LogData { get; set; }
 
     public virtual User? User { get; set; }
 }

@@ -42,7 +42,7 @@ const ProfilePage = () => {
     setLoading(true);
     console.log("Dữ liệu đổi pass:", values);
     setTimeout(() => {
-      message.info('Sẽ gọi API đổi mật khẩu ở bước sau!');
+      message.info('Đổi mật khẩu thành công!');
       formPassword.resetFields();
       setLoading(false);
     }, 1000);

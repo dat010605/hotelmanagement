@@ -8,12 +8,14 @@ using System;
 using CloudinaryDotNet.Actions;
 using CloudinaryDotNet;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Authorization;
 
 
 namespace HotelManagement.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class RoomsController : ControllerBase
     {
         private readonly AppDbContext _context;
