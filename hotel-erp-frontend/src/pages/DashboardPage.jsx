@@ -220,11 +220,33 @@ const DashboardPage = () => {
   const fetchAuditLogs = async () => {
     try {
       const res = await axiosClient.get('/AuditLogs?top=100');
-      let logData = [];
-      if (Array.isArray(res.data)) logData = res.data;
-      else if (res.data && Array.isArray(res.data.data)) logData = res.data.data;
-      else if (res.data && Array.isArray(res.data.items)) logData = res.data.items;
-      setAuditLogs(logData);
+      let rawLogs = [];
+      if (Array.isArray(res.data)) rawLogs = res.data;
+      else if (res.data && Array.isArray(res.data.data)) rawLogs = res.data.data;
+      else if (res.data && Array.isArray(res.data.items)) rawLogs = res.data.items;
+
+      let flattenedLogs = [];
+      rawLogs.forEach(row => {
+        const uName = row.userFullName || row.UserFullName || 'System';
+        const lDate = row.logDate || row.LogDate;
+        if (row.logData || row.LogData) {
+          try {
+            const parsed = JSON.parse(row.logData || row.LogData);
+            if (parsed && Array.isArray(parsed.Events)) {
+              parsed.Events.forEach(ev => {
+                flattenedLogs.push({
+                  id: ev.eventId || Math.random().toString(),
+                  userName: uName,
+                  action: `${ev.actionType} ${ev.tableName}`,
+                  timestamp: ev.timestamp || lDate
+                });
+              });
+            }
+          } catch (e) { }
+        }
+      });
+      flattenedLogs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      setAuditLogs(flattenedLogs);
     } catch (error) { console.error('Lỗi log:', error); }
   };
 

@@ -17,19 +17,39 @@ import HousekeepingChecklist from './pages/HousekeepingChecklist';
 import HousekeepingListPage from './pages/HousekeepingListPage';
 import CreateBooking from "./pages/CreateBooking";
 import VoucherManagement from "./pages/VoucherManagement";
-import { ConfigProvider, App as AntApp } from 'antd';
+import { ConfigProvider, App as AntApp, theme } from 'antd';
 import TouristAttractions from "./pages/TouristAttractions";
 import AuditLogsPage from "./pages/AuditLogsPage";
 import DashboardPage from "./pages/DashboardPage";
+import SystemSettingsPage from "./pages/SystemSettingsPage";
+import useSettingsStore from "./store/useSettingsStore";
 
 function App() {
+  const { themeMode, primaryColor, compactMode } = useSettingsStore();
+
+  const algorithm = [];
+  if (themeMode === 'dark') algorithm.push(theme.darkAlgorithm);
+  else algorithm.push(theme.defaultAlgorithm);
+  if (compactMode) algorithm.push(theme.compactAlgorithm);
+
   return (
    // BỌC TOÀN BỘ BẰNG CONFIGPROVIDER ĐỂ CHỈNH FONT
     <ConfigProvider
       theme={{
+        algorithm,
         token: {
+          colorPrimary: primaryColor,
           fontSize: 16, // TĂNG LÊN 16px (Gốc là 14px, đúng yêu cầu to lên 2 size)
           fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", // Giúp font trông mượt hơn
+          ...(themeMode === 'dark' ? {
+            colorBgBase: '#18191a',       
+            colorBgContainer: '#242526',  
+            colorBgElevated: '#3a3b3c',   
+            colorTextBase: '#e4e6eb',     
+            colorBorder: '#3e4042',
+          } : {
+            colorBgLayout: '#f0f2f5',
+          })
         },
       }}
     >
@@ -53,7 +73,7 @@ function App() {
                 <Route path="/admin/checkout" element={<CheckoutPage />} />
                 <Route path="/admin/bookings" element={<BookingListPage />} />
                 <Route path="/admin/loss-damage" element={<LossAndDamagePage />} />
-                <Route path="/admin/settings" element={<div>⚙️ Cấu hình hệ thống</div>} />
+                <Route path="/admin/settings" element={<SystemSettingsPage />} />
                 <Route path="/admin/housekeeping" element={<HousekeepingListPage />} />
                 <Route path="/admin/housekeeping/:roomId" element={<HousekeepingChecklist />} />
                 <Route path="/admin/booking" element={<CreateBooking />} />

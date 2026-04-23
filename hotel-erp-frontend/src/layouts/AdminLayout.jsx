@@ -10,6 +10,7 @@ import {
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAdminAuthStore } from '../store/adminAuthStore';
+import useSettingsStore from '../store/useSettingsStore';
 import dayjs from 'dayjs';
 
 const { Header, Sider, Content } = Layout;
@@ -25,7 +26,9 @@ const AdminLayout = () => {
   const { notification } = App.useApp();
   const [notifications, setNotifications] = useState([]);
   const [collapsed, setCollapsed] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false); 
+  
+  const { themeMode, setThemeMode } = useSettingsStore();
+  const isDarkMode = themeMode === 'dark'; 
 
   const { user, clearAuth } = useAdminAuthStore();
   const navigate = useNavigate();
@@ -141,22 +144,8 @@ const AdminLayout = () => {
         }))
   };
 
-  const fbDarkTheme = {
-    algorithm: isDarkMode ? theme.darkAlgorithm : theme.defaultAlgorithm,
-    token: isDarkMode ? {
-      colorBgBase: '#18191a',       
-      colorBgContainer: '#242526',  
-      colorBgElevated: '#3a3b3c',   
-      colorTextBase: '#e4e6eb',     
-      colorBorder: '#3e4042',       
-      colorPrimary: '#2e89ff',      
-    } : {
-      colorBgLayout: '#f0f2f5',
-    }
-  };
-
   return (
-    <ConfigProvider theme={fbDarkTheme}>
+    <>
       <Layout style={{ minHeight: '100vh', background: isDarkMode ? '#18191a' : '#f0f2f5' }}>
         <Sider trigger={null} collapsible collapsed={collapsed} theme="dark" width={250} style={{ 
           background: isDarkMode ? '#242526' : '#001529',
@@ -183,7 +172,7 @@ const AdminLayout = () => {
               <Button 
                 type="text" shape="circle" 
                 icon={isDarkMode ? <SunOutlined style={{ fontSize: '20px', color: '#faad14' }} /> : <MoonOutlined style={{ fontSize: '20px' }} />} 
-                onClick={() => setIsDarkMode(!isDarkMode)} 
+                onClick={() => setThemeMode(isDarkMode ? 'light' : 'dark')} 
               />
 
               <Dropdown menu={notificationMenu} placement="bottomRight" arrow trigger={['click']}>
@@ -206,7 +195,7 @@ const AdminLayout = () => {
           </Content>
         </Layout>
       </Layout>
-    </ConfigProvider>
+    </>
   );
 };
 
