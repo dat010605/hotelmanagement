@@ -10,6 +10,7 @@ import CustomerHomePage from './pages/CustomerHomePage';
 import CustomerRoomsPage from './pages/CustomerRoomsPage';
 import CustomerProfilePage from './pages/CustomerProfilePage';
 import CustomerReviewsPage from './pages/CustomerReviewsPage';
+import CustomerOffersPage from './pages/CustomerOffersPage';
 import RoleGuard from './routes/RoleGuard';
 import RoomGridPage from './pages/RoomGridPage';
 import CheckoutPage from './pages/CheckoutPage';
@@ -72,6 +73,7 @@ function App() {
               <Route path="/rooms" element={<CustomerRoomsPage />} />
               <Route path="/profile" element={<CustomerProfilePage />} />
               <Route path="/reviews" element={<CustomerReviewsPage />} />
+              <Route path="/offers" element={<CustomerOffersPage />} />
             </Route>
 
             {/* ADMIN ROUTES */}

@@ -37,7 +37,7 @@ const CustomerLayout = () => {
 
   const menuItems = [
     { key: '/', icon: <HomeOutlined />, label: <Link to="/">{t('home')}</Link> },
-    { key: '/offers', icon: <TagOutlined />, label: <Link to="/">{t('offers')}</Link> }
+    { key: '/offers', icon: <TagOutlined />, label: <Link to="/offers">{t('offers')}</Link> }
   ];
 
   // Dropdown menu khi đã đăng nhập

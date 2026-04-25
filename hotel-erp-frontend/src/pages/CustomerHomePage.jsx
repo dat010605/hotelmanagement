@@ -1,5 +1,5 @@
-import React from 'react';
-import { Row, Col, Card, Typography, Button, Input, DatePicker, InputNumber, Rate, Avatar, Tag, Divider } from 'antd';
+import React, { useState } from 'react';
+import { Row, Col, Card, Typography, Button, Input, DatePicker, InputNumber, Rate, Avatar, Tag, Divider, Modal } from 'antd';
 import {
   EnvironmentOutlined, ArrowRightOutlined, SearchOutlined,
   CalendarOutlined, TeamOutlined, TagOutlined,
@@ -166,6 +166,7 @@ const CustomerHomePage = () => {
   const { attractions } = useAttractionsStore();
   const { t } = useI18nStore();
   const navigate = useNavigate();
+  const [selectedMap, setSelectedMap] = useState(null);
 
   const handleSearch = () => navigate('/rooms');
 
@@ -252,9 +253,21 @@ const CustomerHomePage = () => {
                   {item.title}
                 </Title>
                 <Paragraph style={{ color: '#595959', flex: 1 }}>{item.desc}</Paragraph>
-                <Button type="primary" ghost style={{ width: 'fit-content', borderRadius: '6px', marginTop: 'auto' }}>
-                  {t('viewDetails')} <ArrowRightOutlined />
-                </Button>
+                <div style={{ display: 'flex', gap: '10px', marginTop: 'auto' }}>
+                  <Button type="primary" ghost style={{ borderRadius: '6px' }}>
+                    {t('viewDetails')} <ArrowRightOutlined />
+                  </Button>
+                  {item.mapUrl && (
+                    <Button 
+                      type="default" 
+                      onClick={() => setSelectedMap(item)} 
+                      icon={<EnvironmentOutlined />} 
+                      style={{ borderRadius: '6px', color: '#52c41a', borderColor: '#52c41a' }}
+                    >
+                      Bản đồ
+                    </Button>
+                  )}
+                </div>
               </Card>
             </Col>
           ))}
@@ -330,6 +343,33 @@ const CustomerHomePage = () => {
               Xem thêm đánh giá
             </Button>
           </div>
+      </div>
+
+      <Modal
+        title={selectedMap ? `Bản đồ chỉ dẫn - ${selectedMap.title}` : 'Bản đồ chỉ dẫn'}
+        open={!!selectedMap}
+        onCancel={() => setSelectedMap(null)}
+        footer={null}
+        width={800}
+        centered
+        destroyOnClose
+      >
+        {selectedMap && selectedMap.mapUrl ? (
+          <div style={{ width: '100%', height: '450px', borderRadius: '8px', overflow: 'hidden' }}>
+            <iframe
+              title={selectedMap.title}
+              src={selectedMap.mapUrl}
+              width="100%"
+              height="100%"
+              style={{ border: 0 }}
+              allowFullScreen=""
+              loading="lazy"
+            ></iframe>
+          </div>
+        ) : (
+          <p>Không có dữ liệu bản đồ cho địa điểm này.</p>
+        )}
+      </Modal>
 
     </div>
   );
