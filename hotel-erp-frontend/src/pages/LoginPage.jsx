@@ -36,6 +36,7 @@ const LoginPage = () => {
       else if (finalRoleId === 'receptionist') finalRoleId = '3';
       else if (finalRoleId === 'accountant') finalRoleId = '4';
       else if (finalRoleId === 'housekeeping') finalRoleId = '5';
+      else if (finalRoleId === 'guest') finalRoleId = '10';
       
       // 3. Lưu vào bộ nhớ
       localStorage.setItem('userRole', finalRoleId);
@@ -49,7 +50,12 @@ const LoginPage = () => {
         placement: 'topRight',
       });
 
-      navigate('/admin/dashboard'); 
+      // Nếu là Guest (Role 10) thì vào trang chủ, ngược lại vào Admin Dashboard
+      if (finalRoleId === '10' || finalRoleId === 'guest' || user?.role?.toLowerCase() === 'guest') {
+        navigate('/'); 
+      } else {
+        navigate('/admin/dashboard'); 
+      }
     } catch (error) {
       notification.error({
         message: 'Đăng nhập thất bại',

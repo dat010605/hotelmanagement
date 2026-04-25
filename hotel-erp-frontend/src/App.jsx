@@ -5,6 +5,12 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ProfilePage from './pages/ProfilePage'; 
 import ProtectedRoute from './routes/ProtectedRoute';
 import AdminLayout from './layouts/AdminLayout'; 
+import CustomerLayout from './layouts/CustomerLayout';
+import CustomerHomePage from './pages/CustomerHomePage';
+import CustomerRoomsPage from './pages/CustomerRoomsPage';
+import CustomerProfilePage from './pages/CustomerProfilePage';
+import CustomerReviewsPage from './pages/CustomerReviewsPage';
+import RoleGuard from './routes/RoleGuard';
 import RoomGridPage from './pages/RoomGridPage';
 import CheckoutPage from './pages/CheckoutPage';
 import BookingListPage from './pages/BookingListPage';
@@ -59,29 +65,60 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/" element={<Navigate to="/login" replace />} />
+            
+            {/* PUBLIC CUSTOMER ROUTES */}
+            <Route element={<CustomerLayout />}>
+              <Route path="/" element={<CustomerHomePage />} />
+              <Route path="/rooms" element={<CustomerRoomsPage />} />
+              <Route path="/profile" element={<CustomerProfilePage />} />
+              <Route path="/reviews" element={<CustomerReviewsPage />} />
+            </Route>
 
+            {/* ADMIN ROUTES */}
             <Route element={<ProtectedRoute />}>
               <Route element={<AdminLayout />}> 
+                {/* Tất cả nhân viên đều xem được Dashboard và Profile */}
                 <Route path="/admin/dashboard" element={<DashboardPage />} />
-                <Route path="/admin/employees" element={<UserManagementPage />} />
-                <Route path="/admin/inventory" element={<EquipmentManagementPage />} />
                 <Route path="/admin/profile" element={<ProfilePage />} />
-                <Route path="/admin/roles" element={<RoleManagementPage />} />
-                <Route path="/admin/rooms" element={<RoomManagementPage />} />
-                <Route path="/admin/room-grid" element={<RoomGridPage />} />
-                <Route path="/admin/checkout" element={<CheckoutPage />} />
-                <Route path="/admin/bookings" element={<BookingListPage />} />
-                <Route path="/admin/loss-damage" element={<LossAndDamagePage />} />
-                <Route path="/admin/settings" element={<SystemSettingsPage />} />
-                <Route path="/admin/housekeeping" element={<HousekeepingListPage />} />
-                <Route path="/admin/housekeeping/:roomId" element={<HousekeepingChecklist />} />
-                <Route path="/admin/booking" element={<CreateBooking />} />
-                <Route path="/admin/vouchers" element={<VoucherManagement />} />
                 
-                {/* TASK MỚI CỦA DUY: TRANG ĐIỂM THAM QUAN */}
-                <Route path="/admin/attractions" element={<TouristAttractions />} />
-                <Route path="/admin/audit-logs" element={<AuditLogsPage />} />
+                {/* Nhóm Lễ Tân */}
+                <Route element={<RoleGuard allowedRoles={['receptionist', 'lễ tân']} />}>
+                  <Route path="/admin/rooms" element={<RoomManagementPage />} />
+                  <Route path="/admin/checkout" element={<CheckoutPage />} />
+                  <Route path="/admin/bookings" element={<BookingListPage />} />
+                  <Route path="/admin/booking" element={<CreateBooking />} />
+                  <Route path="/admin/vouchers" element={<VoucherManagement />} />
+                  <Route path="/admin/attractions" element={<TouristAttractions />} />
+                </Route>
+
+                {/* Lễ tân và Buồng phòng cùng xem được */}
+                <Route element={<RoleGuard allowedRoles={['receptionist', 'lễ tân', 'housekeeping', 'buồng phòng']} />}>
+                  <Route path="/admin/room-grid" element={<RoomGridPage />} />
+                  <Route path="/admin/loss-damage" element={<LossAndDamagePage />} />
+                </Route>
+
+                {/* Nhóm Buồng phòng */}
+                <Route element={<RoleGuard allowedRoles={['housekeeping', 'buồng phòng']} />}>
+                  <Route path="/admin/housekeeping" element={<HousekeepingListPage />} />
+                  <Route path="/admin/housekeeping/:roomId" element={<HousekeepingChecklist />} />
+                </Route>
+
+                {/* Nhóm Thủ kho */}
+                <Route element={<RoleGuard allowedRoles={['inventory', 'thủ kho', 'kho']} />}>
+                  <Route path="/admin/inventory" element={<EquipmentManagementPage />} />
+                </Route>
+
+                {/* Nhóm Nhân sự */}
+                <Route element={<RoleGuard allowedRoles={['hr', 'nhân sự']} />}>
+                  <Route path="/admin/employees" element={<UserManagementPage />} />
+                </Route>
+
+                {/* Các trang đặc quyền chỉ Admin và Management được vào (mảng allowedRoles rỗng) */}
+                <Route element={<RoleGuard allowedRoles={[]} />}>
+                  <Route path="/admin/roles" element={<RoleManagementPage />} />
+                  <Route path="/admin/settings" element={<SystemSettingsPage />} />
+                  <Route path="/admin/audit-logs" element={<AuditLogsPage />} />
+                </Route>
               </Route>
             </Route>
 

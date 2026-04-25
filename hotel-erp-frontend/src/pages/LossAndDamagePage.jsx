@@ -70,7 +70,10 @@ const LossAndDamagePage = () => {
   // 3. Tính toán thống kê
   const stats = useMemo(() => {
     const totalIncidents = filteredData.length;
-    const totalPenalty = filteredData.reduce((sum, item) => sum + (item.penaltyAmount || 0), 0);
+    // TỔNG TIỀN ĐỀN BÙ: Chỉ tính những khoản chưa thu tiền (status !== 1)
+    const totalPenalty = filteredData
+      .filter(item => item.status !== 1)
+      .reduce((sum, item) => sum + (item.penaltyAmount || 0), 0);
     return { totalIncidents, totalPenalty };
   }, [filteredData]);
 

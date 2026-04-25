@@ -85,18 +85,29 @@ const AdminLayout = () => {
     navigate('/login');
   };
 
-  // THU GỌN MENU 
-  const sidebarItems = [
-    { key: '/admin/dashboard', icon: <DashboardOutlined />, label: 'Bảng điều khiển' },
+  // HÀM KIỂM TRA QUYỀN
+  const userRole = user?.role?.toLowerCase()?.trim() || '';
+  const isFullAccess = ['admin', 'managenment', 'management', 'manager', 'quản lý', 'managemnt', 'managêmnt'].includes(userRole);
+
+  const checkAccess = (allowedRoles) => {
+    if (isFullAccess) return true;
+    if (allowedRoles === undefined || allowedRoles === null) return true; // Không yêu cầu quyền thì ai cũng xem được
+    return allowedRoles.includes(userRole);
+  };
+
+  // THU GỌN MENU VỚI QUYỀN TRUY CẬP
+  const rawSidebarItems = [
+    { key: '/admin/dashboard', icon: <DashboardOutlined />, label: 'Bảng điều khiển' }, // Public
     
     // Nhóm 1: Quản lý phòng
     {
       key: 'sub-rooms',
       icon: <AppstoreOutlined />,
       label: 'Quản lý Phòng',
+      allowedRoles: ['receptionist', 'lễ tân', 'housekeeping', 'buồng phòng'],
       children: [
-        { key: '/admin/room-grid', label: 'Sơ đồ phòng' },
-        { key: '/admin/rooms', label: 'Quản lý quỹ phòng' }
+        { key: '/admin/room-grid', label: 'Sơ đồ phòng', allowedRoles: ['receptionist', 'lễ tân', 'housekeeping', 'buồng phòng'] },
+        { key: '/admin/rooms', label: 'Quản lý quỹ phòng', allowedRoles: ['receptionist', 'lễ tân'] }
       ]
     },
 
@@ -105,24 +116,41 @@ const AdminLayout = () => {
       key: 'sub-reception',
       icon: <TeamOutlined />,
       label: 'Quầy Lễ Tân',
+      allowedRoles: ['receptionist', 'lễ tân'],
       children: [
-        { key: '/admin/booking', label: 'Tạo đơn đặt phòng' },
-        { key: '/admin/bookings', label: 'Danh sách đặt phòng' },
-        { key: '/admin/checkout', label: 'Trả phòng & Thu tiền' }
+        { key: '/admin/booking', label: 'Tạo đơn đặt phòng', allowedRoles: ['receptionist', 'lễ tân'] },
+        { key: '/admin/bookings', label: 'Danh sách đặt phòng', allowedRoles: ['receptionist', 'lễ tân'] },
+        { key: '/admin/checkout', label: 'Trả phòng & Thu tiền', allowedRoles: ['receptionist', 'lễ tân'] }
       ]
     },
 
-    { key: '/admin/housekeeping', icon: <CheckSquareOutlined />, label: 'Dọn Phòng' },
-    { key: '/admin/loss-damage', icon: <AlertOutlined />, label: 'Thất thoát & Đền bù' }, 
-    { key: '/admin/inventory', icon: <DashboardOutlined />, label: 'Quản lý kho vật tư' },
-    { key: '/admin/vouchers', icon: <GiftOutlined />, label: 'Khuyến mãi' },
-    { key: '/admin/employees', icon: <TeamOutlined />, label: 'Quản lý nhân sự' },
-    { key: '/admin/roles', icon: <LockOutlined />, label: 'Phân quyền (RBAC)' },
-    { key: '/admin/attractions', icon: <EnvironmentOutlined />, label: 'Điểm tham quan'},
-    { key: '/admin/audit-logs', icon: <FileTextOutlined />, label: 'Lịch sử hệ thống' },
-    { key: '/admin/profile', icon: <UserOutlined />, label: 'Hồ sơ cá nhân' },
-    { key: '/admin/settings', icon: <SettingOutlined />, label: 'Cấu hình hệ thống' },
+    { key: '/admin/housekeeping', icon: <CheckSquareOutlined />, label: 'Dọn Phòng', allowedRoles: ['housekeeping', 'buồng phòng'] },
+    { key: '/admin/loss-damage', icon: <AlertOutlined />, label: 'Thất thoát & Đền bù', allowedRoles: ['receptionist', 'lễ tân', 'housekeeping', 'buồng phòng'] }, 
+    { key: '/admin/inventory', icon: <DashboardOutlined />, label: 'Quản lý kho vật tư', allowedRoles: ['inventory', 'thủ kho', 'kho'] },
+    { key: '/admin/vouchers', icon: <GiftOutlined />, label: 'Khuyến mãi', allowedRoles: ['receptionist', 'lễ tân'] },
+    { key: '/admin/employees', icon: <TeamOutlined />, label: 'Quản lý nhân sự', allowedRoles: ['hr', 'nhân sự'] },
+    { key: '/admin/roles', icon: <LockOutlined />, label: 'Phân quyền (RBAC)', allowedRoles: [] }, // Cấp [] có nghĩa là chỉ Admin/Management
+    { key: '/admin/attractions', icon: <EnvironmentOutlined />, label: 'Điểm tham quan', allowedRoles: ['receptionist', 'lễ tân']},
+    { key: '/admin/audit-logs', icon: <FileTextOutlined />, label: 'Lịch sử hệ thống', allowedRoles: [] },
+    { key: '/admin/profile', icon: <UserOutlined />, label: 'Hồ sơ cá nhân' }, // Public
+    { key: '/admin/settings', icon: <SettingOutlined />, label: 'Cấu hình hệ thống', allowedRoles: [] },
   ];
+
+  // Lọc menu đệ quy
+  const filterItems = (items) => {
+    return items
+      .filter(item => checkAccess(item.allowedRoles))
+      .map(item => {
+        if (item.children) {
+          const filteredChildren = filterItems(item.children);
+          return { ...item, children: filteredChildren };
+        }
+        return item;
+      })
+      .filter(item => !item.children || item.children.length > 0);
+  };
+
+  const sidebarItems = filterItems(rawSidebarItems);
 
   const userDropdownItems = [
     { key: 'profile', icon: <UserOutlined />, label: 'Thông tin cá nhân', onClick: () => navigate('/admin/profile') },
