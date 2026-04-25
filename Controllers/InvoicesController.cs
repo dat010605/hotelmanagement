@@ -2,6 +2,9 @@ using HotelManagement.API.DTOs;
 using HotelManagement.API.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json; 
 
 namespace HotelManagement.API.Controllers;
 
@@ -10,10 +13,90 @@ namespace HotelManagement.API.Controllers;
 public class InvoicesController : ControllerBase
 {
     private readonly AppDbContext _context;
+    private readonly IConfiguration _configuration;
 
-    public InvoicesController(AppDbContext context)
+    public InvoicesController(AppDbContext context, IConfiguration configuration)
     {
         _context = context;
+        _configuration = configuration;
+    }
+
+    [HttpPost("create-momo-payment")]
+public async Task<IActionResult> CreateMoMoPayment([FromBody] ProcessPaymentDto.MoMoPaymentRequest request)
+{
+    // 1. Lấy và làm sạch Key (Xóa bỏ khoảng trắng dư thừa)
+    var config = _configuration.GetSection("MoMoConfig");
+    string partnerCode = (config["PartnerCode"] ?? "").Trim();
+    string accessKey = (config["AccessKey"] ?? "").Trim();
+    string secretKey = (config["SecretKey"] ?? "").Trim();
+    string endpoint = (config["Endpoint"] ?? "").Trim();
+    string returnUrl = (config["ReturnUrl"] ?? "").Trim();
+    string ipnUrl = (config["IpnUrl"] ?? "").Trim();
+
+    // 2. Chuẩn bị dữ liệu
+    string orderId = request.OrderId + "_" + DateTime.Now.Ticks; 
+    string requestId = Guid.NewGuid().ToString();
+    string orderInfo = "Thanh toan hoa don khach san";
+    string requestType = "captureWallet";
+    string extraData = ""; 
+    // Ép kiểu amount về string để tính toán signature và gửi JSON
+    string amountStr = request.Amount.ToString();
+
+    // 3. Tạo chữ ký Signature (Phải dùng amount dạng chuỗi)
+    string rawHash = $"accessKey={accessKey}&amount={amountStr}&extraData={extraData}&ipnUrl={ipnUrl}&orderId={orderId}&orderInfo={orderInfo}&partnerCode={partnerCode}&redirectUrl={returnUrl}&requestId={requestId}&requestType={requestType}";
+
+    string signature = ComputeHmacSha256(rawHash, secretKey);
+
+    // 4. Tạo Payload gửi sang MoMo (Quan trọng: amount PHẢI là string)
+    var payload = new {
+        partnerCode = partnerCode,
+        accessKey = accessKey,
+        requestId = requestId,
+        amount = amountStr, // BẮT BUỘC PHẢI LÀ STRING
+        orderId = orderId,
+        orderInfo = orderInfo,
+        redirectUrl = returnUrl,
+        ipnUrl = ipnUrl,
+        extraData = extraData,
+        requestType = requestType,
+        signature = signature,
+        lang = "vi"
+    };
+
+    var jsonOptions = new System.Text.Json.JsonSerializerOptions
+    {
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+    };
+
+    using var client = new HttpClient();
+    var response = await client.PostAsync(endpoint, 
+        new StringContent(System.Text.Json.JsonSerializer.Serialize(payload, jsonOptions), Encoding.UTF8, "application/json"));
+    
+    var responseContent = await response.Content.ReadAsStringAsync();
+
+    // Log ra để bạn kiểm tra nếu vẫn lỗi
+    Console.WriteLine("=== DEBUG MOMO ===");
+    Console.WriteLine($"RawHash: {rawHash}");
+    Console.WriteLine($"Response: {responseContent}");
+
+    using var jsonDoc = System.Text.Json.JsonDocument.Parse(responseContent);
+    var root = jsonDoc.RootElement;
+
+    if (root.TryGetProperty("resultCode", out var resCode) && resCode.GetInt32() == 0)
+    {
+        return Ok(new { payUrl = root.GetProperty("payUrl").GetString() });
+    }
+    
+    return BadRequest(new { message = "MoMo từ chối giao dịch", detail = responseContent });
+}
+
+    private string ComputeHmacSha256(string message, string secretKey)
+    {
+        var keyByte = Encoding.UTF8.GetBytes(secretKey);
+        var messageBytes = Encoding.UTF8.GetBytes(message);
+        using var hmacsha256 = new HMACSHA256(keyByte);
+        byte[] hashMessage = hmacsha256.ComputeHash(messageBytes);
+        return BitConverter.ToString(hashMessage).Replace("-", "").ToLower();
     }
 
     // ==========================================
@@ -168,16 +251,8 @@ public class InvoicesController : ControllerBase
             if (subTotal >= minVal)
             {
                 decimal discVal = (decimal?)booking.Voucher.DiscountValue ?? 0m;
-                
-                // FIX LỖI Ở ĐÂY: Nhận diện cả "Percentage" và "Percent", "Fixed" và "Amount"
-                if (booking.Voucher.DiscountType == "Percentage" || booking.Voucher.DiscountType == "Percent") 
-                {
-                    discountAmount += subTotal * (discVal / 100m);
-                }
-                else if (booking.Voucher.DiscountType == "Fixed" || booking.Voucher.DiscountType == "Amount") 
-                {
-                    discountAmount += discVal;
-                }
+                if (booking.Voucher.DiscountType == "Percent") discountAmount += subTotal * (discVal / 100m);
+                else if (booking.Voucher.DiscountType == "Amount") discountAmount += discVal;
             }
         }
 
