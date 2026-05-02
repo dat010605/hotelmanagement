@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -21,6 +21,9 @@ public partial class LossAndDamage
     public DateTime? CreatedAt { get; set; }
 [Column("ImageUrl")]
     public string? ImageUrl { get; set; }
+
+    [Column("status")]
+    public int? Status { get; set; }
 
     public virtual BookingDetail? BookingDetail { get; set; }
 

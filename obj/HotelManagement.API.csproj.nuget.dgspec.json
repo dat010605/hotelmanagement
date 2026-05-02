@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\anhlafatbeop\\hotelmanagement\\HotelManagement.API.csproj": {}
+    "D:\\datpronak12\\hotelmanagement\\HotelManagement.API.csproj": {}
   },
   "projects": {
-    "D:\\anhlafatbeop\\hotelmanagement\\HotelManagement.API.csproj": {
+    "D:\\datpronak12\\hotelmanagement\\HotelManagement.API.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\anhlafatbeop\\hotelmanagement\\HotelManagement.API.csproj",
+        "projectUniqueName": "D:\\datpronak12\\hotelmanagement\\HotelManagement.API.csproj",
         "projectName": "HotelManagement.API",
-        "projectPath": "D:\\anhlafatbeop\\hotelmanagement\\HotelManagement.API.csproj",
+        "projectPath": "D:\\datpronak12\\hotelmanagement\\HotelManagement.API.csproj",
         "packagesPath": "C:\\Users\\Administrator\\.nuget\\packages\\",
-        "outputPath": "D:\\anhlafatbeop\\hotelmanagement\\obj\\",
+        "outputPath": "D:\\datpronak12\\hotelmanagement\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

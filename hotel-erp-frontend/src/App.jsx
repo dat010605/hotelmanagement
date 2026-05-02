@@ -28,6 +28,7 @@ import { ConfigProvider, App as AntApp, theme } from 'antd';
 import TouristAttractions from "./pages/TouristAttractions";
 import AuditLogsPage from "./pages/AuditLogsPage";
 import DashboardPage from "./pages/DashboardPage";
+import AdminReviewsPage from './pages/AdminReviewsPage';
 import SystemSettingsPage from "./pages/SystemSettingsPage";
 import useSettingsStore from "./store/useSettingsStore";
 
@@ -82,6 +83,7 @@ function App() {
                 {/* Tất cả nhân viên đều xem được Dashboard và Profile */}
                 <Route path="/admin/dashboard" element={<DashboardPage />} />
                 <Route path="/admin/profile" element={<ProfilePage />} />
+                <Route path="/admin/reviews" element={<AdminReviewsPage />} />
                 
                 {/* Nhóm Lễ Tân */}
                 <Route element={<RoleGuard allowedRoles={['receptionist', 'lễ tân']} />}>

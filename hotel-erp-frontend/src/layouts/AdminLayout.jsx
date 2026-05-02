@@ -6,7 +6,7 @@ import {
   LogoutOutlined, SettingOutlined, BellOutlined, HomeOutlined, LockOutlined,
   AlertOutlined, CheckSquareOutlined, CalendarOutlined, GiftOutlined,
   AppstoreOutlined, CreditCardOutlined, FileTextOutlined,
-  SunOutlined, MoonOutlined, EnvironmentOutlined 
+  SunOutlined, MoonOutlined, EnvironmentOutlined, CommentOutlined
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAdminAuthStore } from '../store/adminAuthStore';
@@ -131,6 +131,7 @@ const AdminLayout = () => {
     { key: '/admin/employees', icon: <TeamOutlined />, label: 'Quản lý nhân sự', allowedRoles: ['hr', 'nhân sự'] },
     { key: '/admin/roles', icon: <LockOutlined />, label: 'Phân quyền (RBAC)', allowedRoles: [] }, // Cấp [] có nghĩa là chỉ Admin/Management
     { key: '/admin/attractions', icon: <EnvironmentOutlined />, label: 'Điểm tham quan', allowedRoles: ['receptionist', 'lễ tân']},
+    { key: '/admin/reviews', icon: <CommentOutlined />, label: 'Quản lý đánh giá', allowedRoles: [] },
     { key: '/admin/audit-logs', icon: <FileTextOutlined />, label: 'Lịch sử hệ thống', allowedRoles: [] },
     { key: '/admin/profile', icon: <UserOutlined />, label: 'Hồ sơ cá nhân' }, // Public
     { key: '/admin/settings', icon: <SettingOutlined />, label: 'Cấu hình hệ thống', allowedRoles: [] },
@@ -154,6 +155,7 @@ const AdminLayout = () => {
 
   const userDropdownItems = [
     { key: 'profile', icon: <UserOutlined />, label: 'Thông tin cá nhân', onClick: () => navigate('/admin/profile') },
+    { key: 'web_booking', icon: <HomeOutlined />, label: 'Quay lại Web Booking', onClick: () => navigate('/') },
     { type: 'divider' },
     { key: 'logout', icon: <LogoutOutlined />, label: 'Đăng xuất', danger: true, onClick: handleLogout },
   ];

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Typography, Card, Row, Col, Rate, Input, Button, Avatar, Divider,
   Form, Space, Tag, App, Empty
@@ -9,58 +9,11 @@ import {
 import { useAdminAuthStore } from '../store/adminAuthStore';
 import { useCustomerProfileStore } from '../store/useCustomerProfileStore';
 import { useNavigate } from 'react-router-dom';
+import { useReviewStore } from '../store/useReviewStore';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
 
-// Dữ liệu đánh giá mẫu ban đầu
-const INITIAL_REVIEWS = [
-  {
-    id: 1,
-    name: 'Nguyễn Thanh Hà',
-    avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
-    rating: 5,
-    room: 'Suite Deluxe',
-    date: '20/04/2026',
-    content: 'Tuyệt vời! Phòng rộng rãi, sạch sẽ và view nhìn ra biển rất đẹp. Nhân viên nhiệt tình, chuyên nghiệp. Chắc chắn sẽ quay lại lần sau.'
-  },
-  {
-    id: 2,
-    name: 'Trần Minh Quân',
-    avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
-    rating: 5,
-    room: 'Villa Gia Đình',
-    date: '15/04/2026',
-    content: 'Đưa cả gia đình đến đây nghỉ dưỡng 3 ngày, trẻ con rất thích hồ bơi. Bữa sáng buffet đa dạng và ngon. Giá trị xứng đáng với trải nghiệm nhận được!'
-  },
-  {
-    id: 3,
-    name: 'Lê Phương Linh',
-    avatar: 'https://randomuser.me/api/portraits/women/68.jpg',
-    rating: 4.5,
-    room: 'Executive Room',
-    date: '10/04/2026',
-    content: 'Phòng sạch đẹp, thiết kế sang trọng. Lễ tân check-in rất nhanh và thân thiện. Chỉ có điều bữa tối hơi ít món, nhưng nhìn chung rất hài lòng!'
-  },
-  {
-    id: 4,
-    name: 'Phạm Đức Anh',
-    avatar: 'https://randomuser.me/api/portraits/men/75.jpg',
-    rating: 5,
-    room: 'Honeymoon Suite',
-    date: '05/04/2026',
-    content: 'Kỳ trăng mật hoàn hảo! Khách sạn chuẩn bị hoa và nến trong phòng như đã yêu cầu. Không gian lãng mạn, dịch vụ butler 24/7. Cảm ơn đội ngũ rất nhiều!'
-  },
-  {
-    id: 5,
-    name: 'Hoàng Thu Trang',
-    avatar: 'https://randomuser.me/api/portraits/women/52.jpg',
-    rating: 4,
-    room: 'Standard Room',
-    date: '28/03/2026',
-    content: 'Giá hợp lý, phòng thoáng mát. Vị trí khách sạn thuận tiện, gần trung tâm và các điểm tham quan. Sẽ giới thiệu cho bạn bè.'
-  }
-];
 
 const CustomerReviewsPage = () => {
   const { user } = useAdminAuthStore();
@@ -74,11 +27,13 @@ const CustomerReviewsPage = () => {
   const displayName = profile.displayName || user?.fullName || user?.FullName || 'Khách';
   const displayAvatar = profile.avatarUrl || user?.avatarUrl || null;
 
-  const [reviews, setReviews] = useState(INITIAL_REVIEWS);
+  const { addReview } = useReviewStore();
+  const allReviews = useReviewStore(state => state.reviews);
+  const reviews = useMemo(() => allReviews.filter(r => !r.isHidden), [allReviews]);
   const [submitting, setSubmitting] = useState(false);
 
   // Tính tổng số sao trung bình
-  const avgRating = (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1);
+  const avgRating = reviews.length > 0 ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1) : 0;
 
   const handleSubmitReview = async (values) => {
     if (!user) {
@@ -108,7 +63,7 @@ const CustomerReviewsPage = () => {
       content: values.content
     };
 
-    setReviews([newReview, ...reviews]);
+    addReview(newReview);
     form.resetFields();
     setSubmitting(false);
 
@@ -256,9 +211,9 @@ const CustomerReviewsPage = () => {
                   </Text>
                 </div>
 
-                <Paragraph style={{ marginTop: 12, marginBottom: 0, color: '#333', fontSize: 15, lineHeight: 1.7 }}>
-                  {review.content}
-                </Paragraph>
+                <p style={{ marginTop: 12, marginBottom: 0, color: '#333', fontSize: 15, lineHeight: 1.7 }}>
+                  {review.content || ''}
+                </p>
               </div>
             </div>
           </Card>

@@ -51,7 +51,8 @@ namespace HotelManagement.API.Controllers
                     EquipmentName = (l.RoomInventory != null && l.RoomInventory.Equipment != null) 
                                     ? l.RoomInventory.Equipment.Name : "N/A",
                     //  BẢN VÁ SỐ 1: BỐC ẢNH TỪ DATABASE TRẢ VỀ CHO REACT 
-                    ImageUrl = l.ImageUrl 
+                    ImageUrl = l.ImageUrl,
+                    Status = l.Status ?? 0
                 })
                 .ToListAsync();
             return Ok(data);
@@ -159,6 +160,7 @@ namespace HotelManagement.API.Controllers
 
             if (dto.Description != null) record.Description = dto.Description;
             if (dto.PenaltyAmount.HasValue) record.PenaltyAmount = dto.PenaltyAmount.Value;
+            if (dto.Status.HasValue) record.Status = dto.Status.Value;
             
             await _context.SaveChangesAsync();
             return Ok(record);

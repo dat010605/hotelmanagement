@@ -8,6 +8,8 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useAttractionsStore } from '../store/useAttractionsStore';
 import { useI18nStore } from '../store/useI18nStore';
+import { useReviewStore } from '../store/useReviewStore';
+import { useMemo } from 'react';
 
 const { Title, Paragraph, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -44,50 +46,12 @@ const NEWS_DATA = [
 ];
 
 // ── Dữ liệu đánh giá mẫu ─────────────────────────────────────────────────────
-const REVIEWS_DATA = [
-  {
-    id: 1,
-    name: 'Nguyễn Thanh Hà',
-    avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
-    rating: 5,
-    room: 'Suite Deluxe',
-    date: 'Tháng 4, 2026',
-    content: 'Tuyệt vời! Phòng rộng rãi, sạch sẽ và view nhìn ra biển rất đẹp. Nhân viên nhiệt tình, chuyên nghiệp. Chắc chắn sẽ quay lại lần sau.'
-  },
-  {
-    id: 2,
-    name: 'Trần Minh Quân',
-    avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
-    rating: 5,
-    room: 'Villa Gia Đình',
-    date: 'Tháng 3, 2026',
-    content: 'Đưa cả gia đình đến đây nghỉ dưỡng 3 ngày, trẻ con rất thích hồ bơi. Bữa sáng buffet đa dạng và ngon. Giá trị xứng đáng với trải nghiệm nhận được!'
-  },
-  {
-    id: 3,
-    name: 'Lê Phương Linh',
-    avatar: 'https://randomuser.me/api/portraits/women/68.jpg',
-    rating: 4.5,
-    room: 'Executive Room',
-    date: 'Tháng 3, 2026',
-    content: 'Phòng sạch đẹp, thiết kế sang trọng. Lễ tân check-in rất nhanh và thân thiện. Chỉ có điều bữa tối hơi ít món, nhưng nhìn chung rất hài lòng!'
-  },
-  {
-    id: 4,
-    name: 'Phạm Đức Anh',
-    avatar: 'https://randomuser.me/api/portraits/men/75.jpg',
-    rating: 5,
-    room: 'Honeymoon Suite',
-    date: 'Tháng 2, 2026',
-    content: 'Kỳ trăng mật hoàn hảo! Khách sạn chuẩn bị hoa và nến trong phòng như đã yêu cầu. Không gian lãng mạn, dịch vụ butler 24/7. Cảm ơn đội ngũ rất nhiều!'
-  }
-];
 
 // ── Component Phần Tiêu Đề Section ───────────────────────────────────────────
 const SectionHeader = ({ title, subtitle }) => (
   <div style={{ textAlign: 'center', marginBottom: '48px' }}>
     <Title level={2} style={{ marginBottom: 8 }}>{title}</Title>
-    {subtitle && <Paragraph type="secondary" style={{ fontSize: 16 }}>{subtitle}</Paragraph>}
+    {subtitle && <p style={{ fontSize: 16, color: '#595959', marginBottom: 0 }}>{subtitle}</p>}
     <div style={{ width: '60px', height: '4px', background: '#1890ff', margin: '12px auto 0', borderRadius: '2px' }} />
   </div>
 );
@@ -117,7 +81,7 @@ const NewsCard = ({ item }) => (
       </Text>
     </div>
     <Title level={4} style={{ marginBottom: 10, lineHeight: 1.4 }}>{item.title}</Title>
-    <Paragraph style={{ color: '#595959', flex: 1, marginBottom: 16 }}>{item.desc}</Paragraph>
+    <p style={{ color: '#595959', flex: 1, marginBottom: 16 }}>{item.desc || ''}</p>
     <Button type="link" style={{ padding: 0, textAlign: 'left', fontWeight: 600 }}>
       Đọc thêm <ArrowRightOutlined />
     </Button>
@@ -142,9 +106,9 @@ const ReviewCard = ({ review }) => (
 
     <Rate disabled allowHalf defaultValue={review.rating} style={{ fontSize: 14, marginBottom: 12 }} />
 
-    <Paragraph style={{ color: '#333', fontSize: 15, lineHeight: 1.7, marginBottom: 20, fontStyle: 'italic' }}>
-      "{review.content}"
-    </Paragraph>
+    <p style={{ color: '#333', fontSize: 15, lineHeight: 1.7, marginBottom: 20, fontStyle: 'italic' }}>
+      "{review.content || ''}"
+    </p>
 
     <Divider style={{ margin: '0 0 16px 0' }} />
 
@@ -167,6 +131,8 @@ const CustomerHomePage = () => {
   const { t } = useI18nStore();
   const navigate = useNavigate();
   const [selectedMap, setSelectedMap] = useState(null);
+  const allReviews = useReviewStore(state => state.reviews);
+  const reviews = useMemo(() => allReviews.filter(r => !r.isHidden).slice(0, 4), [allReviews]);
 
   const handleSearch = () => navigate('/rooms');
 
@@ -192,9 +158,9 @@ const CustomerHomePage = () => {
         <Title level={1} style={{ color: '#fff', fontSize: '3.5rem', margin: 0, textShadow: '0 4px 8px rgba(0,0,0,0.3)', fontWeight: 800 }}>
           {t('welcome')}
         </Title>
-        <Paragraph style={{ color: '#e6f7ff', fontSize: '1.2rem', maxWidth: '600px', marginTop: '16px', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
-          {t('subtitle')}
-        </Paragraph>
+        <p style={{ color: '#e6f7ff', fontSize: '1.2rem', maxWidth: '600px', marginTop: '16px', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
+          {t('subtitle') || ''}
+        </p>
 
         {/* Search Bar */}
         <Card
@@ -252,7 +218,7 @@ const CustomerHomePage = () => {
                   <EnvironmentOutlined style={{ color: '#1890ff', marginRight: '8px' }} />
                   {item.title}
                 </Title>
-                <Paragraph style={{ color: '#595959', flex: 1 }}>{item.desc}</Paragraph>
+                <p style={{ color: '#595959', flex: 1 }}>{item.desc || ''}</p>
                 <div style={{ display: 'flex', gap: '10px', marginTop: 'auto' }}>
                   <Button type="primary" ghost style={{ borderRadius: '6px' }}>
                     {t('viewDetails')} <ArrowRightOutlined />
@@ -333,16 +299,18 @@ const CustomerHomePage = () => {
         </div>
 
         <Row gutter={[24, 24]}>
-          {REVIEWS_DATA.map(review => (
+          {reviews.map(review => (
             <Col xs={24} sm={12} md={12} lg={6} key={review.id}>
               <ReviewCard review={review} />
             </Col>
-          ))}</Row>
-          <div style={{ textAlign: 'center', marginTop: 24 }}>
-            <Button size="large" type="primary" onClick={() => navigate('/reviews')} style={{ borderRadius: '8px' }}>
-              Xem thêm đánh giá
-            </Button>
-          </div>
+          ))}
+        </Row>
+
+        <div style={{ textAlign: 'center', marginTop: 24 }}>
+          <Button size="large" type="primary" onClick={() => navigate('/reviews')} style={{ borderRadius: '8px' }}>
+            Xem thêm đánh giá
+          </Button>
+        </div>
       </div>
 
       <Modal
