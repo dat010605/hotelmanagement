@@ -31,7 +31,7 @@ import DashboardPage from "./pages/DashboardPage";
 import AdminReviewsPage from './pages/AdminReviewsPage';
 import SystemSettingsPage from "./pages/SystemSettingsPage";
 import useSettingsStore from "./store/useSettingsStore";
-
+import LocationDetailPage from './pages/LocationDetailPage';
 function App() {
   const { themeMode, primaryColor, compactMode } = useSettingsStore();
 
@@ -71,6 +71,7 @@ function App() {
             {/* PUBLIC CUSTOMER ROUTES */}
             <Route element={<CustomerLayout />}>
               <Route path="/" element={<CustomerHomePage />} />
+              <Route path="/location/:id" element={<LocationDetailPage />} />
               <Route path="/rooms" element={<CustomerRoomsPage />} />
               <Route path="/profile" element={<CustomerProfilePage />} />
               <Route path="/reviews" element={<CustomerReviewsPage />} />
