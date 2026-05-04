@@ -32,9 +32,12 @@ import AdminReviewsPage from './pages/AdminReviewsPage';
 import SystemSettingsPage from "./pages/SystemSettingsPage";
 import useSettingsStore from "./store/useSettingsStore";
 import LocationDetailPage from './pages/LocationDetailPage';
+import { GoogleOAuthProvider } from '@react-oauth/google';
+
+
 function App() {
   const { themeMode, primaryColor, compactMode } = useSettingsStore();
-
+  
   const algorithm = [];
   if (themeMode === 'dark') algorithm.push(theme.darkAlgorithm);
   else algorithm.push(theme.defaultAlgorithm);
