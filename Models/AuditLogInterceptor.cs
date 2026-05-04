@@ -41,11 +41,10 @@ public class AuditLogInterceptor : SaveChangesInterceptor
 
         if (!entries.Any()) return;
 
-        // Lấy UserId và RoleName từ JWT token
+        // Lấy UserId từ JWT token
         int? currentUserId = null;
         var userIdString = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (int.TryParse(userIdString, out int uid)) currentUserId = uid;
-        string? currentRoleName = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.Role)?.Value;
 
         var jsonOptions = new JsonSerializerOptions
         {
@@ -53,97 +52,54 @@ public class AuditLogInterceptor : SaveChangesInterceptor
             WriteIndented = false
         };
 
-        // Tạo danh sách sự kiện mới từ các Entity thay đổi
-        var newEvents = new List<object>();
+        // Tạo 1 AuditLog row cho MỖI entity thay đổi (map đúng schema SQL thực tế)
         foreach (var entry in entries)
         {
-            object? entitySnapshot = null;
-            if (entry.State == EntityState.Added)
-                entitySnapshot = entry.CurrentValues.ToObject();
-            else if (entry.State == EntityState.Deleted)
-                entitySnapshot = entry.OriginalValues.ToObject();
-            else // Modified
-                entitySnapshot = new
-                {
-                    Before = entry.OriginalValues.ToObject(),
-                    After = entry.CurrentValues.ToObject()
-                };
-
-            newEvents.Add(new
+            string actionType = entry.State switch
             {
-                eventId = Guid.NewGuid().ToString(),
-                timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fffffff"),
-                actionType = entry.State == EntityState.Added ? "CREATE"
-                           : entry.State == EntityState.Deleted ? "DELETE"
-                           : "UPDATE",
-                tableName = entry.Metadata.GetTableName() ?? entry.Entity.GetType().Name,
-                entity = entitySnapshot
-            });
-        }
+                EntityState.Added => "Added",
+                EntityState.Deleted => "Deleted",
+                EntityState.Modified => "Modified",
+                _ => "Unknown"
+            };
 
-        // Tìm log hiện tại của user trong ngày hôm nay (UTC)
-        var today = DateTime.UtcNow.Date;
-        var tomorrow = today.AddDays(1);
+            string? oldValue = null;
+            string? newValue = null;
 
-        // Kiểm tra Local cache trước (đã load trong session này)
-        var existingLog = context.Set<AuditLog>()
-            .Local
-            .FirstOrDefault(a => a.UserId == currentUserId
-                              && a.LogDate.HasValue
-                              && a.LogDate.Value >= today
-                              && a.LogDate.Value < tomorrow);
-
-        // Nếu không có trong cache thì truy vấn DB
-        if (existingLog == null)
-        {
-            existingLog = context.Set<AuditLog>()
-                .FirstOrDefault(a => a.UserId == currentUserId
-                                  && a.LogDate.HasValue
-                                  && a.LogDate.Value >= today
-                                  && a.LogDate.Value < tomorrow);
-        }
-
-        if (existingLog != null)
-        {
-            // Merge: đọc Events cũ và thêm Events mới vào
             try
             {
-                var existingDoc = JsonSerializer.Deserialize<JsonElement>(existingLog.LogData ?? "{}");
-                var existingEvents = new List<JsonElement>();
-                if (existingDoc.TryGetProperty("Events", out var evArr))
-                    existingEvents = JsonSerializer.Deserialize<List<JsonElement>>(evArr.GetRawText()) ?? new();
-
-                var allEvents = existingEvents.Cast<object>().Concat(newEvents).ToList();
-                existingLog.LogData = JsonSerializer.Serialize(new
+                if (entry.State == EntityState.Deleted || entry.State == EntityState.Modified)
                 {
-                    TotalEvents = allEvents.Count,
-                    Events = allEvents
-                }, jsonOptions);
+                    oldValue = JsonSerializer.Serialize(entry.OriginalValues.ToObject(), jsonOptions);
+                }
+
+                if (entry.State == EntityState.Added || entry.State == EntityState.Modified)
+                {
+                    newValue = JsonSerializer.Serialize(entry.CurrentValues.ToObject(), jsonOptions);
+                }
             }
             catch
             {
-                // Nếu parse lỗi thì ghi đè
-                existingLog.LogData = JsonSerializer.Serialize(new
-                {
-                    TotalEvents = newEvents.Count,
-                    Events = newEvents
-                }, jsonOptions);
+                // Bỏ qua nếu serialize thất bại
             }
-            // existingLog đã được EF Core track, sẽ tự động UPDATE khi SaveChanges
-        }
-        else
-        {
-            // Tạo dòng mới cho ngày hôm nay
+
+            // Lấy ID của entity (nếu có property Id)
+            int? recordId = null;
+            var idProp = entry.Properties.FirstOrDefault(p => p.Metadata.Name == "Id");
+            if (idProp?.CurrentValue is int idVal)
+            {
+                recordId = idVal;
+            }
+
             context.Set<AuditLog>().Add(new AuditLog
             {
                 UserId = currentUserId,
-                RoleName = currentRoleName,
-                LogDate = DateTime.UtcNow,
-                LogData = JsonSerializer.Serialize(new
-                {
-                    TotalEvents = newEvents.Count,
-                    Events = newEvents
-                }, jsonOptions)
+                Action = actionType,
+                TableName = entry.Metadata.GetTableName() ?? entry.Entity.GetType().Name,
+                RecordId = recordId,
+                OldValue = oldValue,
+                NewValue = newValue,
+                CreatedAt = DateTime.UtcNow
             });
         }
     }

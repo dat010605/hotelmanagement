@@ -89,10 +89,14 @@ const LoginPage = () => {
         padding: '25px 15px' 
       }}>
         <div style={{ textAlign: 'center', marginBottom: 35 }}>
-          <Title level={1} style={{ color: '#1c1e21', fontWeight: 'bold', marginBottom: 10 }}>
-            Hotel Những Người Bạn
+          <Title level={1} style={{ color: '#1c1e21', fontWeight: 'bold', marginBottom: 10, fontFamily: "'Playfair Display', serif" }}>
+            The Royal Citadel
           </Title>
-          <Text style={{ fontSize: '18px', color: '#1c1e21' }}>
+          <Text style={{ fontSize: '16px', color: '#8c8c8c', letterSpacing: '2px', textTransform: 'uppercase' }}>
+            Luxury Hotel &amp; Resort
+          </Text>
+          <br />
+          <Text style={{ fontSize: '18px', color: '#1c1e21', marginTop: 8, display: 'inline-block' }}>
             Vui lòng đăng nhập để tiếp tục 
           </Text>
         </div>

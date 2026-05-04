@@ -35,24 +35,45 @@ namespace HotelManagement.API.Controllers
             return Ok(permissions);
         }
 
-        // 3. Gán quyền (Gửi mảng ID trực tiếp)
+        // 3. Gán quyền (Xóa cũ → Thêm mới, dùng Transaction an toàn)
         [HttpPost("{id:int}/AssignPermissions")]
         public async Task<IActionResult> AssignPermissions(int id, [FromBody] List<int> permissionIds)
         {
-            var role = await _context.Roles
-                .Include(r => r.Permissions)
-                .FirstOrDefaultAsync(r => r.Id == id);
-
+            var role = await _context.Roles.FindAsync(id);
             if (role == null) return NotFound("Không tìm thấy Vai trò.");
 
-            var permissions = await _context.Permissions
-                .Where(p => permissionIds.Contains(p.Id))
-                .ToListAsync();
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // Bước 1: Xóa toàn bộ quyền cũ của roleId trong bảng trung gian
+                await _context.Database.ExecuteSqlRawAsync(
+                    "DELETE FROM [Role_Permissions] WHERE [role_id] = {0}", id);
 
-            role.Permissions = permissions;
-            await _context.SaveChangesAsync();
+                // Bước 2: Thêm mới danh sách quyền
+                if (permissionIds != null && permissionIds.Any())
+                {
+                    // Lọc chỉ những permission ID hợp lệ (tồn tại trong DB)
+                    var validIds = await _context.Permissions
+                        .Where(p => permissionIds.Contains(p.Id))
+                        .Select(p => p.Id)
+                        .ToListAsync();
 
-            return Ok(new { message = "Cập nhật quyền thành công!" });
+                    foreach (var permId in validIds)
+                    {
+                        await _context.Database.ExecuteSqlRawAsync(
+                            "INSERT INTO [Role_Permissions] ([role_id], [permission_id]) VALUES ({0}, {1})",
+                            id, permId);
+                    }
+                }
+
+                await transaction.CommitAsync();
+                return Ok(new { message = "Cập nhật quyền thành công!" });
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return StatusCode(500, $"Lỗi khi cập nhật quyền: {ex.Message}");
+            }
         }
 
         // 4. Lấy chi tiết 1 Role
