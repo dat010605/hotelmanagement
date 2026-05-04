@@ -289,7 +289,7 @@ const CustomerOffersPage = () => {
                   <Text strong>Mã: <Tag color={voucher.color} style={{ fontSize: 14, padding: '2px 8px' }}>{voucher.code}</Tag></Text>
                   <Button type="text" onClick={() => handleCopyCode(voucher.code)}
                     style={{ color: copiedCode === voucher.code ? '#52c41a' : '#1890ff', padding: 0, fontWeight: 600 }}
-                  >{copiedCode === voucher.code ? '✅ Đã Copy!' : 'Copy'}</Button>
+                  >{copiedCode === voucher.code ? 'Đã Copy!' : 'Copy'}</Button>
                 </div>
               </Card>
             </Col>

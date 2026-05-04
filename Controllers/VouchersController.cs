@@ -93,7 +93,17 @@ namespace HotelManagement.API.Controllers
                 return BadRequest("Mã khuyến mãi này không áp dụng cho hạng phòng bạn chọn.");
             }
 
-            return Ok(voucher);
+            return Ok(new {
+                voucher.Id,
+                voucher.Code,
+                voucher.DiscountType,
+                voucher.DiscountValue,
+                voucher.MinBookingValue,
+                voucher.ValidFrom,
+                voucher.ValidTo,
+                voucher.UsageLimit,
+                voucher.RoomTypeId
+            });
         }
     }
 }
