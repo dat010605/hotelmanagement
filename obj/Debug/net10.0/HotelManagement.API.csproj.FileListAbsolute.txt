@@ -1962,3 +1962,8 @@ D:\datpronak12\hotelmanagement\obj\Debug\net10.0\HotelManagement.API.pdb
 D:\datpronak12\hotelmanagement\obj\Debug\net10.0\HotelManagement.API.genruntimeconfig.cache
 D:\datpronak12\hotelmanagement\obj\Debug\net10.0\ref\HotelManagement.API.dll
 C:\Users\trant\hotelmanagement\bin\Debug\net10.0\Cronos.dll
+C:\Users\trant\hotelmanagement\bin\Debug\net10.0\Google.Apis.dll
+C:\Users\trant\hotelmanagement\bin\Debug\net10.0\Google.Apis.Auth.dll
+C:\Users\trant\hotelmanagement\bin\Debug\net10.0\Google.Apis.Core.dll
+C:\Users\trant\hotelmanagement\bin\Debug\net10.0\System.Management.dll
+C:\Users\trant\hotelmanagement\bin\Debug\net10.0\runtimes\win\lib\net7.0\System.Management.dll

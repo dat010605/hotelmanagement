@@ -64,9 +64,9 @@ builder.Services.AddScoped<AuditLogInterceptor>();
 
 builder.Services.AddDbContext<AppDbContext>((sp, options) =>
 {
-    var interceptor = sp.GetRequiredService<AuditLogInterceptor>();
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
-           .AddInterceptors(interceptor);
+    //var interceptor = sp.GetRequiredService<AuditLogInterceptor>();
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+           //.AddInterceptors(interceptor);
 });
 
 builder.Services.AddCors(options =>
