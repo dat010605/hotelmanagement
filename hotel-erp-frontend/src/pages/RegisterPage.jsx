@@ -44,7 +44,10 @@ const RegisterPage = () => {
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f0f2f5', fontFamily: 'SFProDisplay-Regular, Helvetica, Arial, sans-serif' }}>
       <Card style={{ width: 580, borderRadius: '12px', boxShadow: '0 2px 4px rgba(0, 0, 0, .1), 0 8px 16px rgba(0, 0, 0, .1)', padding: '25px 15px' }}>
         <div style={{ textAlign: 'center', marginBottom: 25 }}>
-          <Title level={1} style={{ color: '#1c1e21', fontWeight: 'bold', marginBottom: 5 }}>Đăng Ký Tài Khoản</Title>
+          <Title level={2} style={{ color: '#1c1e21', fontWeight: 'bold', marginBottom: 4, fontFamily: "'Playfair Display', serif" }}>The Royal Citadel</Title>
+          <Text style={{ fontSize: '14px', color: '#8c8c8c', letterSpacing: '2px', textTransform: 'uppercase' }}>Luxury Hotel &amp; Resort</Text>
+          <br />
+          <Title level={3} style={{ color: '#1c1e21', marginTop: 12, marginBottom: 0 }}>Đăng Ký Tài Khoản</Title>
         </div>
 
         <Form name="register_form" onFinish={onFinish} layout="vertical">

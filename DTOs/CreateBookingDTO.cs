@@ -14,6 +14,8 @@ namespace HotelManagement.API.DTOs
 
         public string? GuestEmail { get; set; }
 
+        public string? VoucherCode { get; set; }
+
         [Required]
         public List<BookingRoomDTO> Rooms { get; set; } = new List<BookingRoomDTO>();
     }

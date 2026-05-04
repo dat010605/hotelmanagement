@@ -19,7 +19,7 @@ public class AuditLogsController : ControllerBase
     }
 
     /// <summary>
-    /// Lấy danh sách audit logs (1 dòng = 1 ngày hoạt động của 1 user).
+    /// Lấy danh sách audit logs (map đúng schema: action, table_name, record_id, old_value, new_value, created_at).
     /// Admin/Manager xem tất cả. Staff chỉ xem của mình.
     /// </summary>
     [HttpGet]
@@ -48,10 +48,10 @@ public class AuditLogsController : ControllerBase
         if (date.HasValue)
         {
             var targetDate = date.Value.Date;
-            query = query.Where(a => a.LogDate.HasValue && a.LogDate.Value.Date == targetDate);
+            query = query.Where(a => a.CreatedAt.HasValue && a.CreatedAt.Value.Date == targetDate);
         }
 
-        query = query.OrderByDescending(a => a.LogDate);
+        query = query.OrderByDescending(a => a.CreatedAt);
 
         var totalCount = await query.CountAsync();
         var logs = await query
@@ -60,9 +60,13 @@ public class AuditLogsController : ControllerBase
             .Select(a => new
             {
                 a.Id,
-                a.RoleName,
-                a.LogDate,
-                a.LogData,
+                a.UserId,
+                a.Action,
+                a.TableName,
+                a.RecordId,
+                a.OldValue,
+                a.NewValue,
+                a.CreatedAt,
                 UserFullName = a.User != null ? a.User.FullName : "System/Unknown"
             })
             .ToListAsync();
@@ -71,46 +75,19 @@ public class AuditLogsController : ControllerBase
     }
 
     /// <summary>
-    /// Thống kê số sự kiện theo loại (CREATE/UPDATE/DELETE) — chỉ Admin/Manager.
-    /// Parse từ JSON của log_data.
+    /// Thống kê số sự kiện theo loại (Added/Modified/Deleted) — chỉ Admin/Manager.
+    /// Đọc trực tiếp từ cột action.
     /// </summary>
     [HttpGet("stats")]
     [Authorize(Roles = "Admin,Manager")]
     public async Task<IActionResult> GetLogStats()
     {
-        var logs = await _context.AuditLogs
-            .Select(a => a.LogData)
+        var stats = await _context.AuditLogs
+            .Where(a => a.Action != null)
+            .GroupBy(a => a.Action!)
+            .Select(g => new { Action = g.Key, Count = g.Count() })
             .ToListAsync();
 
-        var stats = new Dictionary<string, int>
-        {
-            { "CREATE", 0 },
-            { "UPDATE", 0 },
-            { "DELETE", 0 }
-        };
-
-        foreach (var logData in logs)
-        {
-            if (string.IsNullOrEmpty(logData)) continue;
-            try
-            {
-                using var doc = System.Text.Json.JsonDocument.Parse(logData);
-                if (doc.RootElement.TryGetProperty("Events", out var events))
-                {
-                    foreach (var ev in events.EnumerateArray())
-                    {
-                        if (ev.TryGetProperty("actionType", out var actionProp))
-                        {
-                            var action = actionProp.GetString() ?? "";
-                            if (stats.ContainsKey(action))
-                                stats[action]++;
-                        }
-                    }
-                }
-            }
-            catch { /* bỏ qua log lỗi parse */ }
-        }
-
-        return Ok(stats.Select(kv => new { Action = kv.Key, Count = kv.Value }));
+        return Ok(stats);
     }
 }
