@@ -43,7 +43,7 @@ public class AuditLogCleanupService : BackgroundService
                 var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
 
                 var oldLogs = await dbContext.AuditLogs
-                    .Where(log => log.LogDate < thirtyDaysAgo)
+                    .Where(log => log.CreatedAt < thirtyDaysAgo)
                     .ToListAsync(stoppingToken);
 
                 if (oldLogs.Any())

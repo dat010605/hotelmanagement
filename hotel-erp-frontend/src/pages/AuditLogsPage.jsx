@@ -1,75 +1,112 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Typography, Tag, Space, Card, Modal, Button, Row, Col, Select, DatePicker, Descriptions } from 'antd';
+import { Table, Typography, Tag, Space, Card, Modal, Button, Row, Col, Select, DatePicker, Descriptions, message } from 'antd';
 import { UserOutlined, FileExcelOutlined, CloudDownloadOutlined, ReloadOutlined } from '@ant-design/icons';
 import axiosClient from '../api/axiosClient';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
 
+// ======================================================
+// HELPER: Dịch tên bảng sang tiếng Việt
+// ======================================================
+const TABLE_NAME_MAP = {
+    'Bookings': 'Đơn đặt phòng',
+    'Booking_Details': 'Chi tiết đặt phòng',
+    'Rooms': 'Phòng',
+    'Room_Types': 'Loại phòng',
+    'Room_Images': 'Ảnh phòng',
+    'Room_Inventory': 'Vật tư phòng',
+    'Users': 'Người dùng',
+    'Invoices': 'Hóa đơn',
+    'Payments': 'Thanh toán',
+    'Services': 'Dịch vụ',
+    'Order_Services': 'Đơn dịch vụ',
+    'Order_Service_Details': 'Chi tiết đơn DV',
+    'Vouchers': 'Mã giảm giá',
+    'Equipments': 'Vật tư',
+    'Loss_And_Damages': 'Hư hỏng / Mất mát',
+    'Role_Permissions': 'Phân quyền',
+    'Notifications': 'Thông báo',
+    'Attractions': 'Địa điểm',
+};
+
+const ACTION_MAP = {
+    'Added': { text: 'Thêm mới', color: '#52c41a' },
+    'Modified': { text: 'Cập nhật', color: '#1890ff' },
+    'Deleted': { text: 'Xóa', color: '#ff4d4f' },
+};
+
+// ======================================================
+// HELPER: Tạo tóm tắt thông minh từ dữ liệu audit
+// ======================================================
+const parseLogSummary = (record) => {
+    try {
+        const actionInfo = ACTION_MAP[record.action] || { text: record.action || '?', color: '#666' };
+        const tableName = TABLE_NAME_MAP[record.tableName] || record.tableName || 'Dữ liệu';
+
+        // Trường hợp UPDATE — so sánh old vs new
+        if (record.action === 'Modified' && record.oldValue && record.newValue) {
+            const oldObj = JSON.parse(record.oldValue);
+            const newObj = JSON.parse(record.newValue);
+
+            // Tìm các field thay đổi
+            const changes = [];
+            for (const key of Object.keys(newObj)) {
+                if (JSON.stringify(oldObj[key]) !== JSON.stringify(newObj[key])) {
+                    changes.push(key);
+                }
+            }
+
+            // Trường hợp đặc biệt: thay đổi Status
+            if (changes.includes('Status') || changes.includes('status')) {
+                const oldStatus = oldObj.Status || oldObj.status || '?';
+                const newStatus = newObj.Status || newObj.status || '?';
+                return `Thay đổi trạng thái ${tableName} từ "${oldStatus}" sang "${newStatus}"`;
+            }
+            if (changes.includes('CleaningStatus') || changes.includes('cleaning_status')) {
+                const oldCS = oldObj.CleaningStatus || oldObj.cleaning_status || '?';
+                const newCS = newObj.CleaningStatus || newObj.cleaning_status || '?';
+                return `Thay đổi tình trạng dọn phòng từ "${oldCS}" sang "${newCS}"`;
+            }
+
+            if (changes.length > 0 && changes.length <= 3) {
+                return `${actionInfo.text} ${tableName}: ${changes.join(', ')}`;
+            }
+            return `${actionInfo.text} ${tableName} (${changes.length} trường)`;
+        }
+
+        // Trường hợp CREATE
+        if (record.action === 'Added' && record.newValue) {
+            const obj = JSON.parse(record.newValue);
+            const name = obj.GuestName || obj.Name || obj.BookingCode || obj.Code || obj.RoomNumber || '';
+            return name ? `${actionInfo.text} ${tableName}: "${name}"` : `${actionInfo.text} ${tableName}`;
+        }
+
+        // Trường hợp DELETE
+        if (record.action === 'Deleted' && record.oldValue) {
+            const obj = JSON.parse(record.oldValue);
+            const name = obj.GuestName || obj.Name || obj.BookingCode || obj.Code || obj.RoomNumber || '';
+            return name ? `${actionInfo.text} ${tableName}: "${name}"` : `${actionInfo.text} ${tableName}`;
+        }
+
+        return `${actionInfo.text} ${tableName}`;
+    } catch (e) {
+        return `${record.action || 'Hoạt động'} trên ${TABLE_NAME_MAP[record.tableName] || record.tableName || 'hệ thống'}`;
+    }
+};
+
 const AuditLogsPage = () => {
-    const [groupedLogs, setGroupedLogs] = useState([]);
+    const [logs, setLogs] = useState([]);
     const [loading, setLoading] = useState(false);
     const [pagination, setPagination] = useState({ current: 1, pageSize: 50, total: 0 });
     
-    // State cho bộ lọc
     const [users, setUsers] = useState([]);
     const [selectedUserId, setSelectedUserId] = useState(null);
     const [selectedDate, setSelectedDate] = useState(null);
 
-    // State cho Modal JSON 
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [selectedData, setSelectedData] = useState(null);
     const [modalTitle, setModalTitle] = useState('');
-
-    //  THUẬT TOÁN GOM NHÓM DỮ LIỆU
-    const groupLogs = (flatLogs) => {
-        // Với schema mới, 1 log đã là 1 nhóm (1 ngày/1 user). 
-        // Chúng ta chỉ cần format lại để hiển thị đúng cấu trúc cũ của frontend.
-        return flatLogs.map(log => {
-            const rawDateStr = log.logDate
-                ? (log.logDate.endsWith('Z') ? log.logDate : `${log.logDate}Z`)
-                : new Date().toISOString();
-            const dateObj = new Date(rawDateStr);
-            const dateStr = dateObj.toLocaleDateString('vi-VN');
-            const timeStr = dateObj.toLocaleTimeString('vi-VN');
-
-            let events = [];
-            let summary = "Không có dữ liệu sự kiện";
-
-            if (log.logData) {
-                try {
-                    const parsedData = JSON.parse(log.logData);
-                    const rawEvents = parsedData.Events || [];
-                    
-                    events = rawEvents.map(ev => ({
-                        key: ev.eventId || Math.random(),
-                        time: ev.timestamp ? new Date(ev.timestamp).toLocaleTimeString('vi-VN') : timeStr,
-                        action: ev.actionType,
-                        target: ev.tableName,
-                        content: `Tác động lên bảng ${ev.tableName}`,
-                        logData: JSON.stringify(ev.entity) // Pass the specific entity snapshot to modal
-                    }));
-
-                    if (events.length > 0) {
-                        const first = events[0];
-                        const actionText = first.action === 'CREATE' ? 'Thêm mới' : first.action === 'UPDATE' ? 'Cập nhật' : 'Xóa';
-                        summary = `${actionText} dữ liệu ở bảng ${first.target}. (và ${events.length - 1} sự kiện khác)`;
-                    }
-                } catch (e) {
-                    console.error("Error parsing logData", e);
-                }
-            }
-
-            return {
-                key: log.id,
-                date: dateStr,
-                employeeName: log.userFullName || 'Hệ thống',
-                role: log.roleName || 'Unknown',
-                events: events,
-                summary: summary
-            };
-        });
-    };
 
     const fetchUsers = async () => {
         try {
@@ -83,7 +120,6 @@ const AuditLogsPage = () => {
     const fetchLogs = async (page = 1, pageSize = 50, userId = null, date = null) => {
         setLoading(true);
         try {
-            // Sử dụng tham số truyền vào, nếu null thì lấy từ state
             const filterUserId = userId !== null ? userId : selectedUserId;
             const filterDate = date !== null ? date : selectedDate;
 
@@ -92,14 +128,24 @@ const AuditLogsPage = () => {
             if (filterDate) url += `&date=${filterDate.format('YYYY-MM-DD')}`;
 
             const response = await axiosClient.get(url);
-            const groupedData = groupLogs(response.data.data || []);
-            setGroupedLogs(groupedData);
-            
-            setPagination({
-                ...pagination,
-                current: page,
-                total: response.data.total || 0
-            });
+            const rawData = response.data.data || [];
+
+            // Map dữ liệu từ schema mới
+            const mapped = rawData.map(log => ({
+                key: log.id,
+                id: log.id,
+                action: log.action,
+                tableName: log.tableName,
+                recordId: log.recordId,
+                oldValue: log.oldValue,
+                newValue: log.newValue,
+                createdAt: log.createdAt,
+                employeeName: log.userFullName || 'Hệ thống',
+                summary: parseLogSummary(log),
+            }));
+
+            setLogs(mapped);
+            setPagination(prev => ({ ...prev, current: page, total: response.data.total || 0 }));
         } catch (error) {
             console.error('Error fetching audit logs', error);
         } finally {
@@ -112,106 +158,88 @@ const AuditLogsPage = () => {
         fetchLogs(1, 50, null, null);
     }, []);
 
-    const handleFilterChange = () => {
-        // Truyền giá trị từ state vào một cách tường minh
-        fetchLogs(1, pagination.pageSize, selectedUserId, selectedDate);
-    };
+    const handleFilterChange = () => fetchLogs(1, pagination.pageSize, selectedUserId, selectedDate);
+    const resetFilters = () => { setSelectedUserId(null); setSelectedDate(null); fetchLogs(1, pagination.pageSize, null, null); };
+    const handleTableChange = (newPagination) => fetchLogs(newPagination.current, newPagination.pageSize);
 
-    const resetFilters = () => {
-        setSelectedUserId(null);
-        setSelectedDate(null);
-        fetchLogs(1, pagination.pageSize, null, null);
-    };
-
-    const handleTableChange = (newPagination) => {
-        fetchLogs(newPagination.current, newPagination.pageSize);
-    };
-
-    //  GIỮ NGUYÊN HÀM HIỂN THỊ JSON CỦA NGÀI
+    // ── Modal hiển thị JSON đẹp ──
     const showJsonModal = (title, dataStr) => {
         let parsedObj = null;
         let formattedStr = dataStr;
         try {
             if (dataStr) {
                 const temp = JSON.parse(dataStr);
-                if (typeof temp === 'object' && temp !== null && !Array.isArray(temp)) {
-                    parsedObj = temp;
-                }
+                if (typeof temp === 'object' && temp !== null && !Array.isArray(temp)) parsedObj = temp;
                 formattedStr = JSON.stringify(temp, null, 2);
             }
         } catch(e) {}
-
         setModalTitle(title);
         setSelectedData({ raw: formattedStr, parsed: parsedObj });
         setIsModalVisible(true);
     };
 
-    // ==========================================
-    // BẢNG CON (CHI TIẾT KHI BẤM DẤU +)
-    // ==========================================
-    const expandedRowRender = (record) => {
-        const nestedColumns = [
-            { title: 'Giờ', dataIndex: 'time', key: 'time', width: 100 },
-            { 
-                title: 'Hành động', 
-                dataIndex: 'action', 
-                width: 120,
-                render: (action) => {
-                    let color = '#1890ff'; // Xanh cho UPDATE
-                    if (action === 'CREATE') color = '#d4b106'; // Vàng
-                    if (action === 'DELETE') color = '#faad14'; // Cam
-                    return <Text style={{ color: color, fontWeight: 'bold' }}>{action}</Text>;
-                }
-            },
-            { title: 'Đối tượng', dataIndex: 'target', width: 150 },
-            { title: 'Nội dung', dataIndex: 'content' },
-            {
-                title: 'Chi tiết dữ liệu',
-                key: 'details',
-                width: 150,
-                render: (_, eventRecord) => (
-                    <Space>
-                        {eventRecord.logData && (
-                            <Button size="small" type="primary" onClick={() => showJsonModal('Chi tiết thay đổi', eventRecord.logData)}>Xem chi tiết</Button>
-                        )}
-                    </Space>
-                )
-            }
-        ];
-
-        return (
-            <Table 
-                columns={nestedColumns} 
-                dataSource={record.events} 
-                pagination={false} 
-                rowKey="key" 
-                size="small" 
-                style={{ margin: '0 0 16px 50px', borderLeft: '3px solid #1890ff' }} 
-            />
-        );
+    // ── Format thời gian ──
+    const formatTime = (dateStr) => {
+        if (!dateStr) return '—';
+        try {
+            const d = new Date(dateStr.endsWith('Z') ? dateStr : dateStr + 'Z');
+            return d.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        } catch { return dateStr; }
     };
 
     // ==========================================
-    // BẢNG CHA (GIAO DIỆN CHÍNH)
+    // CỘT BẢNG CHÍNH
     // ==========================================
     const columns = [
-        { title: 'Ngày', dataIndex: 'date', width: 150 },
         { 
-            title: 'Nhân viên', 
-            width: 250,
+            title: 'Thời gian', dataIndex: 'createdAt', width: 170,
+            render: (val) => <Text>{formatTime(val)}</Text>
+        },
+        { 
+            title: 'Nhân viên', width: 200,
             render: (_, record) => (
                 <Space>
                     <UserOutlined style={{ color: '#8c8c8c' }} />
                     <Text strong>{record.employeeName}</Text>
-                    <Text type="secondary" style={{ fontSize: '12px', color: '#1890ff' }}>{record.role}</Text>
                 </Space>
             )
         },
-        { title: 'Tóm tắt hoạt động', dataIndex: 'summary' },
+        {
+            title: 'Hành động', dataIndex: 'action', width: 120, align: 'center',
+            render: (action) => {
+                const info = ACTION_MAP[action] || { text: action, color: '#666' };
+                return <Tag color={info.color} style={{ fontWeight: 600 }}>{info.text}</Tag>;
+            }
+        },
+        {
+            title: 'Đối tượng', dataIndex: 'tableName', width: 180,
+            render: (name) => <Tag>{TABLE_NAME_MAP[name] || name}</Tag>
+        },
+        {
+            title: 'Tóm tắt hoạt động', dataIndex: 'summary',
+            render: (text) => <Text style={{ color: '#333' }}>{text}</Text>
+        },
+        {
+            title: 'Chi tiết', key: 'details', width: 200, align: 'center',
+            render: (_, record) => (
+                <Space>
+                    {record.oldValue && (
+                        <Button size="small" onClick={() => showJsonModal('Giá trị CŨ', record.oldValue)}>
+                            Trước
+                        </Button>
+                    )}
+                    {record.newValue && (
+                        <Button size="small" type="primary" onClick={() => showJsonModal('Giá trị MỚI', record.newValue)}>
+                            Sau
+                        </Button>
+                    )}
+                </Space>
+            )
+        },
     ];
 
     // ==========================================
-    // HÀM TẢI FILE EXCEL TỪ SERVER
+    // HÀM TẢI FILE EXCEL
     // ==========================================
     const handleDownloadAuditLog = async () => {
         const token = localStorage.getItem('token');
@@ -220,9 +248,7 @@ const AuditLogsPage = () => {
                 method: 'GET',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-
             if (!response.ok) throw new Error('Tải file thất bại!');
-
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -247,17 +273,10 @@ const AuditLogsPage = () => {
                     </Col>
                     <Col>
                         <Space>
-                            <Button 
-                                icon={<FileExcelOutlined />}
-                                onClick={handleDownloadAuditLog}
-                            >
+                            <Button icon={<FileExcelOutlined />} onClick={handleDownloadAuditLog}>
                                 Xuất theo bộ lọc
                             </Button>
-                            <Button 
-                                type="primary" 
-                                icon={<CloudDownloadOutlined />}
-                                onClick={handleDownloadAuditLog}
-                            >
+                            <Button type="primary" icon={<CloudDownloadOutlined />} onClick={handleDownloadAuditLog}>
                                 Xuất toàn bộ (Server)
                             </Button>
                         </Space>
@@ -267,26 +286,18 @@ const AuditLogsPage = () => {
                 <Row gutter={[16, 16]} style={{ marginBottom: 24, padding: '16px', background: '#fafafa', borderRadius: '8px' }}>
                     <Col>
                         <Select 
-                            placeholder="Lọc theo nhân viên" 
-                            style={{ width: 250 }} 
-                            allowClear
-                            value={selectedUserId}
-                            onChange={(val) => { setSelectedUserId(val); }}
+                            placeholder="Lọc theo nhân viên" style={{ width: 250 }} allowClear
+                            value={selectedUserId} onChange={(val) => setSelectedUserId(val)}
                         >
                             {users.map(u => (
-                                <Option key={u.id} value={u.id}>
-                                    {u.fullName} ({u.role})
-                                </Option>
+                                <Option key={u.id} value={u.id}>{u.fullName} ({u.role})</Option>
                             ))}
                         </Select>
                     </Col>
                     <Col>
                         <DatePicker 
-                            placeholder="Lọc theo ngày" 
-                            style={{ width: 180 }} 
-                            format="DD/MM/YYYY" 
-                            value={selectedDate}
-                            onChange={(val) => { setSelectedDate(val); }}
+                            placeholder="Lọc theo ngày" style={{ width: 180 }} format="DD/MM/YYYY"
+                            value={selectedDate} onChange={(val) => setSelectedDate(val)}
                         />
                     </Col>
                     <Col>
@@ -299,12 +310,12 @@ const AuditLogsPage = () => {
 
                 <Table
                     columns={columns}
-                    expandable={{ expandedRowRender, rowExpandable: (record) => record.events.length > 0 }}
-                    dataSource={groupedLogs}
+                    dataSource={logs}
                     rowKey="key"
                     loading={loading}
                     pagination={pagination}
                     onChange={handleTableChange}
+                    size="middle"
                 />
 
                 {/* MODAL VIEW JSON */}
@@ -319,6 +330,7 @@ const AuditLogsPage = () => {
                                     <Descriptions.Item label={key} key={key}>
                                         {value === null ? <Text type="secondary">null</Text> : 
                                          typeof value === 'boolean' ? <Tag color={value ? 'green' : 'red'}>{value ? 'true' : 'false'}</Tag> : 
+                                         typeof value === 'object' ? <pre style={{ margin: 0, fontSize: 12 }}>{JSON.stringify(value, null, 2)}</pre> :
                                          String(value)}
                                     </Descriptions.Item>
                                 ))}
@@ -335,4 +347,4 @@ const AuditLogsPage = () => {
     );
 };
 
-export default AuditLogsPage;
+export default AuditLogsPage;

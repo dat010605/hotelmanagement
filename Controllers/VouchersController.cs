@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.Authorization;
 using HotelManagement.API.Models;
 using HotelManagement.API.Hubs;
 
@@ -73,6 +74,7 @@ namespace HotelManagement.API.Controllers
         // 4. API ĐẶC BIỆT DÀNH CHO LỄ TÂN (Dùng ở trang Đặt phòng)
         // GET: api/Vouchers/check?code=SUMMER2026
         // ========================================================
+        [AllowAnonymous]
         [HttpGet("check")]
         public async Task<IActionResult> CheckVoucher(string code)
         {

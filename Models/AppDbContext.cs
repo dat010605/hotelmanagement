@@ -174,15 +174,20 @@ public partial class AppDbContext : DbContext
             entity.ToTable("Audit_Logs", tb => tb.HasTrigger("TR_AuditLogs_PreventDelete"));
 
             entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.LogDate)
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.Action)
+                .HasMaxLength(50)
+                .HasColumnName("action");
+            entity.Property(e => e.TableName)
+                .HasMaxLength(255)
+                .HasColumnName("table_name");
+            entity.Property(e => e.RecordId).HasColumnName("record_id");
+            entity.Property(e => e.OldValue).HasColumnName("old_value");
+            entity.Property(e => e.NewValue).HasColumnName("new_value");
+            entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
-                .HasColumnName("log_date");
-            entity.Property(e => e.LogData).HasColumnName("log_data");
-            entity.Property(e => e.RoleName)
-                .HasMaxLength(100)
-                .HasColumnName("role_name");
-            entity.Property(e => e.UserId).HasColumnName("user_id");
+                .HasColumnName("created_at");
 
             entity.HasOne(d => d.User).WithMany(p => p.AuditLogs)
                 .HasForeignKey(d => d.UserId)

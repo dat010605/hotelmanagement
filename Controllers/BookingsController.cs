@@ -2,7 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.SignalR; 
 using HotelManagement.API.Models;
-using HotelManagement.API.Hubs;     
+using HotelManagement.API.Hubs;
+using Microsoft.AspNetCore.Authorization;     
 
 namespace HotelManagement.API.Controllers
 {
@@ -49,6 +50,7 @@ namespace HotelManagement.API.Controllers
             return Ok(availableRooms);
         }
 
+        [AllowAnonymous]
         [HttpPost]
         public async Task<IActionResult> CreateBooking([FromBody] DTOs.CreateBookingDTO request)
         {
@@ -57,12 +59,46 @@ namespace HotelManagement.API.Controllers
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
+                // Kiểm tra voucher nếu có
+                int? voucherId = null;
+                if (!string.IsNullOrWhiteSpace(request.VoucherCode))
+                {
+                    var voucher = await _context.Vouchers
+                        .FirstOrDefaultAsync(v => v.Code.ToUpper() == request.VoucherCode.ToUpper());
+                    if (voucher == null)
+                    {
+                        await transaction.RollbackAsync();
+                        return BadRequest("Mã khuyến mãi không tồn tại.");
+                    }
+                    if (voucher.ValidFrom.HasValue && voucher.ValidFrom.Value > DateTime.Now)
+                    {
+                        await transaction.RollbackAsync();
+                        return BadRequest("Mã khuyến mãi chưa tới thời gian sử dụng.");
+                    }
+                    if (voucher.ValidTo.HasValue && voucher.ValidTo.Value < DateTime.Now)
+                    {
+                        await transaction.RollbackAsync();
+                        return BadRequest("Mã khuyến mãi đã hết hạn.");
+                    }
+                    if (voucher.UsageLimit.HasValue)
+                    {
+                        var usedCount = await _context.Bookings.CountAsync(b => b.VoucherId == voucher.Id && b.Status != "Cancelled");
+                        if (usedCount >= voucher.UsageLimit.Value)
+                        {
+                            await transaction.RollbackAsync();
+                            return BadRequest("Mã khuyến mãi đã hết lượt sử dụng.");
+                        }
+                    }
+                    voucherId = voucher.Id;
+                }
+
                 var newBooking = new Booking
                 {
                     GuestName = request.GuestName,
                     GuestPhone = request.GuestPhone,
                     GuestEmail = request.GuestEmail,
                     BookingCode = "BK" + DateTime.Now.ToString("yyyyMMddHHmmss"),
+                    VoucherId = voucherId,
                     Status = "Confirmed"
                 };
                 _context.Bookings.Add(newBooking);
