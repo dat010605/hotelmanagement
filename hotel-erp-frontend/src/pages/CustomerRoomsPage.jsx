@@ -80,10 +80,22 @@ const CustomerRoomsPage = () => {
     }
 
     // Sort
+    const isVillaRoom = (r) => ((r.roomTypeName || '').toLowerCase()).includes('villa');
+
     if (sortOrder === 'price_asc') {
       result.sort((a, b) => a.basePrice - b.basePrice);
     } else if (sortOrder === 'price_desc') {
       result.sort((a, b) => b.basePrice - a.basePrice);
+    } else {
+      // Mặc định: Sắp xếp roomNumber tăng dần, Villa luôn ở cuối
+      result.sort((a, b) => {
+        const aVilla = isVillaRoom(a) ? 1 : 0;
+        const bVilla = isVillaRoom(b) ? 1 : 0;
+        if (aVilla !== bVilla) return aVilla - bVilla; // Villa xuống cuối
+        const aNum = String(a.roomNumber || a.RoomNumber || '');
+        const bNum = String(b.roomNumber || b.RoomNumber || '');
+        return aNum.localeCompare(bNum, undefined, { numeric: true });
+      });
     }
 
     return result;
@@ -137,7 +149,8 @@ const CustomerRoomsPage = () => {
     if (!voucherCode.trim()) { setVoucherError('Vui lòng nhập mã khuyến mãi'); return; }
     setVoucherLoading(true); setVoucherError(''); setVoucherInfo(null);
     try {
-      const res = await axiosClient.get(`/Vouchers/check?code=${voucherCode.trim()}`);
+      const rtId = selectedRoom?.roomTypeId || selectedRoom?.RoomTypeId || '';
+      const res = await axiosClient.get(`/Vouchers/check?code=${voucherCode.trim()}&roomTypeId=${rtId}`);
       const v = res.data;
       if (v.validTo && new Date(v.validTo) < new Date()) { setVoucherError('Mã khuyến mãi đã hết hạn.'); return; }
       if (v.validFrom && new Date(v.validFrom) > new Date()) { setVoucherError('Mã khuyến mãi chưa tới thời gian sử dụng.'); return; }

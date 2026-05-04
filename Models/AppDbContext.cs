@@ -774,6 +774,11 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.ValidTo)
                 .HasColumnType("datetime")
                 .HasColumnName("valid_to");
+            entity.Property(e => e.RoomTypeId).HasColumnName("room_type_id");
+
+            entity.HasOne(d => d.RoomType).WithMany()
+                .HasForeignKey(d => d.RoomTypeId)
+                .HasConstraintName("FK_Vouchers_RoomTypes");
         });
 
         OnModelCreatingPartial(modelBuilder);

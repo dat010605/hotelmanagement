@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Typography, Row, Col, Card, Tag, Button, Spin, Divider, Badge } from 'antd';
+import { Typography, Row, Col, Card, Tag, Button, Spin, Divider, Badge, message } from 'antd';
 import { FireOutlined, GiftOutlined, TagOutlined, RightOutlined, StarFilled } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
@@ -113,6 +113,18 @@ const CustomerOffersPage = () => {
   const [rooms, setRooms] = useState([]);
   const [roomTypes, setRoomTypes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [copiedCode, setCopiedCode] = useState(null);
+
+  const handleCopyCode = async (code) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopiedCode(code);
+      message.success(`Đã copy mã "${code}" vào clipboard!`);
+      setTimeout(() => setCopiedCode(null), 2000);
+    } catch {
+      message.error('Không thể copy, vui lòng copy thủ công.');
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -275,7 +287,9 @@ const CustomerOffersPage = () => {
                 <Divider style={{ margin: '12px 0' }} />
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Text strong>Mã: <Tag color={voucher.color} style={{ fontSize: 14, padding: '2px 8px' }}>{voucher.code}</Tag></Text>
-                  <Button type="text" style={{ color: '#1890ff', padding: 0 }}>Copy</Button>
+                  <Button type="text" onClick={() => handleCopyCode(voucher.code)}
+                    style={{ color: copiedCode === voucher.code ? '#52c41a' : '#1890ff', padding: 0, fontWeight: 600 }}
+                  >{copiedCode === voucher.code ? '✅ Đã Copy!' : 'Copy'}</Button>
                 </div>
               </Card>
             </Col>
