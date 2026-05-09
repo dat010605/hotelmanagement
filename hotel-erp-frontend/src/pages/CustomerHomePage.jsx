@@ -10,9 +10,12 @@ import { useAttractionsStore } from '../store/useAttractionsStore';
 import { useI18nStore } from '../store/useI18nStore';
 import { useReviewStore } from '../store/useReviewStore';
 import { useMemo } from 'react';
+import HeroSection from '../components/HeroSection';
 
 const { Title, Paragraph, Text } = Typography;
 const { RangePicker } = DatePicker;
+
+const FALLBACK_IMG = 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=600';
 
 // ── Dữ liệu tin tức mẫu ──────────────────────────────────────────────────────
 const NEWS_DATA = [
@@ -66,6 +69,7 @@ const NewsCard = ({ item }) => (
         <img
           alt={item.title}
           src={item.img}
+          onError={(e) => { e.target.src = FALLBACK_IMG; }}
           style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s' }}
           onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.07)'}
           onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
@@ -140,31 +144,12 @@ const CustomerHomePage = () => {
     <div style={{ paddingBottom: '60px' }}>
 
       {/* ── HERO SECTION ──────────────────────────────────────────────────── */}
-      <div style={{
-        background: 'linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6)), url(https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1600) center/cover no-repeat',
-        minHeight: '480px',
-        borderRadius: '16px',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        color: '#fff',
-        textAlign: 'center',
-        padding: '40px 20px',
-        marginBottom: '80px',
-        position: 'relative',
-        boxShadow: '0 8px 24px rgba(0,0,0,0.15)'
-      }}>
-        <Title level={1} style={{ color: '#fff', fontSize: '3.5rem', margin: 0, textShadow: '0 4px 8px rgba(0,0,0,0.3)', fontWeight: 800 }}>
-          {t('welcome')}
-        </Title>
-        <p style={{ color: '#e6f7ff', fontSize: '1.2rem', maxWidth: '600px', marginTop: '16px', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
-          {t('subtitle') || ''}
-        </p>
+      <HeroSection />
 
-        {/* Search Bar */}
+      {/* Search Bar */}
+      <div style={{ maxWidth: 900, margin: '-20px auto 80px', position: 'relative', zIndex: 10 }}>
         <Card
-          style={{ position: 'absolute', bottom: '-45px', width: '90%', maxWidth: '900px', borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.15)' }}
+          style={{ borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.15)' }}
           bodyStyle={{ padding: '16px 24px' }}
         >
           <Row gutter={[16, 16]} align="middle">
@@ -181,7 +166,7 @@ const CustomerHomePage = () => {
               <Input placeholder="Mã khuyến mãi" size="large" bordered={false} style={{ borderBottom: '1px solid #d9d9d9', width: '100%' }} />
             </Col>
             <Col xs={24} md={4} style={{ textAlign: 'center' }}>
-              <Button type="primary" size="large" icon={<SearchOutlined />} onClick={handleSearch} style={{ width: '100%', height: '50px', borderRadius: '8px', background: '#fa8c16', borderColor: '#fa8c16', fontWeight: 'bold', marginTop: '22px' }}>
+              <Button type="primary" size="large" icon={<SearchOutlined />} onClick={handleSearch} style={{ width: '100%', height: '50px', borderRadius: '8px', background: '#c9a961', borderColor: '#c9a961', fontWeight: 'bold', marginTop: '22px' }}>
                 TÌM
               </Button>
             </Col>
@@ -206,6 +191,7 @@ const CustomerHomePage = () => {
                     <img
                       alt={item.title}
                       src={item.img}
+                      onError={(e) => { e.target.src = FALLBACK_IMG; }}
                       style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s' }}
                       onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
                       onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}

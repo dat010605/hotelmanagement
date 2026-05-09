@@ -494,7 +494,7 @@ const RoomManagementPage = () => {
               {currentRoom?.roomImages && currentRoom.roomImages.length > 0 ? (
                 <div style={{ marginTop: '20px' }}>
                   <Text strong style={{ display: 'block', marginBottom: 10 }}>Ảnh hiện tại:</Text>
-                  <img src={currentRoom.roomImages[0].imageUrl} alt="Room" style={{ maxWidth: '80%', maxHeight: '350px', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                  <img src={currentRoom.roomImages[0].imageUrl} alt="Room" onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=800'; }} style={{ maxWidth: '80%', maxHeight: '350px', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
                 </div>
               ) : (
                 <div style={{ marginTop: '30px', color: '#bfbfbf' }}><p>Chưa có hình ảnh nào.</p></div>

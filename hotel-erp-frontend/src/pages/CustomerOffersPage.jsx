@@ -200,7 +200,7 @@ const CustomerOffersPage = () => {
                 <Badge.Ribbon text="Best Seller" color="red">
                   <Card
                     hoverable
-                    cover={<img alt={room.roomNumber} src={room.imgUrl} style={{ height: 200, objectFit: 'cover' }} />}
+                    cover={<img alt={room.roomNumber} src={room.imgUrl} onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=800'; }} style={{ height: 200, objectFit: 'cover' }} />}
                     style={{ borderRadius: '12px', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column' }}
                     bodyStyle={{ flex: 1, display: 'flex', flexDirection: 'column' }}
                   >
@@ -239,7 +239,7 @@ const CustomerOffersPage = () => {
             <Col xs={24} md={8} key={combo.id}>
               <Card
                 hoverable
-                cover={<img alt={combo.title} src={combo.img} style={{ height: 220, objectFit: 'cover' }} />}
+                cover={<img alt={combo.title} src={combo.img} onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=600'; }} style={{ height: 220, objectFit: 'cover' }} />}
                 style={{ borderRadius: '12px', overflow: 'hidden', height: '100%' }}
                 bodyStyle={{ padding: 24 }}
               >
