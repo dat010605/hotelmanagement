@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { SUPPORTED_LANGUAGES } from '../i18n';
 import { useAdminAuthStore } from '../store/adminAuthStore';
 import { useCustomerProfileStore } from '../store/useCustomerProfileStore';
 import {
@@ -288,21 +290,34 @@ const injectKeyframes = () => {
       .hero-desktop-actions { display: none !important; }
       .hero-hamburger { display: block !important; }
     }
+    /* Language Dropdown in Hero */
+    .hero-lang-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 4px;
+      font-size: 0.88rem;
+      font-family: 'Inter', 'Segoe UI', sans-serif;
+    }
+    .hero-lang-item .lang-flag { font-size: 1.15rem; }
+    .hero-lang-item .lang-check { color: #c9a961; font-weight: 700; }
   `;
   document.head.appendChild(style);
 };
 
-const NAV_ITEMS = [
-  { path: '/', label: 'Trang chủ' },
-  { path: '/rooms', label: 'Phòng & Villa' },
-  { path: '/services', label: 'Dịch vụ' },
-  { path: '/attractions', label: 'Khám phá' },
-  { path: '/offers', label: 'Ưu đãi' },
-  { path: '/contact', label: 'Liên hệ' },
+// ── Navigation items (translation keys) ────────────────────────────────────
+const NAV_KEYS = [
+  { path: '/', key: 'header.home' },
+  { path: '/rooms', key: 'header.rooms' },
+  { path: '/services', key: 'header.services' },
+  { path: '/attractions', key: 'header.explore' },
+  { path: '/offers', key: 'header.offers' },
+  { path: '/contact', key: 'header.contact' },
 ];
 
 const HeroSection = () => {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
   const { user, clearAuth } = useAdminAuthStore();
   const { getProfile } = useCustomerProfileStore();
   const [scrolled, setScrolled] = useState(false);
@@ -312,8 +327,11 @@ const HeroSection = () => {
 
   const email = user?.email || user?.Email || '';
   const profile = getProfile(email);
-  const fullName = profile.displayName || user?.fullName || user?.FullName || user?.name || 'Khách';
+  const fullName = profile.displayName || user?.fullName || user?.FullName || user?.name || t('header.guest');
   const avatarUrl = profile.avatarUrl || user?.avatarUrl || user?.AvatarUrl || null;
+
+  // Lấy thông tin ngôn ngữ hiện tại
+  const currentLang = SUPPORTED_LANGUAGES.find(l => l.code === i18n.language) || SUPPORTED_LANGUAGES[0];
 
   useEffect(() => {
     injectKeyframes();
@@ -326,6 +344,23 @@ const HeroSection = () => {
     clearAuth();
     navigate('/');
   };
+
+  const handleChangeLanguage = (langCode) => {
+    i18n.changeLanguage(langCode);
+  };
+
+  // ── Dropdown ngôn ngữ 6 lựa chọn ──────────────────────────────────────
+  const languageItems = SUPPORTED_LANGUAGES.map(lang => ({
+    key: lang.code,
+    label: (
+      <div className="hero-lang-item">
+        <span className="lang-flag">{lang.flag}</span>
+        <span style={{ flex: 1 }}>{lang.label}</span>
+        {i18n.language === lang.code && <span className="lang-check">✓</span>}
+      </div>
+    ),
+    onClick: () => handleChangeLanguage(lang.code),
+  }));
 
   // Account dropdown for logged-in users
   const accountDropdownItems = user ? [
@@ -340,20 +375,20 @@ const HeroSection = () => {
       disabled: true
     },
     { type: 'divider' },
-    { key: 'profile', icon: <SettingOutlined />, label: 'Thông tin tài khoản', onClick: () => navigate('/profile') },
-    { key: 'bookings', icon: <UserOutlined />, label: 'Lịch sử đặt phòng', onClick: () => navigate('/my-bookings') },
-    { key: 'password', icon: <LockOutlined />, label: 'Đổi mật khẩu', onClick: () => navigate('/profile') },
+    { key: 'profile', icon: <SettingOutlined />, label: t('header.accountInfo'), onClick: () => navigate('/profile') },
+    { key: 'bookings', icon: <UserOutlined />, label: t('header.bookingHistory'), onClick: () => navigate('/my-bookings') },
+    { key: 'password', icon: <LockOutlined />, label: t('header.changePassword'), onClick: () => navigate('/profile') },
     { type: 'divider' },
     ...(user?.role?.toLowerCase()?.trim() !== 'guest' ? [{
       key: 'admin',
       icon: <SettingOutlined />,
-      label: 'Trang Quản Trị',
+      label: t('header.adminPanel'),
       onClick: () => navigate('/admin/dashboard')
     }] : []),
     {
       key: 'logout',
       icon: <LogoutOutlined />,
-      label: <Text type="danger">Đăng xuất</Text>,
+      label: <Text type="danger">{t('header.logout')}</Text>,
       onClick: handleLogout,
       danger: true
     }
@@ -399,7 +434,7 @@ const HeroSection = () => {
         {/* Desktop Navigation */}
         <nav className="hero-desktop-nav" style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
           <ul style={styles.nav}>
-            {NAV_ITEMS.map((item) => (
+            {NAV_KEYS.map((item) => (
               <li key={item.path}>
                 <Link
                   to={item.path}
@@ -411,7 +446,7 @@ const HeroSection = () => {
                   onMouseEnter={() => setHoveredNav(item.path)}
                   onMouseLeave={() => setHoveredNav(null)}
                 >
-                  {item.label}
+                  {t(item.key)}
                 </Link>
               </li>
             ))}
@@ -420,6 +455,20 @@ const HeroSection = () => {
 
         {/* Desktop Actions */}
         <div className="hero-desktop-actions" style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          {/* Language Switcher */}
+          <Dropdown menu={{ items: languageItems }} placement="bottomRight" trigger={['click']}>
+            <button style={{
+              background: 'none', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '20px',
+              color: 'rgba(255,255,255,0.85)', cursor: 'pointer', fontSize: '0.82rem',
+              letterSpacing: '1px', fontFamily: "'Inter', sans-serif",
+              padding: '5px 14px', display: 'flex', alignItems: 'center', gap: '6px',
+              transition: 'all 0.3s',
+            }}>
+              <span style={{ fontSize: '1rem' }}>{currentLang.flag}</span>
+              <span>{currentLang.short}</span>
+            </button>
+          </Dropdown>
+
           {user ? (
             <Dropdown
               menu={{ items: accountDropdownItems }}
@@ -455,7 +504,7 @@ const HeroSection = () => {
                   transition: 'color 0.3s',
                 }}
               >
-                <LoginOutlined style={{ marginRight: 6 }} />Đăng nhập
+                <LoginOutlined style={{ marginRight: 6 }} />{t('header.login')}
               </Link>
               <button
                 className="hero-book-btn"
@@ -467,7 +516,7 @@ const HeroSection = () => {
                 onMouseLeave={() => setBtnHover(false)}
                 onClick={() => navigate('/rooms')}
               >
-                Book Now
+                {t('header.bookNow')}
               </button>
             </>
           )}
@@ -492,7 +541,27 @@ const HeroSection = () => {
         >
           <CloseOutlined />
         </button>
-        {NAV_ITEMS.map((item) => (
+
+        {/* Mobile Language Selector */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, paddingBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.15)' }}>
+          {SUPPORTED_LANGUAGES.map(lang => (
+            <button
+              key={lang.code}
+              onClick={() => handleChangeLanguage(lang.code)}
+              style={{
+                background: i18n.language === lang.code ? 'rgba(201,169,97,0.2)' : 'rgba(255,255,255,0.05)',
+                border: i18n.language === lang.code ? '1px solid #c9a961' : '1px solid rgba(255,255,255,0.15)',
+                color: i18n.language === lang.code ? '#c9a961' : 'rgba(255,255,255,0.7)',
+                borderRadius: 16, padding: '4px 12px', fontSize: '0.78rem', cursor: 'pointer',
+                fontFamily: "'Inter', sans-serif", transition: 'all 0.3s',
+              }}
+            >
+              {lang.flag} {lang.short}
+            </button>
+          ))}
+        </div>
+
+        {NAV_KEYS.map((item) => (
           <Link
             key={item.path}
             to={item.path}
@@ -508,26 +577,26 @@ const HeroSection = () => {
               fontFamily: "'Inter', sans-serif",
             }}
           >
-            {item.label}
+            {t(item.key)}
           </Link>
         ))}
         <button
           style={{ ...styles.bookNowBtn, marginTop: '16px', width: '100%', textAlign: 'center' }}
           onClick={() => { navigate('/rooms'); setMobileOpen(false); }}
         >
-          Book Now
+          {t('header.bookNow')}
         </button>
       </div>
 
       {/* ── Center Content ─────────────────────────────────────────────── */}
       <div style={styles.centerContent}>
         <div className="hero-tagline" style={styles.tagline}>
-          Some places you visit.<br />
-          Others, you <span style={styles.taglineItalic}>feel</span>.
+          {t('hero.tagline1')}<br />
+          {t('hero.tagline2')} <span style={styles.taglineItalic}>{t('hero.taglineHighlight')}</span>
         </div>
         <div className="hero-divider" style={styles.divider} />
         <div className="hero-subtitle" style={styles.subtitle}>
-          A world of timeless luxury on the shores of Việt Nam
+          {t('hero.subtitle')}
         </div>
         <div className="hero-cta">
           <button
@@ -542,14 +611,14 @@ const HeroSection = () => {
             onMouseLeave={(e) => { e.target.style.background = 'transparent'; e.target.style.color = '#c9a961'; }}
             onClick={() => navigate('/rooms')}
           >
-            Explore Rooms
+            {t('hero.exploreRooms')}
           </button>
         </div>
       </div>
 
       {/* ── Scroll indicator ───────────────────────────────────────────── */}
       <div className="hero-scroll" style={styles.scrollIndicator}>
-        <span>Scroll</span>
+        <span>{t('header.scroll')}</span>
         <div style={styles.scrollLine} />
       </div>
     </div>

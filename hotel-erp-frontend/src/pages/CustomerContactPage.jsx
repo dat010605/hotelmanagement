@@ -5,42 +5,43 @@ import {
   ClockCircleOutlined, SendOutlined, GlobalOutlined,
   FacebookOutlined, InstagramOutlined, YoutubeOutlined
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 
 const { Title, Paragraph, Text } = Typography;
 const { TextArea } = Input;
 
-const CONTACT_INFO = [
-  {
-    icon: <PhoneOutlined style={{ fontSize: 28, color: '#c9a961' }} />,
-    title: 'Điện thoại',
-    details: ['+84 (0) 236 3888 888', '+84 (0) 905 123 456 (Hotline)'],
-  },
-  {
-    icon: <MailOutlined style={{ fontSize: 28, color: '#c9a961' }} />,
-    title: 'Email',
-    details: ['hotelnhungnguoiban@gmail.com', 'The Royal Citadel'],
-  },
-  {
-    icon: <EnvironmentOutlined style={{ fontSize: 28, color: '#c9a961' }} />,
-    title: 'Địa chỉ',
-    details: ['Bãi biển Mỹ Khê, Quận Ngũ Hành Sơn', 'TP. Đà Nẵng, Việt Nam'],
-  },
-  {
-    icon: <ClockCircleOutlined style={{ fontSize: 28, color: '#c9a961' }} />,
-    title: 'Giờ làm việc',
-    details: ['Lễ tân: 24/7', 'Đặt phòng: 07:00 – 22:00'],
-  },
-];
-
 const CustomerContactPage = () => {
+  const { t } = useTranslation();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
 
+  const CONTACT_INFO = [
+    {
+      icon: <PhoneOutlined style={{ fontSize: 28, color: '#c9a961' }} />,
+      titleKey: 'contactPage.phone',
+      details: ['+84 (0) 236 3888 888', '+84 (0) 905 123 456 (Hotline)'],
+    },
+    {
+      icon: <MailOutlined style={{ fontSize: 28, color: '#c9a961' }} />,
+      titleKey: 'contactPage.email',
+      details: ['hotelnhungnguoiban@gmail.com', 'The Royal Citadel'],
+    },
+    {
+      icon: <EnvironmentOutlined style={{ fontSize: 28, color: '#c9a961' }} />,
+      titleKey: 'contactPage.address',
+      detailKeys: ['contactPage.addressLine1', 'contactPage.addressLine2'],
+    },
+    {
+      icon: <ClockCircleOutlined style={{ fontSize: 28, color: '#c9a961' }} />,
+      titleKey: 'contactPage.workingHours',
+      detailKeys: ['contactPage.receptionHours', 'contactPage.bookingHours'],
+    },
+  ];
+
   const handleSubmit = async (values) => {
     setLoading(true);
-    // Giả lập gửi form
     setTimeout(() => {
-      message.success('Cảm ơn bạn! Chúng tôi sẽ phản hồi trong 24 giờ.');
+      message.success(t('contactPage.successMsg'));
       form.resetFields();
       setLoading(false);
     }, 1500);
@@ -62,14 +63,14 @@ const CustomerContactPage = () => {
           color: '#fff', margin: 0, fontFamily: "'Playfair Display', serif",
           fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 400, position: 'relative',
         }}>
-          Liên Hệ
+          {t('contactPage.title')}
         </Title>
         <div style={{ width: 60, height: 1, background: '#c9a961', margin: '16px auto' }} />
         <Paragraph style={{
           color: 'rgba(255,255,255,0.7)', fontSize: '1rem', maxWidth: 600,
           margin: '0 auto', position: 'relative', letterSpacing: '1px',
         }}>
-          Chúng tôi luôn sẵn sàng lắng nghe và hỗ trợ bạn
+          {t('contactPage.subtitle')}
         </Paragraph>
       </div>
 
@@ -93,12 +94,15 @@ const CustomerContactPage = () => {
               }}>
                 {info.icon}
               </div>
-              <Title level={5} style={{ marginBottom: 8, color: '#1a1a2e' }}>{info.title}</Title>
-              {info.details.map((d, i) => (
-                <Text key={i} style={{ display: 'block', color: '#595959', fontSize: 14, lineHeight: 1.8 }}>
-                  {d}
-                </Text>
-              ))}
+              <Title level={5} style={{ marginBottom: 8, color: '#1a1a2e' }}>{t(info.titleKey)}</Title>
+              {info.details
+                ? info.details.map((d, i) => (
+                    <Text key={i} style={{ display: 'block', color: '#595959', fontSize: 14, lineHeight: 1.8 }}>{d}</Text>
+                  ))
+                : info.detailKeys.map((dk, i) => (
+                    <Text key={i} style={{ display: 'block', color: '#595959', fontSize: 14, lineHeight: 1.8 }}>{t(dk)}</Text>
+                  ))
+              }
             </Card>
           </Col>
         ))}
@@ -115,7 +119,7 @@ const CustomerContactPage = () => {
             bodyStyle={{ padding: 32 }}
           >
             <Title level={3} style={{ fontFamily: "'Playfair Display', serif", marginBottom: 4 }}>
-              Gửi Tin Nhắn
+              {t('contactPage.sendMessage')}
             </Title>
             <div style={{ width: 40, height: 2, background: '#c9a961', marginBottom: 24 }} />
 
@@ -124,19 +128,19 @@ const CustomerContactPage = () => {
                 <Col xs={24} sm={12}>
                   <Form.Item
                     name="name"
-                    label="Họ và tên"
-                    rules={[{ required: true, message: 'Vui lòng nhập họ tên' }]}
+                    label={t('contactPage.fullName')}
+                    rules={[{ required: true, message: t('contactPage.enterName') }]}
                   >
-                    <Input size="large" placeholder="Nguyễn Văn A" style={{ borderRadius: 8 }} />
+                    <Input size="large" placeholder={t('contactPage.namePlaceholder')} style={{ borderRadius: 8 }} />
                   </Form.Item>
                 </Col>
                 <Col xs={24} sm={12}>
                   <Form.Item
                     name="email"
-                    label="Email"
+                    label={t('contactPage.email')}
                     rules={[
-                      { required: true, message: 'Vui lòng nhập email' },
-                      { type: 'email', message: 'Email không hợp lệ' }
+                      { required: true, message: t('contactPage.enterEmail') },
+                      { type: 'email', message: t('contactPage.invalidEmail') }
                     ]}
                   >
                     <Input size="large" placeholder="email@example.com" style={{ borderRadius: 8 }} />
@@ -144,27 +148,24 @@ const CustomerContactPage = () => {
                 </Col>
               </Row>
 
-              <Form.Item
-                name="phone"
-                label="Số điện thoại"
-              >
+              <Form.Item name="phone" label={t('contactPage.phoneLine')}>
                 <Input size="large" placeholder="+84 905 xxx xxx" style={{ borderRadius: 8 }} />
               </Form.Item>
 
               <Form.Item
                 name="subject"
-                label="Chủ đề"
-                rules={[{ required: true, message: 'Vui lòng nhập chủ đề' }]}
+                label={t('contactPage.subject')}
+                rules={[{ required: true, message: t('contactPage.enterSubject') }]}
               >
-                <Input size="large" placeholder="VD: Đặt phòng, Hỏi giá, Góp ý..." style={{ borderRadius: 8 }} />
+                <Input size="large" placeholder={t('contactPage.subjectPlaceholder')} style={{ borderRadius: 8 }} />
               </Form.Item>
 
               <Form.Item
                 name="message"
-                label="Nội dung"
-                rules={[{ required: true, message: 'Vui lòng nhập nội dung' }]}
+                label={t('contactPage.content')}
+                rules={[{ required: true, message: t('contactPage.enterContent') }]}
               >
-                <TextArea rows={5} placeholder="Nội dung tin nhắn của bạn..." style={{ borderRadius: 8 }} />
+                <TextArea rows={5} placeholder={t('contactPage.contentPlaceholder')} style={{ borderRadius: 8 }} />
               </Form.Item>
 
               <Button
@@ -179,7 +180,7 @@ const CustomerContactPage = () => {
                   width: '100%', height: 48,
                 }}
               >
-                GỬI TIN NHẮN
+                {t('contactPage.submitBtn')}
               </Button>
             </Form>
           </Card>
@@ -197,10 +198,10 @@ const CustomerContactPage = () => {
           >
             <div style={{ padding: '24px 24px 16px' }}>
               <Title level={3} style={{ fontFamily: "'Playfair Display', serif", marginBottom: 4 }}>
-                Vị Trí
+                {t('contactPage.location')}
               </Title>
               <div style={{ width: 40, height: 2, background: '#c9a961', marginBottom: 8 }} />
-              <Text type="secondary">The Royal Citadel – Bãi biển Mỹ Khê, Đà Nẵng</Text>
+              <Text type="secondary">{t('contactPage.locationDesc')}</Text>
             </div>
             <div style={{ height: 'calc(100% - 90px)' }}>
               <iframe
@@ -224,7 +225,7 @@ const CustomerContactPage = () => {
         borderRadius: 16,
       }}>
         <Title level={4} style={{ color: '#fff', fontFamily: "'Playfair Display', serif", fontWeight: 400 }}>
-          Theo dõi chúng tôi
+          {t('contactPage.followUs')}
         </Title>
         <div style={{ display: 'flex', justifyContent: 'center', gap: 20, marginTop: 16 }}>
           {[

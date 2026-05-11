@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'; // The Royal Citadel Layout v4
+import React, { useState, useEffect } from 'react'; // The Royal Citadel Layout v5 – i18n
 import { Layout, Button, Dropdown, Typography, Space, Avatar } from 'antd';
 import {
   GlobalOutlined, LoginOutlined, UserAddOutlined,
@@ -6,7 +6,8 @@ import {
   MenuOutlined, CloseOutlined
 } from '@ant-design/icons';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
-import { useI18nStore } from '../store/useI18nStore';
+import { useTranslation } from 'react-i18next';
+import { SUPPORTED_LANGUAGES } from '../i18n';
 import { useAdminAuthStore } from '../store/adminAuthStore';
 import { useCustomerProfileStore } from '../store/useCustomerProfileStore';
 
@@ -32,14 +33,14 @@ const CitadelLogo = ({ size = 36, color = '#c9a961' }) => (
   </svg>
 );
 
-// ── Navigation Items ───────────────────────────────────────────────────────
-const NAV_ITEMS = [
-  { path: '/', label: 'Trang chủ' },
-  { path: '/rooms', label: 'Phòng & Villa' },
-  { path: '/services', label: 'Dịch vụ' },
-  { path: '/attractions', label: 'Khám phá' },
-  { path: '/offers', label: 'Ưu đãi' },
-  { path: '/contact', label: 'Liên hệ' },
+// ── Navigation Items (dùng translation keys) ──────────────────────────────
+const NAV_KEYS = [
+  { path: '/', key: 'header.home' },
+  { path: '/rooms', key: 'header.rooms' },
+  { path: '/services', key: 'header.services' },
+  { path: '/attractions', key: 'header.explore' },
+  { path: '/offers', key: 'header.offers' },
+  { path: '/contact', key: 'header.contact' },
 ];
 
 // ── Inject CSS once ────────────────────────────────────────────────────────
@@ -112,6 +113,28 @@ const injectHeaderCSS = () => {
       background: rgba(0,0,0,0.5);
       z-index: 1000;
     }
+    /* ── Language Dropdown Styles ── */
+    .lang-dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 4px;
+      font-size: 0.88rem;
+      font-family: 'Inter', 'Segoe UI', sans-serif;
+      transition: all 0.2s;
+    }
+    .lang-dropdown-item .lang-flag {
+      font-size: 1.15rem;
+      line-height: 1;
+    }
+    .lang-dropdown-item .lang-label {
+      flex: 1;
+    }
+    .lang-dropdown-item .lang-check {
+      color: #c9a961;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
   `;
   document.head.appendChild(style);
 };
@@ -119,16 +142,19 @@ const injectHeaderCSS = () => {
 const CustomerLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { t, language, setLanguage } = useI18nStore();
+  const { t, i18n } = useTranslation();
   const { user, clearAuth } = useAdminAuthStore();
   const { getProfile } = useCustomerProfileStore();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const email = user?.email || user?.Email || '';
   const profile = getProfile(email);
-  const fullName = profile.displayName || user?.fullName || user?.FullName || user?.name || 'Khách';
+  const fullName = profile.displayName || user?.fullName || user?.FullName || user?.name || t('header.guest');
   const avatarUrl = profile.avatarUrl || user?.avatarUrl || user?.AvatarUrl || null;
   const isHomePage = location.pathname === '/';
+
+  // Lấy thông tin ngôn ngữ hiện tại
+  const currentLang = SUPPORTED_LANGUAGES.find(l => l.code === i18n.language) || SUPPORTED_LANGUAGES[0];
 
   useEffect(() => {
     injectHeaderCSS();
@@ -139,10 +165,22 @@ const CustomerLayout = () => {
     navigate('/');
   };
 
-  const languageItems = [
-    { key: 'vi', label: '🇻🇳 Tiếng Việt', onClick: () => setLanguage('vi') },
-    { key: 'en', label: '🇬🇧 English', onClick: () => setLanguage('en') }
-  ];
+  // ── Dropdown ngôn ngữ 6 lựa chọn ──────────────────────────────────────
+  const handleChangeLanguage = (langCode) => {
+    i18n.changeLanguage(langCode);
+  };
+
+  const languageItems = SUPPORTED_LANGUAGES.map(lang => ({
+    key: lang.code,
+    label: (
+      <div className="lang-dropdown-item">
+        <span className="lang-flag">{lang.flag}</span>
+        <span className="lang-label">{lang.label}</span>
+        {i18n.language === lang.code && <span className="lang-check">✓</span>}
+      </div>
+    ),
+    onClick: () => handleChangeLanguage(lang.code),
+  }));
 
   const accountDropdownItems = user ? [
     {
@@ -156,16 +194,16 @@ const CustomerLayout = () => {
       disabled: true
     },
     { type: 'divider' },
-    { key: 'profile', icon: <SettingOutlined />, label: 'Thông tin tài khoản', onClick: () => navigate('/profile') },
-    { key: 'bookings', icon: <UserOutlined />, label: 'Lịch sử đặt phòng', onClick: () => navigate('/my-bookings') },
-    { key: 'password', icon: <LockOutlined />, label: 'Đổi mật khẩu', onClick: () => navigate('/profile') },
+    { key: 'profile', icon: <SettingOutlined />, label: t('header.accountInfo'), onClick: () => navigate('/profile') },
+    { key: 'bookings', icon: <UserOutlined />, label: t('header.bookingHistory'), onClick: () => navigate('/my-bookings') },
+    { key: 'password', icon: <LockOutlined />, label: t('header.changePassword'), onClick: () => navigate('/profile') },
     { type: 'divider' },
     ...(user?.role?.toLowerCase()?.trim() !== 'guest' ? [{
-      key: 'admin', icon: <SettingOutlined />, label: 'Trang Quản Trị', onClick: () => navigate('/admin/dashboard')
+      key: 'admin', icon: <SettingOutlined />, label: t('header.adminPanel'), onClick: () => navigate('/admin/dashboard')
     }] : []),
     {
       key: 'logout', icon: <LogoutOutlined />,
-      label: <Text type="danger">Đăng xuất</Text>,
+      label: <Text type="danger">{t('header.logout')}</Text>,
       onClick: handleLogout, danger: true
     }
   ] : [];
@@ -219,13 +257,13 @@ const CustomerLayout = () => {
           {/* Desktop Navigation */}
           <nav className="layout-desktop-nav" style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
             <ul style={{ display: 'flex', alignItems: 'center', gap: '32px', listStyle: 'none', margin: 0, padding: 0 }}>
-              {NAV_ITEMS.map(item => (
+              {NAV_KEYS.map(item => (
                 <li key={item.path}>
                   <Link
                     to={item.path}
                     className={`layout-nav-link ${location.pathname === item.path ? 'active' : ''}`}
                   >
-                    {item.label}
+                    {t(item.key)}
                   </Link>
                 </li>
               ))}
@@ -234,15 +272,17 @@ const CustomerLayout = () => {
 
           {/* Desktop Actions */}
           <div className="layout-desktop-actions" style={{ display: 'flex', alignItems: 'center', gap: '16px', flexShrink: 0 }}>
-            {/* Language */}
-            <Dropdown menu={{ items: languageItems }} placement="bottomRight">
+            {/* Language Switcher */}
+            <Dropdown menu={{ items: languageItems }} placement="bottomRight" trigger={['click']}>
               <button style={{
-                background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)',
-                cursor: 'pointer', fontSize: '0.85rem', letterSpacing: '1px',
-                fontFamily: "'Inter', sans-serif",
+                background: 'none', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '20px',
+                color: 'rgba(255,255,255,0.85)', cursor: 'pointer', fontSize: '0.82rem',
+                letterSpacing: '1px', fontFamily: "'Inter', sans-serif",
+                padding: '5px 14px', display: 'flex', alignItems: 'center', gap: '6px',
+                transition: 'all 0.3s',
               }}>
-                <GlobalOutlined style={{ marginRight: 4 }} />
-                {language === 'vi' ? 'VI' : 'EN'}
+                <span style={{ fontSize: '1rem' }}>{currentLang.flag}</span>
+                <span>{currentLang.short}</span>
               </button>
             </Dropdown>
 
@@ -263,10 +303,10 @@ const CustomerLayout = () => {
             ) : (
               <>
                 <Link to="/login" style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.82rem', letterSpacing: '1px', textDecoration: 'none' }}>
-                  <LoginOutlined style={{ marginRight: 4 }} />Đăng nhập
+                  <LoginOutlined style={{ marginRight: 4 }} />{t('header.login')}
                 </Link>
                 <button className="layout-book-btn" onClick={() => navigate('/rooms')}>
-                  Book Now
+                  {t('header.bookNow')}
                 </button>
               </>
             )}
@@ -292,7 +332,27 @@ const CustomerLayout = () => {
         >
           <CloseOutlined />
         </button>
-        {NAV_ITEMS.map(item => (
+
+        {/* Mobile Language Selector */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.15)' }}>
+          {SUPPORTED_LANGUAGES.map(lang => (
+            <button
+              key={lang.code}
+              onClick={() => handleChangeLanguage(lang.code)}
+              style={{
+                background: i18n.language === lang.code ? 'rgba(201,169,97,0.2)' : 'rgba(255,255,255,0.05)',
+                border: i18n.language === lang.code ? '1px solid #c9a961' : '1px solid rgba(255,255,255,0.15)',
+                color: i18n.language === lang.code ? '#c9a961' : 'rgba(255,255,255,0.7)',
+                borderRadius: 16, padding: '4px 12px', fontSize: '0.78rem', cursor: 'pointer',
+                fontFamily: "'Inter', sans-serif", transition: 'all 0.3s',
+              }}
+            >
+              {lang.flag} {lang.short}
+            </button>
+          ))}
+        </div>
+
+        {NAV_KEYS.map(item => (
           <Link
             key={item.path}
             to={item.path}
@@ -305,13 +365,13 @@ const CustomerLayout = () => {
               fontFamily: "'Inter', sans-serif",
             }}
           >
-            {item.label}
+            {t(item.key)}
           </Link>
         ))}
         <button className="layout-book-btn" style={{ marginTop: 16, width: '100%', textAlign: 'center' }}
           onClick={() => { navigate('/rooms'); setMobileOpen(false); }}
         >
-          Book Now
+          {t('header.bookNow')}
         </button>
       </div>
 
@@ -338,7 +398,7 @@ const CustomerLayout = () => {
           </div>
           <div style={{ width: 40, height: 1, background: '#c9a961', margin: '12px auto' }} />
           <p style={{ color: 'rgba(255,255,255,0.5)', marginTop: '12px', letterSpacing: '1px', fontSize: 13 }}>
-            © 2026 The Royal Citadel. Nơi lưu giữ những khoảnh khắc tuyệt vời.
+            {t('footer.copyright')}
           </p>
         </div>
       </Footer>

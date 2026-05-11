@@ -1972,3 +1972,9 @@ D:\Download\hotelmanagement\bin\Debug\net10.0\runtimes\unix\lib\netcoreapp3.0\Sy
 D:\Download\hotelmanagement\bin\Debug\net10.0\runtimes\win\lib\netcoreapp3.0\System.Drawing.Common.dll
 D:\Download\hotelmanagement\bin\Debug\net10.0\runtimes\win\lib\netcoreapp3.0\System.Windows.Extensions.dll
 D:\Download\hotelmanagement\bin\Debug\net10.0\HotelManagement.API.staticwebassets.runtime.json
+D:\Download\hotelmanagement\bin\Debug\net10.0\hotel-erp-frontend\src\locales\de.json
+D:\Download\hotelmanagement\bin\Debug\net10.0\hotel-erp-frontend\src\locales\en.json
+D:\Download\hotelmanagement\bin\Debug\net10.0\hotel-erp-frontend\src\locales\es.json
+D:\Download\hotelmanagement\bin\Debug\net10.0\hotel-erp-frontend\src\locales\fr.json
+D:\Download\hotelmanagement\bin\Debug\net10.0\hotel-erp-frontend\src\locales\vi.json
+D:\Download\hotelmanagement\bin\Debug\net10.0\hotel-erp-frontend\src\locales\zh.json
