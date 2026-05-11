@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   Typography, Card, Row, Col, Rate, Input, Button, Avatar, Divider,
-  Form, Space, Tag, App, Empty
+  Form, Space, Tag, App, Empty, Pagination, Select
 } from 'antd';
 import {
   UserOutlined, StarFilled, SendOutlined, SmileOutlined, ClockCircleOutlined
@@ -31,9 +31,28 @@ const CustomerReviewsPage = () => {
   const allReviews = useReviewStore(state => state.reviews);
   const reviews = useMemo(() => allReviews.filter(r => !r.isHidden), [allReviews]);
   const [submitting, setSubmitting] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [ratingFilter, setRatingFilter] = useState('all');
+  const pageSize = 5;
 
   // Tính tổng số sao trung bình
   const avgRating = reviews.length > 0 ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1) : 0;
+
+  const handleFilterChange = (value) => {
+    setRatingFilter(value);
+    setCurrentPage(1);
+  };
+
+  const filteredReviews = useMemo(() => {
+    if (ratingFilter === 'all') return reviews;
+    return reviews.filter(r => Math.floor(r.rating) === parseInt(ratingFilter));
+  }, [reviews, ratingFilter]);
+
+  // Lấy danh sách đánh giá của trang hiện tại
+  const currentReviews = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return filteredReviews.slice(startIndex, startIndex + pageSize);
+  }, [filteredReviews, currentPage, pageSize]);
 
   const handleSubmitReview = async (values) => {
     if (!user) {
@@ -184,12 +203,30 @@ const CustomerReviewsPage = () => {
       </Card>
 
       {/* REVIEWS LIST */}
-      <Title level={4} style={{ marginBottom: 24 }}>
-        💬 Tất cả đánh giá ({reviews.length})
-      </Title>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
+        <Title level={4} style={{ margin: 0 }}>
+          💬 Tất cả đánh giá ({filteredReviews.length})
+        </Title>
+        <Select
+          defaultValue="all"
+          style={{ width: 160 }}
+          onChange={handleFilterChange}
+          options={[
+            { value: 'all', label: 'Tất cả số sao' },
+            { value: '5', label: '5 Sao (Tuyệt vời)' },
+            { value: '4', label: '4 Sao (Rất tốt)' },
+            { value: '3', label: '3 Sao (Bình thường)' },
+            { value: '2', label: '2 Sao (Tạm được)' },
+            { value: '1', label: '1 Sao (Tệ)' },
+          ]}
+        />
+      </div>
 
-      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-        {reviews.map(review => (
+      {filteredReviews.length === 0 ? (
+        <Empty description="Không có đánh giá nào phù hợp với bộ lọc." style={{ margin: '40px 0' }} />
+      ) : (
+        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+        {currentReviews.map(review => (
           <Card
             key={review.id}
             style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
@@ -219,6 +256,19 @@ const CustomerReviewsPage = () => {
           </Card>
         ))}
       </Space>
+      )}
+
+      {filteredReviews.length > pageSize && (
+        <div style={{ textAlign: 'center', marginTop: 32 }}>
+          <Pagination
+            current={currentPage}
+            pageSize={pageSize}
+            total={filteredReviews.length}
+            onChange={(page) => setCurrentPage(page)}
+            showSizeChanger={false}
+          />
+        </div>
+      )}
     </div>
   );
 };

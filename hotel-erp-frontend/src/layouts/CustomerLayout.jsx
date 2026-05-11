@@ -3,7 +3,7 @@ import { Layout, Button, Dropdown, Typography, Space, Avatar } from 'antd';
 import {
   GlobalOutlined, LoginOutlined, UserAddOutlined,
   LogoutOutlined, UserOutlined, SettingOutlined, LockOutlined,
-  MenuOutlined, CloseOutlined
+  MenuOutlined, CloseOutlined, FacebookFilled
 } from '@ant-design/icons';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -134,6 +134,13 @@ const injectHeaderCSS = () => {
       color: #c9a961;
       font-weight: 700;
       font-size: 0.9rem;
+    }
+    @keyframes pageFadeIn {
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .page-transition {
+      animation: pageFadeIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
     }
   `;
   document.head.appendChild(style);
@@ -381,7 +388,9 @@ const CustomerLayout = () => {
         margin: '0 auto',
         padding: isHomePage ? '0' : '24px'
       }}>
-        <Outlet />
+        <div key={location.pathname} className="page-transition">
+          <Outlet />
+        </div>
       </Content>
 
       <Footer style={{ textAlign: 'center', background: '#0a0a1a', padding: '48px 24px' }}>
@@ -396,7 +405,18 @@ const CustomerLayout = () => {
               The Royal Citadel
             </Title>
           </div>
-          <div style={{ width: 40, height: 1, background: '#c9a961', margin: '12px auto' }} />
+          <div style={{ width: 40, height: 1, background: '#c9a961', margin: '12px auto 24px' }} />
+          
+          <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem', marginBottom: 24, lineHeight: 1.8 }}>
+            <p style={{ margin: 0 }}><strong>Dương Duy Khánh</strong> | Email: <a href="mailto:duongduykhanh06072005@gmail.com" style={{ color: '#c9a961', textDecoration: 'none' }}>duongduykhanh06072005@gmail.com</a></p>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 8 }}>
+              <span>Tìm kiếm chúng tôi trên facebook:</span>
+              <a href="https://www.facebook.com/profile.php?id=61589457996947" target="_blank" rel="noopener noreferrer" style={{ color: '#1877f2', fontSize: 24, display: 'flex' }}>
+                <FacebookFilled />
+              </a>
+            </div>
+          </div>
+
           <p style={{ color: 'rgba(255,255,255,0.5)', marginTop: '12px', letterSpacing: '1px', fontSize: 13 }}>
             {t('footer.copyright')}
           </p>
