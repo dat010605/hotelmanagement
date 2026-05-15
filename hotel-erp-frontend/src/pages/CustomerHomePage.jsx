@@ -368,11 +368,7 @@ const CustomerHomePage = () => {
             </Col>
           ))}
         </Row>
-        <div style={{ textAlign: 'center', marginTop: 32 }}>
-          <Button size="large" icon={<ReadOutlined />} style={{ borderRadius: '8px', padding: '0 32px' }}>
-            {t('home.viewAllNews')}
-          </Button>
-        </div>
+
       </div>
 
       {/* ── REVIEWS SECTION ───────────────────────────────────────────────── */}
