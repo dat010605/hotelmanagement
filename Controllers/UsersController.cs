@@ -121,7 +121,7 @@ namespace HotelManagement.API.Controllers
                     {
                         Host = "smtp.gmail.com",
                         Port = 587,
-                     ư   EnableSsl = true,
+                     EnableSsl = true,
                         DeliveryMethod = SmtpDeliveryMethod.Network,
                         UseDefaultCredentials = false,
                         Credentials = new NetworkCredential(fromAddress.Address, appPassword)

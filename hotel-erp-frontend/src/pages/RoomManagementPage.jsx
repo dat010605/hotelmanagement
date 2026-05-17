@@ -462,7 +462,7 @@ const RoomManagementPage = () => {
                    </Form.Item>
                 </Col>
 
-                <Col span={8}><Form.Item name="status" label="Trạng thái kinh doanh"><Select options={[{value:'Available', label:'Available'}, {value:'Occupied', label:'Occupied'}, {value:'Maintenance', label:'Maintenance'}]} /></Form.Item></Col>
+                <Col span={8}><Form.Item name="status" label="Trạng thái kinh doanh"><Select disabled={currentRoom?.status === 'Occupied' || currentRoom?.Status === 'Occupied'} options={[{value:'Available', label:'Available'}, {value:'Occupied', label:'Occupied'}, {value:'Maintenance', label:'Maintenance'}]} /></Form.Item></Col>
                 <Col span={8}><Form.Item name="cleaningStatus" label="Tình trạng dọn dẹp"><Select options={[{value:'Clean', label:'Sạch sẽ'}, {value:'Dirty', label:'Chưa dọn'}, {value:'Cleaning', label:'Đang dọn'}]} /></Form.Item></Col>
               </Row>
             </Form>

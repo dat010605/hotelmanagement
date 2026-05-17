@@ -62,34 +62,52 @@ namespace HotelManagement.API.Controllers
 
             // Validate dữ liệu
             if (request.Rating < 1 || request.Rating > 5)
-            {
                 return BadRequest("Điểm đánh giá phải từ 1 đến 5.");
-            }
 
             if (string.IsNullOrWhiteSpace(request.Comment))
-            {
                 return BadRequest("Vui lòng viết nhận xét.");
-            }
+
+            var roleClaim = User.FindFirst(ClaimTypes.Role)?.Value ?? "";
 
             // =====================================================
-            // VALIDATE: Kiểm tra user đã từng ở RoomType này chưa
-            // Chỉ cho phép đánh giá nếu có Booking Completed/CheckedOut
-            // chứa BookingDetail có RoomTypeId trùng khớp
+            // VALIDATE THEO ROLE:
+            // - Admin / Manager / Lễ Tân / Receptionist: được gửi đánh giá tự do (không cần booking)
+            // - Guest: phải có booking đã hoàn thành (Completed / CheckedOut)
+            // - Housekeeping / Buồng Phòng: không được đánh giá
             // =====================================================
-            var hasStayed = await _context.BookingDetails
-                .AnyAsync(bd =>
-                    bd.Booking != null &&
-                    bd.Booking.UserId == userId &&
-                    bd.RoomTypeId == request.RoomTypeId &&
-                    (bd.Booking.Status == "Completed" || bd.Booking.Status == "CheckedOut")
-                );
-
-            if (!hasStayed)
+            var privilegedRoles = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
-                return BadRequest("Bạn chỉ được đánh giá hạng phòng mà bạn đã từng lưu trú và hoàn thành.");
+                "Admin", "Manager", "Receptionist", "Lễ Tân"
+            };
+            var blockedRoles = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "Housekeeping", "Buồng Phòng"
+            };
+
+            if (blockedRoles.Contains(roleClaim))
+            {
+                return StatusCode(403, "Bộ phận buồng phòng không được phép gửi đánh giá.");
             }
 
-            // Kiểm tra xem user đã đánh giá booking này chưa (tránh spam)
+            // Guest: kiểm tra lịch sử đặt phòng hoàn thành
+            bool isPrivileged = privilegedRoles.Contains(roleClaim);
+            if (!isPrivileged)
+            {
+                var hasStayed = await _context.BookingDetails
+                    .AnyAsync(bd =>
+                        bd.Booking != null &&
+                        bd.Booking.UserId == userId &&
+                        bd.RoomTypeId == request.RoomTypeId &&
+                        (bd.Booking.Status == "Completed" || bd.Booking.Status == "CheckedOut")
+                    );
+
+                if (!hasStayed)
+                {
+                    return BadRequest("Bạn chỉ được đánh giá hạng phòng mà bạn đã từng lưu trú và hoàn thành.");
+                }
+            }
+
+            // Kiểm tra trùng lặp (tất cả role)
             var alreadyReviewed = await _context.Reviews
                 .AnyAsync(r => r.UserId == userId && r.RoomTypeId == request.RoomTypeId);
 
@@ -127,6 +145,55 @@ namespace HotelManagement.API.Controllers
                 return Unauthorized("Không xác định được người dùng.");
             }
 
+            var roleClaim = User.FindFirst(ClaimTypes.Role)?.Value ?? "";
+            var privilegedRoles = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "Admin", "Manager", "Receptionist", "Lễ Tân"
+            };
+
+            // =====================================================
+            // Privileged staff (Admin/Manager/Lễ Tân):
+            // Trả về tất cả RoomType dưới dạng 1 booking giả để
+            // frontend hiển thị nút đánh giá cho từng hạng phòng
+            // =====================================================
+            if (privilegedRoles.Contains(roleClaim))
+            {
+                var allRoomTypes = await _context.RoomTypes
+                    .Select(rt => new
+                    {
+                        Id = rt.Id,
+                        RoomNumber = "—",
+                        RoomTypeId = rt.Id,
+                        RoomTypeName = rt.Name,
+                        CheckInDate = (DateTime?)null,
+                        CheckOutDate = (DateTime?)null,
+                        PricePerNight = (decimal?)null
+                    })
+                    .ToListAsync();
+
+                var reviewedRoomTypeIds = await _context.Reviews
+                    .Where(r => r.UserId == userId)
+                    .Select(r => r.RoomTypeId)
+                    .ToListAsync();
+
+                var syntheticBooking = new[]
+                {
+                    new
+                    {
+                        Id = 0,
+                        BookingCode = "STAFF-REVIEW",
+                        Status = "Completed",
+                        GuestName = User.FindFirst(ClaimTypes.Name)?.Value ?? "",
+                        Rooms = allRoomTypes
+                    }
+                };
+
+                return Ok(new { bookings = syntheticBooking, reviewedRoomTypeIds });
+            }
+
+            // =====================================================
+            // Guest: trả về booking thực tế của user
+            // =====================================================
             var bookings = await _context.Bookings
                 .Include(b => b.BookingDetails)
                     .ThenInclude(bd => bd.RoomType)
@@ -154,12 +221,32 @@ namespace HotelManagement.API.Controllers
                 .ToListAsync();
 
             // Lấy danh sách các RoomTypeId mà user đã review
-            var reviewedRoomTypeIds = await _context.Reviews
+            var guestReviewedIds = await _context.Reviews
                 .Where(r => r.UserId == userId)
                 .Select(r => r.RoomTypeId)
                 .ToListAsync();
 
-            return Ok(new { bookings, reviewedRoomTypeIds });
+            return Ok(new { bookings, reviewedRoomTypeIds = guestReviewedIds });
+        }
+
+        // =====================================================
+        // 4. XÓA ĐÁNH GIÁ (Admin)
+        // DELETE: api/Reviews/{id}
+        // =====================================================
+        [Authorize(Roles = "Admin,Manager")]
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteReview(int id)
+        {
+            var review = await _context.Reviews.FindAsync(id);
+            if (review == null)
+            {
+                return NotFound("Không tìm thấy đánh giá này.");
+            }
+
+            _context.Reviews.Remove(review);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { Message = "Đã xóa đánh giá thành công." });
         }
     }
 

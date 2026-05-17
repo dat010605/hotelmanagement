@@ -753,7 +753,9 @@ public partial class AppDbContext : DbContext
 
             entity.HasIndex(e => e.Code, "UQ__Vouchers__357D4CF98290E970").IsUnique();
 
-            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Id)
+                .ValueGeneratedNever()
+                .HasColumnName("id");
             entity.Property(e => e.Code)
                 .HasMaxLength(50)
                 .HasColumnName("code");

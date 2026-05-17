@@ -404,9 +404,19 @@ const HeroSection = () => {
         playsInline
         style={styles.video}
         poster="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1920&q=80"
+        onError={(e) => {
+          // Nếu video không tải được, ẩn video để hiện poster image bên dưới
+          e.target.style.display = 'none';
+        }}
       >
+        {/* Nguồn 1: resort video nhẹ từ Mixkit (CDN toàn cầu, không bị chặn) */}
         <source
-          src="https://videos.pexels.com/video-files/3571264/3571264-uhd_2560_1440_30fps.mp4"
+          src="https://assets.mixkit.co/videos/preview/mixkit-waves-in-the-water-1164-large.mp4"
+          type="video/mp4"
+        />
+        {/* Nguồn 2: hotel pool video */}
+        <source
+          src="https://assets.mixkit.co/videos/preview/mixkit-swimming-pool-in-a-luxury-villa-1239-large.mp4"
           type="video/mp4"
         />
       </video>
@@ -620,6 +630,13 @@ const HeroSection = () => {
       <div className="hero-scroll" style={styles.scrollIndicator}>
         <span>{t('header.scroll')}</span>
         <div style={styles.scrollLine} />
+      </div>
+
+      {/* ── Wave SVG Bottom ───────────────────────────────────────────── */}
+      <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', zIndex: 10, lineHeight: 0 }}>
+        <svg viewBox="0 0 1440 120" style={{ display: 'block', width: '100%', height: 'auto' }} preserveAspectRatio="none" fill="#f5f5f5">
+          <path d="M0,64L80,69.3C160,75,320,85,480,80C640,75,800,53,960,42.7C1120,32,1280,32,1360,32L1440,32L1440,120L1360,120C1280,120,1120,120,960,120C800,120,640,120,480,120C320,120,160,120,80,120L0,120Z"></path>
+        </svg>
       </div>
     </div>
   );

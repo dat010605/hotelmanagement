@@ -59,6 +59,14 @@ namespace HotelManagement.API.Controllers
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
+                // Lấy UserId từ Token nếu người dùng đã đăng nhập
+                int? currentUserId = null;
+                var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (!string.IsNullOrEmpty(userIdClaim) && int.TryParse(userIdClaim, out int uid))
+                {
+                    currentUserId = uid;
+                }
+
                 // Kiểm tra voucher nếu có
                 int? voucherId = null;
                 if (!string.IsNullOrWhiteSpace(request.VoucherCode))
@@ -94,12 +102,13 @@ namespace HotelManagement.API.Controllers
 
                 var newBooking = new Booking
                 {
+                    UserId = currentUserId,
                     GuestName = request.GuestName,
                     GuestPhone = request.GuestPhone,
                     GuestEmail = request.GuestEmail,
                     BookingCode = "BK" + DateTime.Now.ToString("yyyyMMddHHmmss"),
                     VoucherId = voucherId,
-                    Status = "Confirmed"
+                    Status = "Pending"
                 };
                 _context.Bookings.Add(newBooking);
                 await _context.SaveChangesAsync(); 
@@ -195,6 +204,18 @@ namespace HotelManagement.API.Controllers
 
             if (booking == null) return NotFound("Không tìm thấy đơn đặt phòng này.");
             return Ok(booking);
+        }
+
+        [HttpPatch("{id}/confirm")]
+        public async Task<IActionResult> ConfirmBooking(int id)
+        {
+            var booking = await _context.Bookings.FindAsync(id);
+            if (booking == null) return NotFound("Không tìm thấy đơn đặt phòng.");
+            if (booking.Status != "Pending") return BadRequest("Chỉ có thể duyệt đơn ở trạng thái Pending.");
+            
+            booking.Status = "Confirmed";
+            await _context.SaveChangesAsync();
+            return Ok(new { Message = "Duyệt đơn thành công!" });
         }
 
         [HttpPatch("{id}/checkin")]

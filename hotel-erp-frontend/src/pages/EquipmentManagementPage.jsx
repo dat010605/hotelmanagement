@@ -126,6 +126,7 @@ const EquipmentManagementPage = () => {
     { title: 'Tổng', dataIndex: 'totalQuantity', key: 'totalQuantity', render: (val) => <b style={{color: '#1890ff'}}>{val}</b> },
     { title: 'Sẵn kho', dataIndex: 'inStockQuantity', key: 'inStockQuantity', render: (val) => <span style={{color: '#52c41a'}}>{val}</span> },
     { title: 'Hỏng', dataIndex: 'damagedQuantity', key: 'damagedQuantity', render: (val) => <span style={{color: '#ff4d4f'}}>{val || 0}</span> },
+    { title: 'Nhà phân phối', dataIndex: 'supplier', key: 'supplier' },
     { title: 'Thao tác', key: 'action', render: (_, record) => (
         <Space size="middle">
           <Button type="text" style={{color: '#1890ff'}} icon={<EditOutlined />} onClick={() => showEditModal(record)} />
@@ -165,13 +166,14 @@ const EquipmentManagementPage = () => {
                   </Form.Item>
                 </Col>
                 <Col span={12}><Form.Item name="unit" label="Đơn vị tính"><Input /></Form.Item></Col>
-                <Col span={8}><Form.Item name="totalQuantity" label="SL tổng" rules={[{ required: true }]}><InputNumber style={{ width: '100%' }} /></Form.Item></Col>
-                <Col span={8}>
+                <Col span={12}><Form.Item name="supplier" label="Nhà phân phối"><Input placeholder="Tên đơn vị cung cấp..." /></Form.Item></Col>
+                <Col span={12}><Form.Item name="totalQuantity" label="SL tổng" rules={[{ required: true }]}><InputNumber style={{ width: '100%' }} /></Form.Item></Col>
+                <Col span={12}>
                   <Form.Item name="basePrice" label="Giá nhập" rules={[{ required: true }]}>
                     <InputNumber min={0} style={{ width: '100%' }} onChange={handleBasePriceChange} />
                   </Form.Item>
                 </Col>
-                <Col span={8}><Form.Item name="defaultPriceIfLost" label="Giá đền bù"><InputNumber style={{ width: '100%' }} /></Form.Item></Col>
+                <Col span={12}><Form.Item name="defaultPriceIfLost" label="Giá đền bù"><InputNumber style={{ width: '100%' }} /></Form.Item></Col>
               </Row>
             </Col>
             <Col span={8} style={{ textAlign: 'center' }}>

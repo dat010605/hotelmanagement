@@ -80,8 +80,17 @@ const VoucherManagement = () => {
         body: JSON.stringify(payload),
       });
 
-      const result = await response.json();
-      if (!response.ok) throw new Error(result || 'Lỗi khi tạo mã');
+      let result;
+      const text = await response.text();
+      try {
+        result = JSON.parse(text);
+      } catch {
+        result = text;
+      }
+
+      if (!response.ok) {
+        throw new Error(result.Message || result || 'Lỗi khi tạo mã');
+      }
 
       message.success('Thêm Voucher mới thành công!');
       setIsModalVisible(false);

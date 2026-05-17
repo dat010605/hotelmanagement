@@ -40,6 +40,14 @@ namespace HotelManagement.API.Controllers
                 return BadRequest("Mã Voucher này đã tồn tại, vui lòng chọn mã khác!");
             }
 
+            // Tự động tăng ID vì DB bị thiếu IDENTITY ở cột id bảng Vouchers
+            int nextId = 1;
+            if (await _context.Vouchers.AnyAsync())
+            {
+                nextId = await _context.Vouchers.MaxAsync(v => v.Id) + 1;
+            }
+            request.Id = nextId;
+
             // Format lại dữ liệu cho đẹp
             request.Code = request.Code.ToUpper();
             

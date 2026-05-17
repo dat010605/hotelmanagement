@@ -25,10 +25,19 @@ namespace HotelManagement.API.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(Equipment equipment)
         {
+            var existing = await _context.Equipments.FirstOrDefaultAsync(e => e.Name.ToLower() == equipment.Name.ToLower() && e.Supplier == equipment.Supplier);
+            if (existing != null)
+            {
+                existing.TotalQuantity += equipment.TotalQuantity;
+                await _context.SaveChangesAsync();
+                await _hubContext.Clients.All.SendAsync("ReceiveNotification", $"Kho vật tư: Vừa nhập thêm {equipment.TotalQuantity} '{equipment.Name}' từ nhà phân phối '{equipment.Supplier ?? "Không rõ"}'");
+                return Ok(existing);
+            }
+
        //   Đã tự động tính: Tồn kho = Tổng - Đang dùng - Hỏng - Thanh lý
             _context.Equipments.Add(equipment);
             await _context.SaveChangesAsync();
-            await _hubContext.Clients.All.SendAsync("ReceiveNotification", $"Kho vật tư: Vừa nhập mới '{equipment.Name}'");
+            await _hubContext.Clients.All.SendAsync("ReceiveNotification", $"Kho vật tư: Vừa nhập mới '{equipment.Name}' từ nhà phân phối '{equipment.Supplier ?? "Không rõ"}'");
             return Ok(equipment);
         }
 
