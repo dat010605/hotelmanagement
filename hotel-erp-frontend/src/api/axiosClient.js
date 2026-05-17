@@ -18,14 +18,20 @@ axiosClient.interceptors.request.use((config) => {
   return config;
 });
 
-// ✅ Tự động đá văng nếu Token hết hạn
+// ✅ Tự động đá văng nếu Token hết hạn (chỉ trên trang admin)
 axiosClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      useAdminAuthStore.getState().clearAuth();
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+      // Chỉ redirect về login nếu đang ở trang admin (không redirect ở trang khách hàng công khai)
+      const currentPath = window.location.pathname;
+      const isAdminRoute = currentPath.startsWith('/admin');
+      
+      if (isAdminRoute) {
+        useAdminAuthStore.getState().clearAuth();
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

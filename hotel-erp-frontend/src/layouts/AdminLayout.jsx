@@ -95,23 +95,26 @@ const AdminLayout = () => {
     return allowedRoles.includes(userRole);
   };
 
-  // THU GỌN MENU VỚI QUYỀN TRUY CẬP
+  // THU GỌN MENU VỚI QUYỀN TRUY CẬP (THEO BẢNG MA TRẬN PHÂN QUYỀN)
   const rawSidebarItems = [
-    { key: '/admin/dashboard', icon: <DashboardOutlined />, label: 'Bảng điều khiển' }, // Public
+    // Thống kê/Dashboard - Chỉ Admin & Manager
+    { key: '/admin/dashboard', icon: <DashboardOutlined />, label: 'Bảng điều khiển', allowedRoles: [] },
     
-    // Nhóm 1: Quản lý phòng
+    // Nhóm: Quản lý phòng
     {
       key: 'sub-rooms',
       icon: <AppstoreOutlined />,
       label: 'Quản lý Phòng',
       allowedRoles: ['receptionist', 'lễ tân', 'housekeeping', 'buồng phòng'],
       children: [
+        // Sơ đồ phòng: Admin, Manager, Lễ tân, Buồng phòng (Chỉ xem)
         { key: '/admin/room-grid', label: 'Sơ đồ phòng', allowedRoles: ['receptionist', 'lễ tân', 'housekeeping', 'buồng phòng'] },
-        { key: '/admin/rooms', label: 'Quản lý quỹ phòng', allowedRoles: ['receptionist', 'lễ tân'] }
+        // Quản lý quỹ phòng: Chỉ Admin & Manager
+        { key: '/admin/rooms', label: 'Quản lý quỹ phòng', allowedRoles: [] }
       ]
     },
 
-    // Nhóm 2: Quầy lễ tân
+    // Nhóm: Quầy Lễ Tân - Chỉ Admin, Manager, Lễ tân
     {
       key: 'sub-reception',
       icon: <TeamOutlined />,
@@ -124,16 +127,27 @@ const AdminLayout = () => {
       ]
     },
 
-    { key: '/admin/housekeeping', icon: <CheckSquareOutlined />, label: 'Dọn Phòng', allowedRoles: ['housekeeping', 'buồng phòng'] },
+    // Dọn phòng: Admin, Manager, Lễ tân, Buồng phòng
+    { key: '/admin/housekeeping', icon: <CheckSquareOutlined />, label: 'Dọn Phòng', allowedRoles: ['receptionist', 'lễ tân', 'housekeeping', 'buồng phòng'] },
+    // Thất thoát & Đền bù: Admin, Manager, Lễ tân, Buồng phòng
     { key: '/admin/loss-damage', icon: <AlertOutlined />, label: 'Thất thoát & Đền bù', allowedRoles: ['receptionist', 'lễ tân', 'housekeeping', 'buồng phòng'] }, 
-    { key: '/admin/inventory', icon: <DashboardOutlined />, label: 'Quản lý kho vật tư', allowedRoles: ['inventory', 'thủ kho', 'kho'] },
+    // Quản lý kho vật tư: Chỉ Admin & Manager
+    { key: '/admin/inventory', icon: <DashboardOutlined />, label: 'Quản lý kho vật tư', allowedRoles: [] },
+    // Khuyến mãi: Admin, Manager, Lễ tân
     { key: '/admin/vouchers', icon: <GiftOutlined />, label: 'Khuyến mãi', allowedRoles: ['receptionist', 'lễ tân'] },
-    { key: '/admin/employees', icon: <TeamOutlined />, label: 'Quản lý nhân sự', allowedRoles: ['hr', 'nhân sự'] },
-    { key: '/admin/roles', icon: <LockOutlined />, label: 'Phân quyền (RBAC)', allowedRoles: [] }, // Cấp [] có nghĩa là chỉ Admin/Management
-    { key: '/admin/attractions', icon: <EnvironmentOutlined />, label: 'Điểm tham quan', allowedRoles: ['receptionist', 'lễ tân']},
-    { key: '/admin/reviews', icon: <CommentOutlined />, label: 'Quản lý đánh giá', allowedRoles: [] },
+    // Điểm tham quan: Admin, Manager, Lễ tân
+    { key: '/admin/attractions', icon: <EnvironmentOutlined />, label: 'Điểm tham quan', allowedRoles: ['receptionist', 'lễ tân'] },
+    // Quản lý đánh giá: Admin, Manager, Lễ tân
+    { key: '/admin/reviews', icon: <CommentOutlined />, label: 'Quản lý đánh giá', allowedRoles: ['receptionist', 'lễ tân'] },
+    // Quản lý nhân sự: Chỉ Admin & Manager
+    { key: '/admin/employees', icon: <TeamOutlined />, label: 'Quản lý nhân sự', allowedRoles: [] },
+    // Phân quyền (RBAC): Chỉ Admin & Manager
+    { key: '/admin/roles', icon: <LockOutlined />, label: 'Phân quyền (RBAC)', allowedRoles: [] },
+    // Lịch sử hệ thống: Chỉ Admin & Manager
     { key: '/admin/audit-logs', icon: <FileTextOutlined />, label: 'Lịch sử hệ thống', allowedRoles: [] },
-    { key: '/admin/profile', icon: <UserOutlined />, label: 'Hồ sơ cá nhân' }, // Public
+    // Hồ sơ cá nhân: Tất cả nhân viên
+    { key: '/admin/profile', icon: <UserOutlined />, label: 'Hồ sơ cá nhân' },
+    // Cấu hình hệ thống: Chỉ Admin & Manager
     { key: '/admin/settings', icon: <SettingOutlined />, label: 'Cấu hình hệ thống', allowedRoles: [] },
   ];
 
@@ -186,8 +200,8 @@ const AdminLayout = () => {
           left: 0,             
         }}>
           <div style={{ height: 64, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', background: isDarkMode ? '#242526' : '#001529', borderBottom: `1px solid ${isDarkMode ? '#3e4042' : 'rgba(255,255,255,0.1)'}` }}>
-            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: collapsed ? 14 : 20 }}>
-              {collapsed ? 'ERP' : 'HOTEL ERP'}
+            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: collapsed ? 14 : 18, fontFamily: "'Playfair Display', Georgia, serif", letterSpacing: '1px' }}>
+              {collapsed ? 'TRC' : 'THE ROYAL CITADEL'}
             </Text>
           </div>
           

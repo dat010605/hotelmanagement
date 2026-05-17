@@ -1,20 +1,36 @@
 import React, { useState } from 'react';
+<<<<<<< HEAD
 import { Form, Input, Button, Card, App, Typography, Divider } from 'antd'; // Thêm Divider cho đẹp
 import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons';
 import { useNavigate, Link } from 'react-router-dom';
 import axiosClient from '../api/axiosClient'; 
 import { GoogleLogin } from '@react-oauth/google';
 import { useAdminAuthStore } from '../store/adminAuthStore'; // Import store để lưu session sau khi ĐK thành công
+=======
+import { Form, Input, Button, Card, App, Typography, Divider } from 'antd';
+import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons';
+import { useNavigate, Link } from 'react-router-dom';
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
+import axiosClient from '../api/axiosClient';
+import { useAdminAuthStore } from '../store/adminAuthStore';
+>>>>>>> datpronak123
 
 const { Title, Text } = Typography;
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '123456789-xxxx.apps.googleusercontent.com';
 
 const RegisterPage = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const setAuth = useAdminAuthStore((state) => state.setAuth);
   const { notification } = App.useApp();
   const setAuth = useAdminAuthStore((state) => state.setAuth);
 
+<<<<<<< HEAD
   // --- LOGIC ĐĂNG KÝ THÔNG THƯỜNG ---
+=======
+  // Đăng ký thường
+>>>>>>> datpronak123
   const onFinish = async (values) => {
     setLoading(true);
     try {
@@ -23,7 +39,6 @@ const RegisterPage = () => {
         email: values.email,
         password: values.password
       });
-
       notification.success({
         message: 'Đăng ký thành công!',
         description: 'Tài khoản của ngài đã được tạo. Vui lòng đăng nhập.',
@@ -41,6 +56,7 @@ const RegisterPage = () => {
     }
   };
 
+<<<<<<< HEAD
   // --- LOGIC GỬI TOKEN GOOGLE XUỐNG BACKEND ---
   const handleGoogleRegister = async (credentialResponse) => {
     setLoading(true);
@@ -72,6 +88,47 @@ const RegisterPage = () => {
     }
   };
 
+=======
+  // Đăng ký bằng Google (Google Login = tự động tạo tài khoản nếu chưa có)
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      const response = await axiosClient.post('Auth/google-login', {
+        credential: credentialResponse.credential,
+      });
+      const { token, user, permissions } = response.data;
+      
+      let rawRole = user?.role || 'guest';
+      let finalRoleId = String(rawRole).toLowerCase();
+      if (finalRoleId === 'guest') finalRoleId = '10';
+      else if (finalRoleId === 'admin') finalRoleId = '1';
+
+      localStorage.setItem('userRole', finalRoleId);
+      setAuth(token, user, permissions);
+
+      notification.success({
+        message: 'Đăng ký Google thành công!',
+        description: `Chào mừng ${user?.fullName || 'bạn'} đến với The Royal Citadel.`,
+        placement: 'topRight',
+      });
+      navigate('/');
+    } catch (error) {
+      notification.error({
+        message: 'Đăng ký Google thất bại',
+        description: error.response?.data?.message || 'Có lỗi xảy ra.',
+        placement: 'topRight',
+      });
+    }
+  };
+
+  const handleGoogleError = () => {
+    notification.warning({
+      message: 'Google OAuth',
+      description: 'Không thể kết nối tới Google. Vui lòng thử lại.',
+      placement: 'topRight',
+    });
+  };
+
+>>>>>>> datpronak123
   const bigInputStyle = { padding: '16px 20px', fontSize: '18px', borderRadius: '10px' };
 
   return (
@@ -79,7 +136,11 @@ const RegisterPage = () => {
       <Card style={{ width: 580, borderRadius: '12px', boxShadow: '0 8px 16px rgba(0, 0, 0, .1)', padding: '25px 15px' }}>
         <div style={{ textAlign: 'center', marginBottom: 25 }}>
           <Title level={2} style={{ color: '#1c1e21', fontWeight: 'bold', marginBottom: 4, fontFamily: "'Playfair Display', serif" }}>The Royal Citadel</Title>
+<<<<<<< HEAD
           <Text style={{ fontSize: '14px', color: '#8c8c8c', letterSpacing: '2px', textTransform: 'uppercase' }}>Luxury Hotel & Resort</Text>
+=======
+          <Text style={{ fontSize: '14px', color: '#8c8c8c', letterSpacing: '2px', textTransform: 'uppercase' }}>Luxury Hotel &amp; Resort</Text>
+>>>>>>> datpronak123
           <br />
           <Title level={3} style={{ color: '#1c1e21', marginTop: 12, marginBottom: 0 }}>Đăng Ký Tài Khoản</Title>
         </div>
@@ -119,6 +180,23 @@ const RegisterPage = () => {
               Đăng Ký
             </Button>
           </Form.Item>
+
+          {/* ── GOOGLE SIGN UP ─────────────────────────────────── */}
+          <Divider style={{ margin: '16px 0', color: '#8c8c8c', fontSize: 14 }}>hoặc</Divider>
+          
+          <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+                theme="outline"
+                size="large"
+                width="480"
+                text="signup_with"
+                shape="rectangular"
+              />
+            </div>
+          </GoogleOAuthProvider>
           
           <div style={{ textAlign: 'center', marginTop: 15 }}>
             <Link to="/login" style={{ color: '#1877f2', fontSize: '16px', fontWeight: '500' }}>Đã có tài khoản? Đăng nhập ngay</Link>
@@ -142,4 +220,8 @@ const RegisterPage = () => {
   );
 };
 
+<<<<<<< HEAD
 export default RegisterPage;
+=======
+export default RegisterPage;
+>>>>>>> datpronak123

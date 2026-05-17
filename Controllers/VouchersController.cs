@@ -40,6 +40,14 @@ namespace HotelManagement.API.Controllers
                 return BadRequest("Mã Voucher này đã tồn tại, vui lòng chọn mã khác!");
             }
 
+            // Tự động tăng ID vì DB bị thiếu IDENTITY ở cột id bảng Vouchers
+            int nextId = 1;
+            if (await _context.Vouchers.AnyAsync())
+            {
+                nextId = await _context.Vouchers.MaxAsync(v => v.Id) + 1;
+            }
+            request.Id = nextId;
+
             // Format lại dữ liệu cho đẹp
             request.Code = request.Code.ToUpper();
             
@@ -76,7 +84,7 @@ namespace HotelManagement.API.Controllers
         // ========================================================
         [AllowAnonymous]
         [HttpGet("check")]
-        public async Task<IActionResult> CheckVoucher(string code)
+        public async Task<IActionResult> CheckVoucher(string code, int? roomTypeId = null)
         {
             if (string.IsNullOrEmpty(code)) return BadRequest("Vui lòng nhập mã.");
 
@@ -87,7 +95,23 @@ namespace HotelManagement.API.Controllers
                 return NotFound("Mã giảm giá không tồn tại hoặc đã hết hạn.");
             }
 
-            return Ok(voucher);
+            // Kiểm tra giới hạn theo hạng phòng
+            if (voucher.RoomTypeId.HasValue && roomTypeId.HasValue && voucher.RoomTypeId.Value != roomTypeId.Value)
+            {
+                return BadRequest("Mã khuyến mãi này không áp dụng cho hạng phòng bạn chọn.");
+            }
+
+            return Ok(new {
+                voucher.Id,
+                voucher.Code,
+                voucher.DiscountType,
+                voucher.DiscountValue,
+                voucher.MinBookingValue,
+                voucher.ValidFrom,
+                voucher.ValidTo,
+                voucher.UsageLimit,
+                voucher.RoomTypeId
+            });
         }
     }
 }

@@ -462,7 +462,7 @@ const RoomManagementPage = () => {
                    </Form.Item>
                 </Col>
 
-                <Col span={8}><Form.Item name="status" label="Trạng thái kinh doanh"><Select options={[{value:'Available', label:'Available'}, {value:'Occupied', label:'Occupied'}, {value:'Maintenance', label:'Maintenance'}]} /></Form.Item></Col>
+                <Col span={8}><Form.Item name="status" label="Trạng thái kinh doanh"><Select disabled={currentRoom?.status === 'Occupied' || currentRoom?.Status === 'Occupied'} options={[{value:'Available', label:'Available'}, {value:'Occupied', label:'Occupied'}, {value:'Maintenance', label:'Maintenance'}]} /></Form.Item></Col>
                 <Col span={8}><Form.Item name="cleaningStatus" label="Tình trạng dọn dẹp"><Select options={[{value:'Clean', label:'Sạch sẽ'}, {value:'Dirty', label:'Chưa dọn'}, {value:'Cleaning', label:'Đang dọn'}]} /></Form.Item></Col>
               </Row>
             </Form>
@@ -494,7 +494,7 @@ const RoomManagementPage = () => {
               {currentRoom?.roomImages && currentRoom.roomImages.length > 0 ? (
                 <div style={{ marginTop: '20px' }}>
                   <Text strong style={{ display: 'block', marginBottom: 10 }}>Ảnh hiện tại:</Text>
-                  <img src={currentRoom.roomImages[0].imageUrl} alt="Room" style={{ maxWidth: '80%', maxHeight: '350px', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                  <img src={currentRoom.roomImages[0].imageUrl} alt="Room" onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=800'; }} style={{ maxWidth: '80%', maxHeight: '350px', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
                 </div>
               ) : (
                 <div style={{ marginTop: '30px', color: '#bfbfbf' }}><p>Chưa có hình ảnh nào.</p></div>

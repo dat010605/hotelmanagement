@@ -753,7 +753,9 @@ public partial class AppDbContext : DbContext
 
             entity.HasIndex(e => e.Code, "UQ__Vouchers__357D4CF98290E970").IsUnique();
 
-            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Id)
+                .ValueGeneratedNever()
+                .HasColumnName("id");
             entity.Property(e => e.Code)
                 .HasMaxLength(50)
                 .HasColumnName("code");
@@ -774,6 +776,11 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.ValidTo)
                 .HasColumnType("datetime")
                 .HasColumnName("valid_to");
+            entity.Property(e => e.RoomTypeId).HasColumnName("room_type_id");
+
+            entity.HasOne(d => d.RoomType).WithMany()
+                .HasForeignKey(d => d.RoomTypeId)
+                .HasConstraintName("FK_Vouchers_RoomTypes");
         });
 
         OnModelCreatingPartial(modelBuilder);

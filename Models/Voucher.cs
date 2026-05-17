@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace HotelManagement.API.Models;
@@ -20,6 +20,10 @@ public partial class Voucher
     public DateTime? ValidTo { get; set; }
 
     public int? UsageLimit { get; set; }
+
+    public int? RoomTypeId { get; set; }
+
+    public virtual RoomType? RoomType { get; set; }
 
     public virtual ICollection<Booking> Bookings { get; set; } = new List<Booking>();
 }

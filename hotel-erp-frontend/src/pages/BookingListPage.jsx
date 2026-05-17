@@ -48,6 +48,22 @@ const BookingListPage = () => {
     });
   };
 
+  const handleConfirm = (bookingId) => {
+    Modal.confirm({
+      title: 'Xác nhận Đặt phòng',
+      content: 'Bạn có chắc chắn muốn duyệt (xác nhận) đơn đặt phòng này?',
+      onOk: async () => {
+        try {
+          await axiosClient.patch(`/Bookings/${bookingId}/confirm`);
+          message.success('Duyệt đơn thành công!');
+          fetchBookings();
+        } catch (error) {
+          message.error('Lỗi khi duyệt đơn!');
+        }
+      }
+    });
+  };
+
   //  Hàm gọi API lấy chi tiết đơn và mở Modal
   const handleViewDetail = async (id) => {
     setIsDetailModalOpen(true);
@@ -75,6 +91,8 @@ const BookingListPage = () => {
         if (status === 'CheckedIn') return <Tag color="red">Đang ở</Tag>;
         if (status === 'Completed') return <Tag color="default">Đã trả phòng</Tag>;
         if (status === 'Cancelled') return <Tag color="default">Đã hủy</Tag>;
+        if (status === 'Pending') return <Tag color="gold">Chờ xác nhận</Tag>;
+        if (status === 'Confirmed') return <Tag color="green">Đã duyệt (Chờ nhận phòng)</Tag>;
         return <Tag color="green">Chờ nhận phòng</Tag>;
       }
     },
@@ -86,7 +104,15 @@ const BookingListPage = () => {
           {/*  Nút Chi tiết nay đã có linh hồn */}
           <Button size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record.id)}>Chi tiết</Button>
           
-          {record.status !== 'CheckedIn' && record.status !== 'Cancelled' && record.status !== 'Completed' && record.status !== 'Paid' && (
+          <Button 
+            size="small" type="primary" style={{ backgroundColor: record.status === 'Pending' ? '#1890ff' : undefined }}
+            icon={<CheckCircleOutlined />} onClick={() => handleConfirm(record.id)}
+            disabled={record.status !== 'Pending'}
+          >
+            Xác nhận
+          </Button>
+
+          {record.status === 'Confirmed' && (
             <Button 
               size="small" type="primary" style={{ backgroundColor: '#52c41a' }}
               icon={<CheckCircleOutlined />} onClick={() => handleCheckIn(record.id)}

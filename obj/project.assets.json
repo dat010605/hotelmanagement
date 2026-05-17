@@ -4402,11 +4402,19 @@
   "project": {
     "version": "1.0.0",
     "restore": {
+<<<<<<< HEAD
       "projectUniqueName": "D:\\hotel\\hotelmanagement\\HotelManagement.API.csproj",
       "projectName": "HotelManagement.API",
       "projectPath": "D:\\hotel\\hotelmanagement\\HotelManagement.API.csproj",
       "packagesPath": "C:\\Users\\ASUS\\.nuget\\packages\\",
       "outputPath": "D:\\hotel\\hotelmanagement\\obj\\",
+=======
+      "projectUniqueName": "D:\\tmp\\hotelmanagement\\HotelManagement.API.csproj",
+      "projectName": "HotelManagement.API",
+      "projectPath": "D:\\tmp\\hotelmanagement\\HotelManagement.API.csproj",
+      "packagesPath": "C:\\Users\\ASUS\\.nuget\\packages\\",
+      "outputPath": "D:\\tmp\\hotelmanagement\\obj\\",
+>>>>>>> datpronak123
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\ASUS\\AppData\\Roaming\\NuGet\\NuGet.Config"

@@ -26,8 +26,9 @@ namespace HotelManagement.API.Controllers
         }
 
         // ====================================================
-        // 1. GET /api/Rooms : Lấy danh sách phòng
+        // 1. GET /api/Rooms : Lấy danh sách phòng (Public - cho trang khách hàng)
         // ====================================================
+        [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> GetAllRooms()
         {
@@ -59,8 +60,9 @@ namespace HotelManagement.API.Controllers
         }
 
         // ====================================================
-        // 2. GET /api/Rooms/{id} : Lấy chi tiết 1 phòng
+        // 2. GET /api/Rooms/{id} : Lấy chi tiết 1 phòng (Public)
         // ====================================================
+        [AllowAnonymous]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetRoomById(int id)
         {

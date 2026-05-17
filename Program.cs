@@ -73,7 +73,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReact", builder =>
     {
-        builder.WithOrigins("http://localhost:5173") // Địa chỉ của React FE
+        builder.WithOrigins("http://localhost:5173", "http://localhost:5174") // Địa chỉ của React FE
                .AllowAnyHeader()
                .AllowAnyMethod()
                .AllowCredentials(); // BẮT BUỘC PHẢI CÓ DÒNG NÀY CHO SIGNALR
