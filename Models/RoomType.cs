@@ -17,6 +17,18 @@ public partial class RoomType
 
     public string? Description { get; set; }
 
+    public int? SizeSqm { get; set; }
+
+    public string? BedType { get; set; }
+
+    public string? ViewType { get; set; }
+
+    public bool? IsActive { get; set; }
+
+    public string? Slug { get; set; }
+
+    public string? Content { get; set; }
+
     public virtual ICollection<BookingDetail> BookingDetails { get; set; } = new List<BookingDetail>();
 
     public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();

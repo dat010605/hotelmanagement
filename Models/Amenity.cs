@@ -11,5 +11,7 @@ public partial class Amenity
 
     public string? IconUrl { get; set; }
 
+    public bool? IsActive { get; set; }
+
     public virtual ICollection<RoomType> RoomTypes { get; set; } = new List<RoomType>();
 }

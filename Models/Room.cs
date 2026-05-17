@@ -10,10 +10,15 @@ public partial class Room
     public int? RoomTypeId { get; set; }
 
     public string RoomNumber { get; set; } = null!;
+    public int? ParentRoomId { get; set; }
 
     public int? Floor { get; set; }
 
     public string? Status { get; set; }
+
+    public string? CleaningStatus { get; set; }
+
+    public string? ExtensionNumber { get; set; }
 
     public virtual ICollection<BookingDetail> BookingDetails { get; set; } = new List<BookingDetail>();
 

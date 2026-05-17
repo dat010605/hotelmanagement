@@ -1,0 +1,8 @@
+# .gitignore mẫu cho .NET và React
+[Bb]in/
+[Oo]bj/
+node_modules/
+.vs/
+.vscode/
+*.user
+appsettings.Development.json

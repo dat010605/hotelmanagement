@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 
@@ -29,11 +29,15 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<BookingDetail> BookingDetails { get; set; }
 
+    public virtual DbSet<Equipment> Equipments { get; set; }
+
     public virtual DbSet<Invoice> Invoices { get; set; }
 
     public virtual DbSet<LossAndDamage> LossAndDamages { get; set; }
 
     public virtual DbSet<Membership> Memberships { get; set; }
+
+    public virtual DbSet<Notification> Notifications { get; set; }
 
     public virtual DbSet<OrderService> OrderServices { get; set; }
 
@@ -63,15 +67,27 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<Voucher> Vouchers { get; set; }
 
-   
+    // Trong file AppDbContext.cs
+    public DbSet<RoomInventory> RoomInventory { get; set; } 
+// Hoặc nếu Duy đặt tên model là Room_Inventory thì sửa lại cho đúng tên Model
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        // Đã comment để không bị đè cấu hình trong Program.cs và appsettings.json
+        // #warning To protect potentially sensitive information in your connection string...
+        // optionsBuilder.UseSqlServer("Server=(localdb)\\MSSQLLocalDB;Database=HotelManagementDB;Trusted_Connection=True;TrustServerCertificate=True;");
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Amenity>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Amenitie__3213E83F2C03CD82");
+            entity.HasKey(e => e.Id).HasName("PK__Amenitie__3213E83F9F4AD4B8");
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.IconUrl).HasColumnName("icon_url");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
             entity.Property(e => e.Name)
                 .HasMaxLength(255)
                 .HasColumnName("name");
@@ -79,14 +95,17 @@ public partial class AppDbContext : DbContext
 
         modelBuilder.Entity<Article>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Articles__3213E83F6B0011FE");
+            entity.HasKey(e => e.Id).HasName("PK__Articles__3213E83F5342ECB6");
 
-            entity.HasIndex(e => e.Slug, "UQ__Articles__32DD1E4C106E2D2E").IsUnique();
+            entity.HasIndex(e => e.Slug, "UQ__Articles__32DD1E4C62E939FC").IsUnique();
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.AuthorId).HasColumnName("author_id");
             entity.Property(e => e.CategoryId).HasColumnName("category_id");
             entity.Property(e => e.Content).HasColumnName("content");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
             entity.Property(e => e.PublishedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
@@ -99,20 +118,23 @@ public partial class AppDbContext : DbContext
 
             entity.HasOne(d => d.Author).WithMany(p => p.Articles)
                 .HasForeignKey(d => d.AuthorId)
-                .HasConstraintName("FK__Articles__author__6E01572D");
+                .HasConstraintName("FK__Articles__author__17F790F9");
 
             entity.HasOne(d => d.Category).WithMany(p => p.Articles)
                 .HasForeignKey(d => d.CategoryId)
-                .HasConstraintName("FK__Articles__catego__6EF57B66");
+                .HasConstraintName("FK__Articles__catego__18EBB532");
         });
 
         modelBuilder.Entity<ArticleCategory>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Article___3213E83F08583F66");
+            entity.HasKey(e => e.Id).HasName("PK__Article___3213E83F3592C026");
 
             entity.ToTable("Article_Categories");
 
             entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
             entity.Property(e => e.Name)
                 .HasMaxLength(255)
                 .HasColumnName("name");
@@ -120,13 +142,25 @@ public partial class AppDbContext : DbContext
 
         modelBuilder.Entity<Attraction>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Attracti__3213E83F82338BC3");
+            entity.HasKey(e => e.Id).HasName("PK__Attracti__3213E83FE804037D");
 
             entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Address)
+                .HasMaxLength(500)
+                .HasColumnName("address");
             entity.Property(e => e.Description).HasColumnName("description");
             entity.Property(e => e.DistanceKm)
                 .HasColumnType("decimal(5, 2)")
                 .HasColumnName("distance_km");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
+            entity.Property(e => e.Latitude)
+                .HasColumnType("decimal(10, 8)")
+                .HasColumnName("latitude");
+            entity.Property(e => e.Longitude)
+                .HasColumnType("decimal(11, 8)")
+                .HasColumnName("longitude");
             entity.Property(e => e.MapEmbedLink).HasColumnName("map_embed_link");
             entity.Property(e => e.Name)
                 .HasMaxLength(255)
@@ -135,36 +169,36 @@ public partial class AppDbContext : DbContext
 
         modelBuilder.Entity<AuditLog>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Audit_Lo__3213E83FB0B1B12D");
+            entity.HasKey(e => e.Id).HasName("PK__Audit_Lo__3213E83F7099AC85");
 
-            entity.ToTable("Audit_Logs");
+            entity.ToTable("Audit_Logs", tb => tb.HasTrigger("TR_AuditLogs_PreventDelete"));
 
             entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
             entity.Property(e => e.Action)
                 .HasMaxLength(50)
                 .HasColumnName("action");
+            entity.Property(e => e.TableName)
+                .HasMaxLength(255)
+                .HasColumnName("table_name");
+            entity.Property(e => e.RecordId).HasColumnName("record_id");
+            entity.Property(e => e.OldValue).HasColumnName("old_value");
+            entity.Property(e => e.NewValue).HasColumnName("new_value");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
-            entity.Property(e => e.NewValue).HasColumnName("new_value");
-            entity.Property(e => e.OldValue).HasColumnName("old_value");
-            entity.Property(e => e.RecordId).HasColumnName("record_id");
-            entity.Property(e => e.TableName)
-                .HasMaxLength(100)
-                .HasColumnName("table_name");
-            entity.Property(e => e.UserId).HasColumnName("user_id");
 
             entity.HasOne(d => d.User).WithMany(p => p.AuditLogs)
                 .HasForeignKey(d => d.UserId)
-                .HasConstraintName("FK__Audit_Log__user___6FE99F9F");
+                .HasConstraintName("FK__Audit_Log__user___19DFD96B");
         });
 
         modelBuilder.Entity<Booking>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Bookings__3213E83F28EECD7C");
+            entity.HasKey(e => e.Id).HasName("PK__Bookings__3213E83FB9FFF2AF");
 
-            entity.HasIndex(e => e.BookingCode, "UQ__Bookings__FF29040FFC3B0ACA").IsUnique();
+            entity.HasIndex(e => e.BookingCode, "UQ__Bookings__FF29040FE6D99FEF").IsUnique();
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.BookingCode)
@@ -188,16 +222,16 @@ public partial class AppDbContext : DbContext
 
             entity.HasOne(d => d.User).WithMany(p => p.Bookings)
                 .HasForeignKey(d => d.UserId)
-                .HasConstraintName("FK__Bookings__user_i__73BA3083");
+                .HasConstraintName("FK__Bookings__user_i__1DB06A4F");
 
             entity.HasOne(d => d.Voucher).WithMany(p => p.Bookings)
                 .HasForeignKey(d => d.VoucherId)
-                .HasConstraintName("FK__Bookings__vouche__74AE54BC");
+                .HasConstraintName("FK__Bookings__vouche__1EA48E88");
         });
 
         modelBuilder.Entity<BookingDetail>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Booking___3213E83F083F2040");
+            entity.HasKey(e => e.Id).HasName("PK__Booking___3213E83F162B8975");
 
             entity.ToTable("Booking_Details");
 
@@ -217,20 +251,43 @@ public partial class AppDbContext : DbContext
 
             entity.HasOne(d => d.Booking).WithMany(p => p.BookingDetails)
                 .HasForeignKey(d => d.BookingId)
-                .HasConstraintName("FK__Booking_D__booki__70DDC3D8");
+                .HasConstraintName("FK__Booking_D__booki__1AD3FDA4");
 
             entity.HasOne(d => d.Room).WithMany(p => p.BookingDetails)
                 .HasForeignKey(d => d.RoomId)
-                .HasConstraintName("FK__Booking_D__room___71D1E811");
+                .HasConstraintName("FK__Booking_D__room___1BC821DD");
 
             entity.HasOne(d => d.RoomType).WithMany(p => p.BookingDetails)
                 .HasForeignKey(d => d.RoomTypeId)
-                .HasConstraintName("FK__Booking_D__room___72C60C4A");
+                .HasConstraintName("FK__Booking_D__room___1CBC4616");
+        });
+
+        modelBuilder.Entity<Equipment>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__Equipmen__3214EC078F8611FE");
+
+            entity.HasIndex(e => e.ItemCode, "UQ__Equipmen__3ECC0FEAF6D602FB").IsUnique();
+
+            entity.Property(e => e.BasePrice).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.Category).HasMaxLength(100);
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getutcdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.DefaultPriceIfLost).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.InStockQuantity).HasComputedColumnSql("((([TotalQuantity]-[InUseQuantity])-[DamagedQuantity])-[LiquidatedQuantity])", false);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.ItemCode)
+                .HasMaxLength(50)
+                .IsUnicode(false);
+            entity.Property(e => e.Name).HasMaxLength(255);
+            entity.Property(e => e.Supplier).HasMaxLength(255);
+            entity.Property(e => e.Unit).HasMaxLength(50);
+            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
         });
 
         modelBuilder.Entity<Invoice>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Invoices__3213E83F0A0874E9");
+            entity.HasKey(e => e.Id).HasName("PK__Invoices__3213E83F7EFDBA3E");
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.BookingId).HasColumnName("booking_id");
@@ -261,12 +318,12 @@ public partial class AppDbContext : DbContext
 
             entity.HasOne(d => d.Booking).WithMany(p => p.Invoices)
                 .HasForeignKey(d => d.BookingId)
-                .HasConstraintName("FK__Invoices__bookin__75A278F5");
+                .HasConstraintName("FK__Invoices__bookin__1F98B2C1");
         });
 
         modelBuilder.Entity<LossAndDamage>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Loss_And__3213E83FCBF9253B");
+            entity.HasKey(e => e.Id).HasName("PK__Loss_And__3213E83FBB7A683B");
 
             entity.ToTable("Loss_And_Damages");
 
@@ -285,16 +342,16 @@ public partial class AppDbContext : DbContext
 
             entity.HasOne(d => d.BookingDetail).WithMany(p => p.LossAndDamages)
                 .HasForeignKey(d => d.BookingDetailId)
-                .HasConstraintName("FK__Loss_And___booki__76969D2E");
+                .HasConstraintName("FK__Loss_And___booki__208CD6FA");
 
             entity.HasOne(d => d.RoomInventory).WithMany(p => p.LossAndDamages)
                 .HasForeignKey(d => d.RoomInventoryId)
-                .HasConstraintName("FK__Loss_And___room___778AC167");
+                .HasConstraintName("FK__Loss_And___room___2180FB33");
         });
 
         modelBuilder.Entity<Membership>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Membersh__3213E83FBE8D8CF1");
+            entity.HasKey(e => e.Id).HasName("PK__Membersh__3213E83FB9758578");
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.DiscountPercent)
@@ -309,9 +366,38 @@ public partial class AppDbContext : DbContext
                 .HasColumnName("tier_name");
         });
 
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.HasIndex(e => new { e.UserId, e.IsRead }, "IX_Notifications_UserId_IsRead");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Content).HasColumnName("content");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("created_at");
+            entity.Property(e => e.IsRead).HasColumnName("is_read");
+            entity.Property(e => e.ReferenceLink)
+                .HasMaxLength(255)
+                .IsUnicode(false)
+                .HasColumnName("reference_link");
+            entity.Property(e => e.Title)
+                .HasMaxLength(255)
+                .HasColumnName("title");
+            entity.Property(e => e.Type)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("type");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+
+            entity.HasOne(d => d.User).WithMany(p => p.Notifications)
+                .HasForeignKey(d => d.UserId)
+                .HasConstraintName("FK_Notifications_Users");
+        });
+
         modelBuilder.Entity<OrderService>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Order_Se__3213E83FEDEFA398");
+            entity.HasKey(e => e.Id).HasName("PK__Order_Se__3213E83FE0BCCD8D");
 
             entity.ToTable("Order_Services");
 
@@ -332,12 +418,12 @@ public partial class AppDbContext : DbContext
 
             entity.HasOne(d => d.BookingDetail).WithMany(p => p.OrderServices)
                 .HasForeignKey(d => d.BookingDetailId)
-                .HasConstraintName("FK__Order_Ser__booki__7A672E12");
+                .HasConstraintName("FK__Order_Ser__booki__25518C17");
         });
 
         modelBuilder.Entity<OrderServiceDetail>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Order_Se__3213E83FC00A5CD9");
+            entity.HasKey(e => e.Id).HasName("PK__Order_Se__3213E83FEB09D500");
 
             entity.ToTable("Order_Service_Details");
 
@@ -351,16 +437,16 @@ public partial class AppDbContext : DbContext
 
             entity.HasOne(d => d.OrderService).WithMany(p => p.OrderServiceDetails)
                 .HasForeignKey(d => d.OrderServiceId)
-                .HasConstraintName("FK__Order_Ser__order__787EE5A0");
+                .HasConstraintName("FK__Order_Ser__order__236943A5");
 
             entity.HasOne(d => d.Service).WithMany(p => p.OrderServiceDetails)
                 .HasForeignKey(d => d.ServiceId)
-                .HasConstraintName("FK__Order_Ser__servi__797309D9");
+                .HasConstraintName("FK__Order_Ser__servi__245D67DE");
         });
 
         modelBuilder.Entity<Payment>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Payments__3213E83F476B232E");
+            entity.HasKey(e => e.Id).HasName("PK__Payments__3213E83FDBDA3941");
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.AmountPaid)
@@ -380,12 +466,12 @@ public partial class AppDbContext : DbContext
 
             entity.HasOne(d => d.Invoice).WithMany(p => p.Payments)
                 .HasForeignKey(d => d.InvoiceId)
-                .HasConstraintName("FK__Payments__invoic__7B5B524B");
+                .HasConstraintName("FK__Payments__invoic__2645B050");
         });
 
         modelBuilder.Entity<Permission>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Permissi__3213E83F243B2DED");
+            entity.HasKey(e => e.Id).HasName("PK__Permissi__3213E83F3E402695");
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Name)
@@ -395,7 +481,7 @@ public partial class AppDbContext : DbContext
 
         modelBuilder.Entity<Review>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Reviews__3213E83F5E38E515");
+            entity.HasKey(e => e.Id).HasName("PK__Reviews__3213E83F1867233A");
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Comment).HasColumnName("comment");
@@ -409,16 +495,16 @@ public partial class AppDbContext : DbContext
 
             entity.HasOne(d => d.RoomType).WithMany(p => p.Reviews)
                 .HasForeignKey(d => d.RoomTypeId)
-                .HasConstraintName("FK__Reviews__room_ty__7C4F7684");
+                .HasConstraintName("FK__Reviews__room_ty__2739D489");
 
             entity.HasOne(d => d.User).WithMany(p => p.Reviews)
                 .HasForeignKey(d => d.UserId)
-                .HasConstraintName("FK__Reviews__user_id__7D439ABD");
+                .HasConstraintName("FK__Reviews__user_id__282DF8C2");
         });
 
         modelBuilder.Entity<Role>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Roles__3213E83F1DD0E771");
+            entity.HasKey(e => e.Id).HasName("PK__Roles__3213E83F3EC5F97C");
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Description).HasColumnName("description");
@@ -432,14 +518,14 @@ public partial class AppDbContext : DbContext
                     r => r.HasOne<Permission>().WithMany()
                         .HasForeignKey("PermissionId")
                         .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("FK__Role_Perm__permi__7E37BEF6"),
+                        .HasConstraintName("FK__Role_Perm__permi__29221CFB"),
                     l => l.HasOne<Role>().WithMany()
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("FK__Role_Perm__role___7F2BE32F"),
+                        .HasConstraintName("FK__Role_Perm__role___2A164134"),
                     j =>
                     {
-                        j.HasKey("RoleId", "PermissionId").HasName("PK__Role_Per__C85A54638EDA7B05");
+                        j.HasKey("RoleId", "PermissionId").HasName("PK__Role_Per__C85A5463E34CA258");
                         j.ToTable("Role_Permissions");
                         j.IndexerProperty<int>("RoleId").HasColumnName("role_id");
                         j.IndexerProperty<int>("PermissionId").HasColumnName("permission_id");
@@ -448,9 +534,19 @@ public partial class AppDbContext : DbContext
 
         modelBuilder.Entity<Room>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Rooms__3213E83FB849AB02");
+            entity.HasKey(e => e.Id).HasName("PK__Rooms__3213E83FBA4CFDE9");
+            entity.ToTable(tb => tb.HasTrigger("trg_Rooms_Audit"));
 
             entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CleaningStatus)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasDefaultValue("Clean")
+                .HasColumnName("cleaning_status");
+            entity.Property(e => e.ExtensionNumber)
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasColumnName("extension_number");
             entity.Property(e => e.Floor).HasColumnName("floor");
             entity.Property(e => e.RoomNumber)
                 .HasMaxLength(50)
@@ -463,17 +559,20 @@ public partial class AppDbContext : DbContext
 
             entity.HasOne(d => d.RoomType).WithMany(p => p.Rooms)
                 .HasForeignKey(d => d.RoomTypeId)
-                .HasConstraintName("FK__Rooms__room_type__02084FDA");
+                .HasConstraintName("FK__Rooms__room_type__2DE6D218");
         });
 
         modelBuilder.Entity<RoomImage>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Room_Ima__3213E83F5BF62486");
+            entity.HasKey(e => e.Id).HasName("PK__Room_Ima__3213E83F045A6193");
 
             entity.ToTable("Room_Images");
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.ImageUrl).HasColumnName("image_url");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
             entity.Property(e => e.IsPrimary)
                 .HasDefaultValue(false)
                 .HasColumnName("is_primary");
@@ -481,19 +580,27 @@ public partial class AppDbContext : DbContext
 
             entity.HasOne(d => d.RoomType).WithMany(p => p.RoomImages)
                 .HasForeignKey(d => d.RoomTypeId)
-                .HasConstraintName("FK__Room_Imag__room___00200768");
+                .HasConstraintName("FK__Room_Imag__room___2B0A656D");
         });
 
         modelBuilder.Entity<RoomInventory>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Room_Inv__3213E83FA41F31EE");
+            entity.HasKey(e => e.Id).HasName("PK__Room_Inv__3213E83FEBDF520A");
 
             entity.ToTable("Room_Inventory");
 
             entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.ItemName)
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
+            entity.Property(e => e.ItemType)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasDefaultValue("Asset")
+                .HasColumnName("item_type");
+            entity.Property(e => e.Note)
                 .HasMaxLength(255)
-                .HasColumnName("item_name");
+                .HasColumnName("note");
             entity.Property(e => e.PriceIfLost)
                 .HasDefaultValue(0m)
                 .HasColumnType("decimal(18, 2)")
@@ -503,14 +610,19 @@ public partial class AppDbContext : DbContext
                 .HasColumnName("quantity");
             entity.Property(e => e.RoomId).HasColumnName("room_id");
 
+            entity.HasOne(d => d.Equipment).WithMany(p => p.RoomInventories)
+                .HasForeignKey(d => d.EquipmentId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_RoomInventory_Equipments");
+
             entity.HasOne(d => d.Room).WithMany(p => p.RoomInventories)
                 .HasForeignKey(d => d.RoomId)
-                .HasConstraintName("FK__Room_Inve__room___01142BA1");
+                .HasConstraintName("FK__Room_Inve__room___2BFE89A6");
         });
 
         modelBuilder.Entity<RoomType>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Room_Typ__3213E83FDC021DD2");
+            entity.HasKey(e => e.Id).HasName("PK__Room_Typ__3213E83FD935EF69");
 
             entity.ToTable("Room_Types");
 
@@ -518,12 +630,27 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.BasePrice)
                 .HasColumnType("decimal(18, 2)")
                 .HasColumnName("base_price");
+            entity.Property(e => e.BedType)
+                .HasMaxLength(100)
+                .HasColumnName("bed_type");
             entity.Property(e => e.CapacityAdults).HasColumnName("capacity_adults");
             entity.Property(e => e.CapacityChildren).HasColumnName("capacity_children");
+            entity.Property(e => e.Content).HasColumnName("content");
             entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
             entity.Property(e => e.Name)
                 .HasMaxLength(255)
                 .HasColumnName("name");
+            entity.Property(e => e.SizeSqm).HasColumnName("size_sqm");
+            entity.Property(e => e.Slug)
+                .HasMaxLength(255)
+                .IsUnicode(false)
+                .HasColumnName("slug");
+            entity.Property(e => e.ViewType)
+                .HasMaxLength(100)
+                .HasColumnName("view_type");
 
             entity.HasMany(d => d.Amenities).WithMany(p => p.RoomTypes)
                 .UsingEntity<Dictionary<string, object>>(
@@ -531,14 +658,14 @@ public partial class AppDbContext : DbContext
                     r => r.HasOne<Amenity>().WithMany()
                         .HasForeignKey("AmenityId")
                         .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("FK__RoomType___ameni__02FC7413"),
+                        .HasConstraintName("FK__RoomType___ameni__2EDAF651"),
                     l => l.HasOne<RoomType>().WithMany()
                         .HasForeignKey("RoomTypeId")
                         .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("FK__RoomType___room___03F0984C"),
+                        .HasConstraintName("FK__RoomType___room___2FCF1A8A"),
                     j =>
                     {
-                        j.HasKey("RoomTypeId", "AmenityId").HasName("PK__RoomType__8CA9DAD69AA20238");
+                        j.HasKey("RoomTypeId", "AmenityId").HasName("PK__RoomType__8CA9DAD63F22BE2C");
                         j.ToTable("RoomType_Amenities");
                         j.IndexerProperty<int>("RoomTypeId").HasColumnName("room_type_id");
                         j.IndexerProperty<int>("AmenityId").HasColumnName("amenity_id");
@@ -547,7 +674,7 @@ public partial class AppDbContext : DbContext
 
         modelBuilder.Entity<Service>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Services__3213E83F7C8FA04E");
+            entity.HasKey(e => e.Id).HasName("PK__Services__3213E83F47224E5A");
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.CategoryId).HasColumnName("category_id");
@@ -563,12 +690,12 @@ public partial class AppDbContext : DbContext
 
             entity.HasOne(d => d.Category).WithMany(p => p.Services)
                 .HasForeignKey(d => d.CategoryId)
-                .HasConstraintName("FK__Services__catego__04E4BC85");
+                .HasConstraintName("FK__Services__catego__30C33EC3");
         });
 
         modelBuilder.Entity<ServiceCategory>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Service___3213E83F5E3BD593");
+            entity.HasKey(e => e.Id).HasName("PK__Service___3213E83FE9224A82");
 
             entity.ToTable("Service_Categories");
 
@@ -580,11 +707,21 @@ public partial class AppDbContext : DbContext
 
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Users__3213E83F74E9F69B");
+            entity.HasKey(e => e.Id).HasName("PK__Users__3213E83F39EDA16F");
 
-            entity.HasIndex(e => e.Email, "UQ__Users__AB6E616441B3DD1F").IsUnique();
+            entity.HasIndex(e => e.Email, "UQ__Users__AB6E6164EB721056").IsUnique();
 
             entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Address)
+                .HasMaxLength(500)
+                .HasColumnName("address");
+            entity.Property(e => e.AvatarUrl)
+                .HasMaxLength(255)
+                .HasColumnName("avatar_url");
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("datetime")
+                .HasColumnName("created_at");
+            entity.Property(e => e.DateOfBirth).HasColumnName("date_of_birth");
             entity.Property(e => e.Email)
                 .HasMaxLength(255)
                 .HasColumnName("email");
@@ -603,18 +740,18 @@ public partial class AppDbContext : DbContext
 
             entity.HasOne(d => d.Membership).WithMany(p => p.Users)
                 .HasForeignKey(d => d.MembershipId)
-                .HasConstraintName("FK__Users__membershi__05D8E0BE");
+                .HasConstraintName("FK__Users__membershi__31B762FC");
 
             entity.HasOne(d => d.Role).WithMany(p => p.Users)
                 .HasForeignKey(d => d.RoleId)
-                .HasConstraintName("FK__Users__role_id__06CD04F7");
+                .HasConstraintName("FK__Users__role_id__32AB8735");
         });
 
         modelBuilder.Entity<Voucher>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Vouchers__3213E83F5F1D4433");
+            entity.HasKey(e => e.Id).HasName("PK__Vouchers__3213E83FC9D228F7");
 
-            entity.HasIndex(e => e.Code, "UQ__Vouchers__357D4CF9974EFB9B").IsUnique();
+            entity.HasIndex(e => e.Code, "UQ__Vouchers__357D4CF98290E970").IsUnique();
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Code)

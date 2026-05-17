@@ -21,6 +21,14 @@ public partial class User
 
     public bool? Status { get; set; }
 
+    public string? AvatarUrl { get; set; }
+
+    public DateTime? CreatedAt { get; set; }
+
+    public DateOnly? DateOfBirth { get; set; }
+
+    public string? Address { get; set; }
+
     public virtual ICollection<Article> Articles { get; set; } = new List<Article>();
 
     public virtual ICollection<AuditLog> AuditLogs { get; set; } = new List<AuditLog>();
@@ -28,6 +36,8 @@ public partial class User
     public virtual ICollection<Booking> Bookings { get; set; } = new List<Booking>();
 
     public virtual Membership? Membership { get; set; }
+
+    public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
 
     public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
 
