@@ -7,8 +7,10 @@ import {
   EditOutlined, PlusOutlined, DeleteOutlined, KeyOutlined 
 } from '@ant-design/icons';
 import axiosClient from '../api/axiosClient';
+import { useAdminAuthStore } from '../store/adminAuthStore';
 
 const RoleManagementPage = () => {
+  const { user } = useAdminAuthStore();
   const [roles, setRoles] = useState([]);
   const [allPermissions, setAllPermissions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -106,6 +108,16 @@ const RoleManagementPage = () => {
       message.success('Cập nhật quyền hạn thành công!');
       setIsPermissionModalOpen(false);
       fetchRoles();
+
+      // Nếu role được phân quyền là chính role hiện tại của tôi, reload lại menu ngay lập tức
+      const myRole = user?.role || '';
+      const currentRoleName = currentRole?.name || currentRole?.Name || '';
+      if (myRole.toLowerCase() === currentRoleName.toLowerCase()) {
+        message.loading("Đang thiết lập lại phân quyền menu...", 1.5);
+        setTimeout(() => {
+          window.location.reload();
+        }, 1200);
+      }
     } catch (error) {
       message.error('Lỗi khi phân quyền!');
     }

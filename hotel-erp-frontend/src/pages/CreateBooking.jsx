@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Steps, DatePicker, Button, Table, Form, Input, message, Card, Typography, Space, Divider, InputNumber, Tag } from 'antd';
 import { UserOutlined, PhoneOutlined, MailOutlined, CheckCircleOutlined, DollarOutlined, GiftOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import axiosClient from '../api/axiosClient';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -33,9 +34,8 @@ const CreateBooking = () => {
     const checkOut = dates[1].format('YYYY-MM-DD');
     
     try {
-      const response = await fetch(`http://localhost:5057/api/Bookings/AvailableRooms?checkIn=${checkIn}&checkOut=${checkOut}`);
-      if (!response.ok) throw new Error(await response.text());
-      const rawRooms = await response.json();
+      const response = await axiosClient.get(`/Bookings/AvailableRooms?checkIn=${checkIn}&checkOut=${checkOut}`);
+      const rawRooms = response.data;
 
       // 🔮 THUẬT TOÁN GOM NHÓM TỰ ĐỘNG
       const grouped = rawRooms.reduce((acc, room) => {
@@ -45,6 +45,7 @@ const CreateBooking = () => {
             price: room.price,
             maxAdults: room.maxAdults,
             maxChildren: room.maxChildren,
+            roomTypeId: room.roomTypeId || room.RoomTypeId,
             rooms: [] // Chứa danh sách các phòng cụ thể thuộc hạng này
           };
         }
@@ -115,12 +116,20 @@ const CreateBooking = () => {
 
     let totalRoomPricePerNight = 0;
     let totalRoomsCount = 0;
+    let matchingRoomPricePerNight = 0;
 
     availableRoomTypes.forEach(type => {
       const qty = selectedQuantities[type.roomTypeName] || 0;
       if (qty > 0) {
         totalRoomPricePerNight += (type.price * qty);
         totalRoomsCount += qty;
+
+        if (appliedVoucher && appliedVoucher.roomTypeId) {
+          const typeRoomTypeId = type.roomTypeId || (type.rooms && type.rooms[0] ? (type.rooms[0].roomTypeId || type.rooms[0].RoomTypeId) : null);
+          if (Number(typeRoomTypeId) === Number(appliedVoucher.roomTypeId)) {
+            matchingRoomPricePerNight += (type.price * qty);
+          }
+        }
       }
     });
 
@@ -128,10 +137,24 @@ const CreateBooking = () => {
     let discount = 0;
 
     if (appliedVoucher) {
-      if (appliedVoucher.discountType === 'PERCENT') {
-        discount = (totalAmount * appliedVoucher.discountValue) / 100;
-      } else if (appliedVoucher.discountType === 'AMOUNT') {
-        discount = appliedVoucher.discountValue;
+      const discountVal = appliedVoucher.discountValue || 0;
+      const discountTypeUpper = (appliedVoucher.discountType || '').toUpperCase();
+
+      if (appliedVoucher.roomTypeId) {
+        const matchingAmount = matchingRoomPricePerNight * nights;
+        if (matchingAmount > 0) {
+          if (discountTypeUpper === 'PERCENT') {
+            discount = (matchingAmount * discountVal) / 100;
+          } else {
+            discount = discountVal;
+          }
+        }
+      } else {
+        if (discountTypeUpper === 'PERCENT') {
+          discount = (totalAmount * discountVal) / 100;
+        } else {
+          discount = discountVal;
+        }
       }
       if (discount > totalAmount) discount = totalAmount; 
     }
@@ -148,9 +171,8 @@ const CreateBooking = () => {
     if (!voucherCode.trim()) return message.warning('Vui lòng nhập mã!');
     setCheckingVoucher(true);
     try {
-      const response = await fetch(`http://localhost:5057/api/Vouchers/check?code=${voucherCode.trim()}`);
-      if (!response.ok) throw new Error(await response.text());
-      const data = await response.json();
+      const response = await axiosClient.get(`/Vouchers/check?code=${voucherCode.trim()}`);
+      const data = response.data;
       setAppliedVoucher(data);
       message.success(`Áp dụng mã ${data.code} thành công!`);
     } catch (error) {
@@ -198,13 +220,8 @@ const CreateBooking = () => {
     };
 
     try {
-      const response = await fetch('http://localhost:5057/api/Bookings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result || 'Lỗi đặt phòng');
+      const response = await axiosClient.post('/Bookings', payload);
+      const result = response.data;
 
       message.success(`Đặt phòng thành công! Mã đơn: ${result.bookingCode}`);
       

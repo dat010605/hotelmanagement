@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Table, Button, Modal, Form, Input, Select, InputNumber, message, Card, Typography, Space, Popconfirm, Tag, DatePicker, Descriptions, Divider, Badge } from 'antd';
 import { PlusOutlined, DeleteOutlined, GiftOutlined, EyeOutlined, CalendarOutlined, TagOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import axiosClient from '../api/axiosClient';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -18,12 +19,10 @@ const VoucherManagement = () => {
   const fetchVouchers = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5057/api/Vouchers');
-      if (!response.ok) throw new Error('Không thể tải dữ liệu');
-      const data = await response.json();
-      setVouchers(data);
+      const res = await axiosClient.get('/Vouchers');
+      setVouchers(res.data);
     } catch (error) {
-      message.error(error.message);
+      message.error(error.response?.data || error.message || 'Không thể tải dữ liệu');
     } finally {
       setLoading(false);
     }
@@ -32,11 +31,8 @@ const VoucherManagement = () => {
   // Lấy danh sách hạng phòng
   const fetchRoomTypes = async () => {
     try {
-      const res = await fetch('http://localhost:5057/api/RoomTypes');
-      if (res.ok) {
-        const data = await res.json();
-        setRoomTypes(data);
-      }
+      const res = await axiosClient.get('/RoomTypes');
+      setRoomTypes(res.data);
     } catch (e) {
       console.log('Không tải được hạng phòng');
     }
@@ -50,12 +46,11 @@ const VoucherManagement = () => {
   // Gọi API Xóa
   const handleDelete = async (id) => {
     try {
-      const response = await fetch(`http://localhost:5057/api/Vouchers/${id}`, { method: 'DELETE' });
-      if (!response.ok) throw new Error('Lỗi khi xóa');
+      await axiosClient.delete(`/Vouchers/${id}`);
       message.success('Đã xóa Voucher thành công');
       fetchVouchers(); // Load lại bảng
     } catch (error) {
-      message.error(error.message);
+      message.error(error.response?.data || error.message || 'Lỗi khi xóa');
     }
   };
 
@@ -74,21 +69,14 @@ const VoucherManagement = () => {
     };
 
     try {
-      const response = await fetch('http://localhost:5057/api/Vouchers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      const result = await response.json();
-      if (!response.ok) throw new Error(result || 'Lỗi khi tạo mã');
+      await axiosClient.post('/Vouchers', payload);
 
       message.success('Thêm Voucher mới thành công!');
       setIsModalVisible(false);
       form.resetFields();
       fetchVouchers();
     } catch (error) {
-      message.error(error.message);
+      message.error(error.response?.data || error.message || 'Lỗi khi tạo mã');
     }
   };
 

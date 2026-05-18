@@ -50,9 +50,6 @@ const getRoomImage = (room, typeInfo) => {
 const CustomerOffersPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const [rooms, setRooms] = useState([]);
-  const [roomTypes, setRoomTypes] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [copiedCode, setCopiedCode] = useState(null);
 
   // --- Dữ liệu Mock sử dụng translation keys ---
@@ -128,41 +125,6 @@ const CustomerOffersPage = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [roomsRes, typesRes] = await Promise.all([
-          axiosClient.get('/Rooms'),
-          axiosClient.get('/RoomTypes')
-        ]);
-        setRooms(roomsRes.data);
-        setRoomTypes(typesRes.data);
-      } catch (error) {
-        console.error("Error loading data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
-
-  // Lấy ra 4 phòng nổi bật nhất (giả lập là những phòng có rating cao)
-  const popularRooms = useMemo(() => {
-    if (rooms.length === 0 || roomTypes.length === 0) return [];
-    
-    return rooms.slice(0, 4).map((room, index) => {
-      const typeInfo = roomTypes.find(t => t.id === (room.roomTypeId || room.RoomTypeId)) || {};
-      return {
-        ...room,
-        roomTypeName: typeInfo.name || typeInfo.Name || 'Standard',
-        basePrice: typeInfo.basePrice || typeInfo.BasePrice || 500000,
-        imgUrl: getRoomImage(room, typeInfo),
-        bookedCount: 150 + Math.floor(Math.random() * 300), // Số người đã đặt giả lập
-        rating: 4.8 + (Math.random() * 0.2) // Rating giả lập 4.8 -> 5.0
-      };
-    });
-  }, [rooms, roomTypes]);
-
   return (
     <div style={{ padding: '40px 24px', maxWidth: 1200, margin: '0 auto' }}>
       
@@ -182,53 +144,6 @@ const CustomerOffersPage = () => {
         <Paragraph style={{ color: '#ffd8bf', fontSize: '1.2rem', marginTop: 16 }}>
           {t('offersPage.subtitle')}
         </Paragraph>
-      </div>
-
-      {/* ── POPULAR ROOMS SECTION ─────────────────────────────────────────── */}
-      <div style={{ marginBottom: '60px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <Title level={2} style={{ margin: 0 }}>
-            <FireOutlined style={{ color: '#fa541c' }} /> {t('offersPage.popularTitle')}
-          </Title>
-          <Button type="link" onClick={() => navigate('/rooms')}>{t('offersPage.viewAllRooms')} <RightOutlined /></Button>
-        </div>
-        
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: '40px' }}><Spin size="large" /></div>
-        ) : (
-          <Row gutter={[24, 24]}>
-            {popularRooms.map(room => (
-              <Col xs={24} sm={12} md={12} lg={6} key={room.id}>
-                <Badge.Ribbon text={t('offersPage.bestSeller')} color="red">
-                  <Card
-                    hoverable
-                    cover={<img alt={room.roomNumber} src={room.imgUrl} onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=800'; }} style={{ height: 200, objectFit: 'cover' }} />}
-                    style={{ borderRadius: '12px', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column' }}
-                    bodyStyle={{ flex: 1, display: 'flex', flexDirection: 'column' }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8, gap: 8 }}>
-                      <Tag color="blue" style={{ whiteSpace: 'normal', height: 'auto', padding: '2px 8px', flex: 1 }}>{room.roomTypeName}</Tag>
-                      <Text strong style={{ color: '#faad14', flexShrink: 0, marginTop: 2 }}><StarFilled /> {room.rating.toFixed(1)}</Text>
-                    </div>
-                    <Title level={4} style={{ marginBottom: 4 }}>{t('offersPage.room')} {room.roomNumber}</Title>
-                    <Text type="secondary" style={{ fontSize: 13, display: 'block', marginBottom: 16 }}>
-                      🔥 {t('offersPage.bookedThisMonth', { count: room.bookedCount })}
-                    </Text>
-                    
-                    <div style={{ marginTop: 'auto', paddingTop: 16, borderTop: '1px solid #f0f0f0' }}>
-                      <Text type="danger" strong style={{ fontSize: '1.2rem' }}>
-                        {room.basePrice.toLocaleString('vi-VN')} {t('offersPage.perNight')}
-                      </Text>
-                      <Button type="primary" block style={{ marginTop: 12, borderRadius: 6 }} onClick={() => navigate('/rooms')}>
-                        {t('offersPage.bookNow')}
-                      </Button>
-                    </div>
-                  </Card>
-                </Badge.Ribbon>
-              </Col>
-            ))}
-          </Row>
-        )}
       </div>
 
       {/* ── BEST COMBOS SECTION ───────────────────────────────────────────── */}

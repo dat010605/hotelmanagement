@@ -91,8 +91,8 @@ function App() {
                 {/* Hồ sơ cá nhân - Tất cả nhân viên đều xem được */}
                 <Route path="/admin/profile" element={<ProfilePage />} />
 
-                {/* Thống kê/Dashboard - Chỉ Admin & Manager */}
-                <Route element={<RoleGuard allowedRoles={[]} />}>
+                {/* Thống kê/Dashboard - Admin, Manager, Lễ tân, Buồng phòng */}
+                <Route element={<RoleGuard allowedRoles={['receptionist', 'lễ tân', 'housekeeping', 'buồng phòng']} />}>
                   <Route path="/admin/dashboard" element={<DashboardPage />} />
                 </Route>
 

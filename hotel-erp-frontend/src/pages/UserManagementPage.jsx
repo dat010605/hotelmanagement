@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Card, Table, Tag, Button, Space, Input, Select, Typography, Row, Col, Modal, Form, Switch, message, Descriptions } from 'antd';
 import { SearchOutlined, EditOutlined, LockOutlined, EyeOutlined, UserAddOutlined, ReloadOutlined } from '@ant-design/icons';
 import axiosClient from '../api/axiosClient';
+import { useAdminAuthStore } from '../store/adminAuthStore';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
 
 const UserManagementPage = () => {
+  const { user, setAuth, token, permissions } = useAdminAuthStore();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
@@ -76,6 +78,17 @@ const UserManagementPage = () => {
       setUsers(updatedUsers);
       message.success(`Đã cập nhật thông tin cho ${values.fullName}`);
       setIsEditModalOpen(false);
+
+      // Nếu người được cập nhật là chính người đang đăng nhập, tự động reload lại toàn bộ menu
+      const myId = user?.id || user?.Id;
+      if (myId && String(myId) === String(editingUser.id)) {
+        const updatedUser = { ...user, role: values.role };
+        setAuth(token, updatedUser, permissions);
+        message.loading("Đang thiết lập lại phân quyền menu...", 1.5);
+        setTimeout(() => {
+          window.location.reload();
+        }, 1200);
+      }
     } catch (error) {
       message.error("Lỗi khi cập nhật!");
     }

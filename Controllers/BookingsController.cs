@@ -40,6 +40,7 @@ namespace HotelManagement.API.Controllers
                 .Select(r => new
                 {
                     RoomId = r.Id,
+                    RoomTypeId = r.RoomTypeId,
                     RoomTypeName = r.RoomType != null ? r.RoomType.Name : "Không xác định",
                     Price = r.RoomType != null ? r.RoomType.BasePrice : 0m,
                     MaxAdults = r.RoomType != null ? r.RoomType.CapacityAdults : 0,
@@ -55,6 +56,19 @@ namespace HotelManagement.API.Controllers
         public async Task<IActionResult> CreateBooking([FromBody] DTOs.CreateBookingDTO request)
         {
             if (request.Rooms == null || !request.Rooms.Any()) return BadRequest("Phải chọn ít nhất 1 phòng để đặt.");
+
+            // Kiểm tra ngày hợp lệ cho từng phòng đặt
+            foreach (var roomReq in request.Rooms)
+            {
+                if (roomReq.CheckInDate >= roomReq.CheckOutDate)
+                {
+                    return BadRequest("Ngày nhận phòng phải trước ngày trả phòng.");
+                }
+                if (roomReq.CheckInDate.Date < DateTime.Today)
+                {
+                    return BadRequest("Không thể đặt phòng cho ngày trong quá khứ.");
+                }
+            }
 
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -87,6 +101,18 @@ namespace HotelManagement.API.Controllers
                         {
                             await transaction.RollbackAsync();
                             return BadRequest("Mã khuyến mãi đã hết lượt sử dụng.");
+                        }
+                    }
+
+                    if (voucher.RoomTypeId.HasValue)
+                    {
+                        var roomIds = request.Rooms.Select(r => r.RoomId).ToList();
+                        var hasMatchingRoom = await _context.Rooms
+                            .AnyAsync(r => roomIds.Contains(r.Id) && r.RoomTypeId == voucher.RoomTypeId.Value);
+                        if (!hasMatchingRoom)
+                        {
+                            await transaction.RollbackAsync();
+                            return BadRequest("Mã khuyến mãi này không áp dụng cho hạng phòng bạn chọn.");
                         }
                     }
                     voucherId = voucher.Id;

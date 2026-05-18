@@ -97,8 +97,8 @@ const AdminLayout = () => {
 
   // THU GỌN MENU VỚI QUYỀN TRUY CẬP (THEO BẢNG MA TRẬN PHÂN QUYỀN)
   const rawSidebarItems = [
-    // Thống kê/Dashboard - Chỉ Admin & Manager
-    { key: '/admin/dashboard', icon: <DashboardOutlined />, label: 'Bảng điều khiển', allowedRoles: [] },
+    // Thống kê/Dashboard - Admin, Manager, Lễ tân, Buồng phòng
+    { key: '/admin/dashboard', icon: <DashboardOutlined />, label: 'Bảng điều khiển', allowedRoles: ['receptionist', 'lễ tân', 'housekeeping', 'buồng phòng'] },
     
     // Nhóm: Quản lý phòng
     {

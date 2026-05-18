@@ -251,8 +251,35 @@ public async Task<IActionResult> CreateMoMoPayment([FromBody] ProcessPaymentDto.
             if (subTotal >= minVal)
             {
                 decimal discVal = (decimal?)booking.Voucher.DiscountValue ?? 0m;
-                if (booking.Voucher.DiscountType == "Percent") discountAmount += subTotal * (discVal / 100m);
-                else if (booking.Voucher.DiscountType == "Amount") discountAmount += discVal;
+                if (booking.Voucher.RoomTypeId.HasValue)
+                {
+                    var matchingDetails = booking.BookingDetails.Where(bd => bd.RoomTypeId == booking.Voucher.RoomTypeId.Value).ToList();
+                    if (matchingDetails.Any())
+                    {
+                        decimal matchingRoomsTotal = 0;
+                        foreach (var detail in matchingDetails)
+                        {
+                            int days = (detail.CheckOutDate.Date - detail.CheckInDate.Date).Days;
+                            if (days <= 0) days = 1;
+                            decimal price = (decimal?)detail.PricePerNight ?? 0m;
+                            matchingRoomsTotal += days * price;
+                        }
+
+                        if (booking.Voucher.DiscountType == "Percent")
+                        {
+                            discountAmount += matchingRoomsTotal * (discVal / 100m);
+                        }
+                        else if (booking.Voucher.DiscountType == "Amount")
+                        {
+                            discountAmount += discVal;
+                        }
+                    }
+                }
+                else
+                {
+                    if (booking.Voucher.DiscountType == "Percent") discountAmount += subTotal * (discVal / 100m);
+                    else if (booking.Voucher.DiscountType == "Amount") discountAmount += discVal;
+                }
             }
         }
 

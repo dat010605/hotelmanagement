@@ -84,24 +84,37 @@ const CustomerRoomsPage = () => {
       result = result.filter(r => (r.roomTypeId || r.RoomTypeId) === selectedType);
     }
 
-    // Sort
+    // Helper kiểm tra phòng có sẵn
+    const checkAvailable = (r) => {
+      const status = r.status || r.Status;
+      return status !== 'Occupied' && status !== 'Maintenance';
+    };
+
     const isVillaRoom = (r) => ((r.roomTypeName || '').toLowerCase()).includes('villa');
 
-    if (sortOrder === 'price_asc') {
-      result.sort((a, b) => a.basePrice - b.basePrice);
-    } else if (sortOrder === 'price_desc') {
-      result.sort((a, b) => b.basePrice - a.basePrice);
-    } else {
-      // Mặc định: Sắp xếp roomNumber tăng dần, Villa luôn ở cuối
-      result.sort((a, b) => {
+    result.sort((a, b) => {
+      // 🌟 TIÊU CHÍ 1: Phòng trống/có thể đặt lên đầu, phòng hết/bận xuống dưới
+      const aAvail = checkAvailable(a) ? 1 : 0;
+      const bAvail = checkAvailable(b) ? 1 : 0;
+      if (aAvail !== bAvail) {
+        return bAvail - aAvail; // 1 (Available) lên trước 0 (Occupied/Maintenance)
+      }
+
+      // 🌟 TIÊU CHÍ 2: Sắp xếp theo bộ lọc người dùng chọn
+      if (sortOrder === 'price_asc') {
+        return a.basePrice - b.basePrice;
+      } else if (sortOrder === 'price_desc') {
+        return b.basePrice - a.basePrice;
+      } else {
+        // Mặc định: Sắp xếp roomNumber tăng dần, Villa luôn ở cuối
         const aVilla = isVillaRoom(a) ? 1 : 0;
         const bVilla = isVillaRoom(b) ? 1 : 0;
         if (aVilla !== bVilla) return aVilla - bVilla; // Villa xuống cuối
         const aNum = String(a.roomNumber || a.RoomNumber || '');
         const bNum = String(b.roomNumber || b.RoomNumber || '');
         return aNum.localeCompare(bNum, undefined, { numeric: true });
-      });
-    }
+      }
+    });
 
     return result;
   }, [mergedRooms, selectedType, sortOrder]);
