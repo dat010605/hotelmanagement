@@ -1,6 +1,7 @@
 using HotelManagement.API.DTOs;
 using HotelManagement.API.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
 namespace HotelManagement.API.Controllers
@@ -37,9 +38,10 @@ namespace HotelManagement.API.Controllers
 
         // 3. Gán quyền (Xóa cũ → Thêm mới, dùng Transaction an toàn)
         [HttpPost("{id:int}/AssignPermissions")]
-        public async Task<IActionResult> AssignPermissions(int id, [FromBody] List<int> permissionIds)
+        public async Task<IActionResult> AssignPermissions(int id, [FromBody] List<int> permissionIds,
+            [FromServices] IHubContext<HotelManagement.API.Hubs.NotificationHub> hubContext)
         {
-            var role = await _context.Roles.FindAsync(id);
+            var role = await _context.Roles.Include(r => r.Permissions).FirstOrDefaultAsync(r => r.Id == id);
             if (role == null) return NotFound("Không tìm thấy Vai trò.");
 
             using var transaction = await _context.Database.BeginTransactionAsync();
@@ -67,6 +69,21 @@ namespace HotelManagement.API.Controllers
                 }
 
                 await transaction.CommitAsync();
+
+                // Lấy danh sách permissions mới để gửi cho client
+                var updatedPermissions = await _context.Permissions
+                    .Where(p => permissionIds != null && permissionIds.Contains(p.Id))
+                    .Select(p => p.Name)
+                    .ToListAsync();
+
+                // Gửi SignalR event để client tự reload sidebar
+                await hubContext.Clients.All.SendAsync("PermissionsUpdated", new
+                {
+                    roleId = id,
+                    roleName = role.Name,
+                    permissions = updatedPermissions
+                });
+
                 return Ok(new { message = "Cập nhật quyền thành công!" });
             }
             catch (Exception ex)
@@ -75,6 +92,7 @@ namespace HotelManagement.API.Controllers
                 return StatusCode(500, $"Lỗi khi cập nhật quyền: {ex.Message}");
             }
         }
+
 
         // 4. Lấy chi tiết 1 Role
         [HttpGet("{id:int}")]

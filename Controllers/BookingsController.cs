@@ -118,8 +118,17 @@ namespace HotelManagement.API.Controllers
                     voucherId = voucher.Id;
                 }
 
+                // Kiểm tra xem User có đăng nhập không (qua Token)
+                int? currentUserId = null;
+                var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+                if (userIdClaim != null && int.TryParse(userIdClaim.Value, out int uid))
+                {
+                    currentUserId = uid;
+                }
+
                 var newBooking = new Booking
                 {
+                    UserId = currentUserId, // 🌟 Gán UserId để hiển thị trong lịch sử của khách hàng
                     GuestName = request.GuestName,
                     GuestPhone = request.GuestPhone,
                     GuestEmail = request.GuestEmail,

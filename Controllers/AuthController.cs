@@ -62,32 +62,28 @@ namespace HotelManagement.API.Controllers
         [HttpPost("Login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            var user = await _context.Users.Include(u => u.Role)
+            var user = await _context.Users
+                                     .Include(u => u.Role).ThenInclude(r => r.Permissions)
                                      .FirstOrDefaultAsync(u => u.Email == request.Email && u.Status == true);
 
             if (user == null)
                 return Unauthorized(new { message = "Email không tồn tại hoặc tài khoản bị khóa." });
 
-            bool isPasswordValid = false;
-            if (user.PasswordHash.StartsWith("$"))
-            {
-                isPasswordValid = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
-            }
-            else
-            {
-                isPasswordValid = (user.PasswordHash == request.Password);
-            }
+            // Luôn dùng BCrypt để xác thực - KHÔNG so sánh plain text
+            bool isPasswordValid = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
 
             if (!isPasswordValid)
                 return Unauthorized(new { message = "Mật khẩu không đúng." });
 
             var token = GenerateJwtToken(user);
+            var permissions = user.Role?.Permissions?.Select(p => p.Name).ToList() ?? new List<string>();
             
             // Trả về đúng format để Frontend không bị sập
             return Ok(new
             {
                 message = "Đăng nhập thành công",
                 token = token,
+                permissions = permissions,
                 user = new
                 {
                     id = user.Id,
@@ -98,6 +94,27 @@ namespace HotelManagement.API.Controllers
                 }
             });
         }
+
+        // ====================================================
+        // 2b. LẤY PERMISSIONS CỦA USER HIỆN TẠI (dùng để reload sidebar khi quyền thay đổi)
+        // ====================================================
+        [HttpGet("my-permissions")]
+        [Microsoft.AspNetCore.Authorization.Authorize]
+        public async Task<IActionResult> GetMyPermissions()
+        {
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null) return Unauthorized();
+
+            var user = await _context.Users
+                .Include(u => u.Role).ThenInclude(r => r.Permissions)
+                .FirstOrDefaultAsync(u => u.Id.ToString() == userIdClaim);
+
+            if (user == null) return NotFound();
+
+            var permissions = user.Role?.Permissions?.Select(p => p.Name).ToList() ?? new List<string>();
+            return Ok(new { permissions });
+        }
+
 
         // ====================================================
         // 3. REFRESH TOKEN 

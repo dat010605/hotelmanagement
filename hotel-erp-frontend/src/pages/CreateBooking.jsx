@@ -173,6 +173,23 @@ const CreateBooking = () => {
     try {
       const response = await axiosClient.get(`/Vouchers/check?code=${voucherCode.trim()}`);
       const data = response.data;
+
+      // Kiểm tra nếu voucher giới hạn theo hạng phòng nhưng giỏ không có hạng đó
+      if (data.roomTypeId) {
+        const hasMatchingRoom = availableRoomTypes.some(type => {
+          const qty = selectedQuantities[type.roomTypeName] || 0;
+          if (qty === 0) return false;
+          const typeId = type.roomTypeId || (type.rooms?.[0]?.roomTypeId || type.rooms?.[0]?.RoomTypeId);
+          return Number(typeId) === Number(data.roomTypeId);
+        });
+
+        if (!hasMatchingRoom) {
+          message.warning(`Mã "${data.code}" chỉ áp dụng cho hạng phòng cụ thể không có trong giỏ của bạn!`);
+          setCheckingVoucher(false);
+          return;
+        }
+      }
+
       setAppliedVoucher(data);
       message.success(`Áp dụng mã ${data.code} thành công!`);
     } catch (error) {
@@ -182,6 +199,7 @@ const CreateBooking = () => {
       setCheckingVoucher(false);
     }
   };
+
 
   const handleRemoveVoucher = () => {
     setAppliedVoucher(null);

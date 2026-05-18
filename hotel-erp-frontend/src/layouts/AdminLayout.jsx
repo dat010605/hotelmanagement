@@ -10,6 +10,7 @@ import {
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAdminAuthStore } from '../store/adminAuthStore';
+import axiosClient from '../api/axiosClient';
 import useSettingsStore from '../store/useSettingsStore';
 import dayjs from 'dayjs';
 
@@ -30,7 +31,7 @@ const AdminLayout = () => {
   const { themeMode, setThemeMode } = useSettingsStore();
   const isDarkMode = themeMode === 'dark'; 
 
-  const { user, clearAuth } = useAdminAuthStore();
+  const { user, clearAuth, setAuth, token, permissions } = useAdminAuthStore();
   const navigate = useNavigate();
 
   const location = useLocation();
@@ -70,13 +71,38 @@ const AdminLayout = () => {
       }
     };
 
+    // Lắng nghe khi Admin thay đổi quyền của role nào đó
+    const handlePermissionsUpdated = async (data) => {
+      const myRole = user?.role?.toLowerCase()?.trim() || '';
+      const changedRole = data?.roleName?.toLowerCase()?.trim() || '';
+      // Nếu role của mình bị thay đổi → fetch lại permissions và cập nhật store
+      if (myRole === changedRole) {
+        try {
+          const res = await axiosClient.get('/api/Auth/my-permissions');
+          const newPermissions = res.data?.permissions || [];
+          setAuth(token, user, newPermissions);
+          notification.info({
+            message: 'Quyền hạn đã thay đổi',
+            description: 'Quyền của bạn vừa được cập nhật. Sidebar đã làm mới.',
+            placement: 'topRight',
+            duration: 5,
+          });
+        } catch {
+          // Nếu không có endpoint my-permissions, dùng data từ SignalR
+          setAuth(token, user, data?.permissions || []);
+        }
+      }
+    };
+
     signalRConnection.on("ReceiveNotification", handleReceiveMessage);
     signalRConnection.on("ForceLogout", handleForceLogout); // Cắm tai nghe lắng nghe lệnh đá
+    signalRConnection.on("PermissionsUpdated", handlePermissionsUpdated); // Lắng nghe thay đổi quyền
 
     return () => {
       isMounted = false;
       signalRConnection.off("ReceiveNotification", handleReceiveMessage);
       signalRConnection.off("ForceLogout", handleForceLogout);
+      signalRConnection.off("PermissionsUpdated", handlePermissionsUpdated);
     };
   }, [user, clearAuth, navigate, notification]);
 
@@ -87,12 +113,42 @@ const AdminLayout = () => {
 
   // HÀM KIỂM TRA QUYỀN
   const userRole = user?.role?.toLowerCase()?.trim() || '';
-  const isFullAccess = ['admin', 'managenment', 'management', 'manager', 'quản lý', 'managemnt', 'managêmnt'].includes(userRole);
+  const isAdmin = userRole === 'admin';
 
-  const checkAccess = (allowedRoles) => {
-    if (isFullAccess) return true;
-    if (allowedRoles === undefined || allowedRoles === null) return true; // Không yêu cầu quyền thì ai cũng xem được
-    return allowedRoles.includes(userRole);
+  // Map permission name → menu key để kiểm tra
+  const PERMISSION_MAP = {
+    'VIEW_DASHBOARD':    ['/admin/dashboard'],
+    'MANAGE_ROOMS':      ['/admin/rooms', '/admin/room-grid', 'sub-rooms'],
+    'MANAGE_BOOKINGS':   ['/admin/booking', '/admin/bookings', '/admin/checkout', 'sub-reception'],
+    'MANAGE_USERS':      ['/admin/employees'],
+    'MANAGE_ROLES':      ['/admin/roles'],
+    'VIEW_REPORTS':      ['/admin/audit-logs'],
+    'MANAGE_VOUCHERS':   ['/admin/vouchers'],
+    'MANAGE_INVENTORY':  ['/admin/inventory'],
+    'MANAGE_SERVICES':   ['/admin/housekeeping', '/admin/loss-damage'],
+    'MANAGE_ATTRACTIONS':['/admin/attractions'],
+    'MANAGE_REVIEWS':    ['/admin/reviews'],
+    'MANAGE_SETTINGS':   ['/admin/settings'],
+  };
+
+  // Tập hợp tất cả menu keys mà user được phép, dựa theo permissions từ store
+  const allowedKeys = new Set();
+  allowedKeys.add('/admin/profile'); // Profile ai cũng được xem
+  if (isAdmin) {
+    // Admin có quyền tất cả
+    Object.values(PERMISSION_MAP).flat().forEach(k => allowedKeys.add(k));
+  } else {
+    (permissions || []).forEach(perm => {
+      const permName = typeof perm === 'string' ? perm : perm?.name;
+      const keys = PERMISSION_MAP[permName] || [];
+      keys.forEach(k => allowedKeys.add(k));
+    });
+  }
+
+  const checkAccess = (item) => {
+    if (isAdmin) return true;
+    if (!item.allowedKeys) return allowedKeys.has(item.key); // Leaf node
+    return true; // Group node — kiểm tra ở con
   };
 
   // THU GỌN MENU VỚI QUYỀN TRUY CẬP (THEO BẢNG MA TRẬN PHÂN QUYỀN)
@@ -151,10 +207,14 @@ const AdminLayout = () => {
     { key: '/admin/settings', icon: <SettingOutlined />, label: 'Cấu hình hệ thống', allowedRoles: [] },
   ];
 
-  // Lọc menu đệ quy
+  // Lọc menu đệ quy dựa theo allowedKeys
   const filterItems = (items) => {
     return items
-      .filter(item => checkAccess(item.allowedRoles))
+      .filter(item => {
+        if (isAdmin) return true;
+        if (item.children) return true; // Group node — sẽ kiểm tra ở con
+        return allowedKeys.has(item.key);
+      })
       .map(item => {
         if (item.children) {
           const filteredChildren = filterItems(item.children);
