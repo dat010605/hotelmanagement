@@ -180,6 +180,102 @@ namespace HotelManagement.API.Controllers
             }
         }
 
+        // ====================================================
+        // BOOKING BY ROOM TYPE — Khách chỉ chọn Hạng phòng, hệ thống tự gán phòng trống
+        // ====================================================
+        [AllowAnonymous]
+        [HttpPost("by-type")]
+        public async Task<IActionResult> CreateBookingByType([FromBody] DTOs.CreateBookingByTypeDTO request)
+        {
+            if (request.CheckInDate >= request.CheckOutDate)
+                return BadRequest("Ngày nhận phòng phải trước ngày trả phòng.");
+            if (request.CheckInDate.Date < DateTime.Today)
+                return BadRequest("Không thể đặt phòng cho ngày trong quá khứ.");
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // Tìm phòng trống thuộc hạng phòng được chọn
+                var busyRoomIds = await _context.BookingDetails
+                    .Include(bd => bd.Booking)
+                    .Where(bd => bd.CheckInDate < request.CheckOutDate && bd.CheckOutDate > request.CheckInDate
+                                 && bd.Booking != null && bd.Booking.Status != "Cancelled")
+                    .Select(bd => bd.RoomId)
+                    .Distinct()
+                    .ToListAsync();
+
+                var availableRoom = await _context.Rooms
+                    .Include(r => r.RoomType)
+                    .Where(r => r.RoomTypeId == request.RoomTypeId
+                                && !busyRoomIds.Contains(r.Id)
+                                && r.Status != "Maintenance")
+                    .OrderBy(r => r.Id)
+                    .FirstOrDefaultAsync();
+
+                if (availableRoom == null)
+                    return BadRequest("Rất tiếc, hạng phòng này hiện đã hết phòng trống trong khoảng thời gian bạn chọn.");
+
+                // Kiểm tra voucher nếu có
+                int? voucherId = null;
+                if (!string.IsNullOrWhiteSpace(request.VoucherCode))
+                {
+                    var voucher = await _context.Vouchers
+                        .FirstOrDefaultAsync(v => v.Code.ToUpper() == request.VoucherCode.ToUpper());
+                    if (voucher == null) { await transaction.RollbackAsync(); return BadRequest("Mã khuyến mãi không tồn tại."); }
+                    if (voucher.ValidTo.HasValue && voucher.ValidTo.Value < DateTime.Now) { await transaction.RollbackAsync(); return BadRequest("Mã khuyến mãi đã hết hạn."); }
+                    if (voucher.RoomTypeId.HasValue && voucher.RoomTypeId.Value != request.RoomTypeId) { await transaction.RollbackAsync(); return BadRequest("Mã khuyến mãi không áp dụng cho hạng phòng này."); }
+                    voucherId = voucher.Id;
+                }
+
+                // Lấy userId nếu đăng nhập
+                int? currentUserId = null;
+                var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+                if (userIdClaim != null && int.TryParse(userIdClaim.Value, out int uid)) currentUserId = uid;
+
+                var newBooking = new Booking
+                {
+                    UserId = currentUserId,
+                    GuestName = request.GuestName,
+                    GuestPhone = request.GuestPhone,
+                    GuestEmail = request.GuestEmail,
+                    BookingCode = "BK" + DateTime.Now.ToString("yyyyMMddHHmmss"),
+                    VoucherId = voucherId,
+                    Status = "Confirmed"
+                };
+                _context.Bookings.Add(newBooking);
+                await _context.SaveChangesAsync();
+
+                var detail = new BookingDetail
+                {
+                    BookingId = newBooking.Id,
+                    RoomId = availableRoom.Id,
+                    RoomTypeId = request.RoomTypeId,
+                    CheckInDate = request.CheckInDate,
+                    CheckOutDate = request.CheckOutDate,
+                    PricePerNight = availableRoom.RoomType?.BasePrice ?? 0
+                };
+                _context.BookingDetails.Add(detail);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                await _hubContext.Clients.All.SendAsync("ReceiveNotification",
+                    $"Khách {request.GuestName} vừa đặt phòng hạng {availableRoom.RoomType?.Name}!");
+
+                return Ok(new
+                {
+                    message = "Đặt phòng thành công!",
+                    bookingId = newBooking.Id,
+                    bookingCode = newBooking.BookingCode,
+                    assignedRoom = availableRoom.RoomNumber
+                });
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return StatusCode(500, "Lỗi hệ thống: " + ex.Message);
+            }
+        }
+
         [HttpGet]
         public async Task<IActionResult> GetAllBookings()
         {

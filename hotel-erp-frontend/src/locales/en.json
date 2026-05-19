@@ -19,10 +19,8 @@
     "guest": "Guest"
   },
   "hero": {
-    "tagline1": "Some places you visit.",
-    "tagline2": "Others, you",
-    "taglineHighlight": "feel.",
-    "subtitle": "A WORLD OF TIMELESS LUXURY ON THE VIETNAMESE COAST",
+    "heading": "Where heritage meets bespoke luxury.",
+    "subtitle": "AN INTERNATIONAL MASTERPIECE OF LUXURY ON THE VIETNAMESE COAST",
     "exploreRooms": "Explore Rooms"
   },
   "footer": {
@@ -146,16 +144,16 @@
   "footerText": "© 2026 The Royal Citadel. Where great moments are kept.",
 
   "offersPage": {
-    "title": "Offers & Hot Rooms",
-    "subtitle": "Discover our most sought-after rooms and incredible resort combos at unbeatable prices!",
-    "popularTitle": "Most Booked Rooms",
-    "popularSubtitle": "Our most loved and sought-after rooms by guests this month",
-    "viewAllRooms": "View all rooms",
-    "bestSeller": "Best Seller",
-    "room": "Room",
-    "bookedThisMonth": "{{count}} bookings this month",
-    "perNight": "₫/night",
+    "title": "Exclusive Offers",
+    "subtitle": "Discover exclusive promotions and bespoke packages from The Royal Citadel.",
     "bookNow": "Book Now",
+    "popularTitle": "Most Popular Room Categories",
+    "popularSubtitle": "Our most beloved luxury room categories chosen by distinguished guests",
+    "viewAllRooms": "View All Categories",
+    "bestSeller": "Popular",
+    "bookedThisMonth": "{{count}} bookings this month",
+    "perNight": "₫ / Night",
+    "room": "Room Category",
     "combosTitle": "Today's Best Combos",
     "claimOffer": "Claim This Offer",
     "vouchersTitle": "Exclusive Vouchers by Room Category",
@@ -181,7 +179,26 @@
     "voucher3Desc": "VIP Suite guests receive a complimentary premium dinner for two.",
     "voucher4Discount": "15% Off",
     "voucher4Title": "Stay Longer, Save More",
-    "voucher4Desc": "Applicable to all room types for stays of 4 nights or more."
+    "voucher4Desc": "Applicable to all room types for stays of 4 nights or more.",
+    "bespokeTitle": "Bespoke Experience Packages",
+    "bespokeSubtitle": "Tailor-made experiences designed for your perfect getaway",
+    "pkg1Title": "Stay & Spa Retreat",
+    "pkg1Desc": "2 nights in a Deluxe room + 90-minute Spa for two + daily breakfast buffet.",
+    "pkg1Badge": "Most Popular",
+    "pkg1Price": "From 4,500,000₫",
+    "pkg2Title": "Early Bird – 20% Off",
+    "pkg2Desc": "Book 30 days in advance, save 20% on any room category. Valid for stays of 2+ nights.",
+    "pkg2Badge": "Best Value",
+    "pkg2Price": "Save up to 2,000,000₫",
+    "pkg3Title": "Romantic Getaway",
+    "pkg3Desc": "Ocean-view Suite + rose decoration + beachside candlelit dinner + welcome champagne.",
+    "pkg3Badge": "Romance",
+    "pkg3Price": "From 6,800,000₫",
+    "pkg4Title": "Beachfront Bliss",
+    "pkg4Desc": "3 nights in a beachfront Villa + airport transfer + snorkeling tour + private seafood BBQ.",
+    "pkg4Badge": "Premium",
+    "pkg4Price": "From 12,500,000₫",
+    "pkgBookBtn": "Book Package"
   },
 
   "attractionsPage": {

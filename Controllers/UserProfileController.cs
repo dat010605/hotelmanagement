@@ -39,7 +39,7 @@ namespace HotelManagement.API.Controllers
         {
             var userId = GetUserId();
             var user = await _context.Users
-                .Select(u => new { u.Id, u.FullName, u.Email, u.Phone, u.AvatarUrl })
+                .Select(u => new { u.Id, u.FullName, u.Email, u.Phone, u.AvatarUrl, u.DateOfBirth })
                 .FirstOrDefaultAsync(u => u.Id == userId);
 
             if (user == null) return NotFound("Không tìm thấy người dùng");
@@ -56,6 +56,8 @@ namespace HotelManagement.API.Controllers
 
             user.FullName = dto.FullName;
             user.Phone = dto.Phone;
+            if (!string.IsNullOrEmpty(dto.DateOfBirth) && DateOnly.TryParse(dto.DateOfBirth, out var dob))
+                user.DateOfBirth = dob;
 
             await _context.SaveChangesAsync();
             return Ok(new { Message = "Cập nhật thành công", fullName = user.FullName });

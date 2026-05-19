@@ -7,8 +7,8 @@
     "changePassword": "修改密码", "adminPanel": "管理后台", "guest": "访客"
   },
   "hero": {
-    "tagline1": "有些地方供您驻足。", "tagline2": "有些地方，供您",
-    "taglineHighlight": "感受。", "subtitle": "越南海岸上的永恒奢华之境",
+    "heading": "当文化遗产遇见奢华独创。",
+    "subtitle": "越南海岸上的国际顶级度假杰作",
     "exploreRooms": "探索客房"
   },
   "footer": { "copyright": "© 2026 The Royal Citadel. 留住每一个美好时刻。" },
@@ -209,6 +209,18 @@
     "svc5Full": "Limousine & Transfers – 与 The Royal Citadel 相配的尊贵出行。",
     "svc6Desc": "可容纳10-500人的5间会议室，配备先进AV技术，提供豪华婚礼服务。",
     "svc6Full": "Business & Events Center – 适合各类活动的完美空间。"
+  },
+
+  "offersPage": {
+    "title": "专属优惠",
+    "subtitle": "探索 The Royal Citadel 独家促销和定制套餐。",
+    "bookNow": "立即预订",
+    "popularTitle": "最受欢迎的房型",
+    "popularSubtitle": "尊贵客人最喜爱的豪华房型",
+    "viewAllRooms": "查看所有房型",
+    "bestSeller": "热门",
+    "bookedThisMonth": "本月{{count}}次预订",
+    "perNight": "₫ / 晚",
+    "room": "房型"
   }
 }
-

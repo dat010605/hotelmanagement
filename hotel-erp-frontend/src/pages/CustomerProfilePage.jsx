@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import {
   Card, Form, Input, Button, Upload, Avatar, Typography, App,
-  Divider, Row, Col
+  Divider, Row, Col, DatePicker
 } from 'antd';
 import {
-  UserOutlined, CameraOutlined, LockOutlined, SaveOutlined, MailOutlined
+  UserOutlined, CameraOutlined, LockOutlined, SaveOutlined, MailOutlined, CalendarOutlined
 } from '@ant-design/icons';
 import { useAdminAuthStore } from '../store/adminAuthStore';
 import { useCustomerProfileStore } from '../store/useCustomerProfileStore';
@@ -132,9 +132,12 @@ const CustomerProfilePage = () => {
               >
                 <Input size="large" placeholder="Nhập tên của bạn" prefix={<UserOutlined />} />
               </Form.Item>
+              <Form.Item name="dateOfBirth" label={<><CalendarOutlined style={{ color: '#c9a961' }} /> Ngày sinh <Text type="secondary">(để nhận voucher sinh nhật)</Text></>}>
+                <DatePicker size="large" style={{ width: '100%' }} placeholder="Chọn ngày sinh" format="DD/MM/YYYY" />
+              </Form.Item>
               <Form.Item style={{ marginBottom: 0 }}>
                 <Button type="primary" htmlType="submit" block loading={savingName} icon={<SaveOutlined />} size="large">
-                  Lưu tên
+                  Lưu thông tin
                 </Button>
               </Form.Item>
             </Form>

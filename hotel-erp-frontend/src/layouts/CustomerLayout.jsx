@@ -217,19 +217,22 @@ const CustomerLayout = () => {
 
   return (
     <Layout style={{ minHeight: '100vh', background: '#f5f5f5' }}>
-      {/* ── Header thống nhất giống trang chủ (dark style) ──────────── */}
-      {!isHomePage && (
-        <header style={{
+      {/* ── Header thống nhất — hiển thị trên mọi trang ──────────── */}
+      <header style={{
           position: 'sticky',
           top: 0,
+          left: 0,
+          width: '100%',
           zIndex: 999,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '16px 48px',
-          background: 'rgba(10, 10, 26, 0.95)',
-          backdropFilter: 'blur(12px)',
+          margin: 0,
+          background: 'rgba(10, 10, 26, 0.97)',
+          backdropFilter: 'blur(16px)',
           boxShadow: '0 2px 24px rgba(0,0,0,0.3)',
+          boxSizing: 'border-box',
         }}>
           {/* Logo */}
           <div
@@ -328,7 +331,6 @@ const CustomerLayout = () => {
             {mobileOpen ? <CloseOutlined /> : <MenuOutlined />}
           </button>
         </header>
-      )}
 
       {/* Mobile nav overlay */}
       {mobileOpen && <div className="layout-mobile-overlay" onClick={() => setMobileOpen(false)} />}

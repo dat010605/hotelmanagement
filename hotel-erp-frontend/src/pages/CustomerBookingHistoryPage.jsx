@@ -6,7 +6,7 @@ import {
 import {
   HistoryOutlined, StarOutlined, CalendarOutlined,
   CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined,
-  StarFilled, SendOutlined
+  StarFilled, SendOutlined, LogoutOutlined
 } from '@ant-design/icons';
 import axiosClient from '../api/axiosClient';
 import { useAdminAuthStore } from '../store/adminAuthStore';
@@ -75,6 +75,26 @@ const CustomerBookingHistoryPage = () => {
     } finally {
       setSubmittingReview(false);
     }
+  };
+
+  // Trả phòng (Check-out)
+  const handleCheckOut = (bookingId) => {
+    Modal.confirm({
+      title: 'Xác nhận Trả phòng',
+      content: 'Bạn có chắc chắn muốn trả phòng? Sau khi trả phòng, bạn có thể đánh giá trải nghiệm của mình.',
+      okText: 'Trả phòng',
+      okType: 'danger',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          await axiosClient.patch(`/Bookings/${bookingId}/checkout`);
+          message.success('Trả phòng thành công! Cảm ơn bạn đã sử dụng dịch vụ.');
+          fetchData();
+        } catch (err) {
+          message.error(err.response?.data || 'Lỗi khi trả phòng.');
+        }
+      }
+    });
   };
 
   // Render trạng thái booking
@@ -180,7 +200,19 @@ const CustomerBookingHistoryPage = () => {
                       <Text type="secondary" style={{ marginLeft: 16 }}>{booking.guestName}</Text>
                     )}
                   </div>
-                  {getStatusTag(booking.status)}
+                  <Space>
+                    {getStatusTag(booking.status)}
+                    {booking.status === 'CheckedIn' && (
+                      <Button 
+                        type="primary" danger size="small"
+                        icon={<LogoutOutlined />}
+                        onClick={() => handleCheckOut(booking.id)}
+                        style={{ borderRadius: 6, fontWeight: 600 }}
+                      >
+                        Trả phòng
+                      </Button>
+                    )}
+                  </Space>
                 </div>
 
                 {/* Room List */}

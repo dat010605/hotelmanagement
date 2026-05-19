@@ -47,7 +47,8 @@ namespace HotelManagement.API.Controllers
                 Email = request.Email,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
                 RoleId = GuestRole.Id,
-                Status = true
+                Status = true,
+                DateOfBirth = !string.IsNullOrEmpty(request.DateOfBirth) && DateOnly.TryParse(request.DateOfBirth, out var dob) ? dob : null
             };
 
             _context.Users.Add(newUser);
@@ -69,8 +70,28 @@ namespace HotelManagement.API.Controllers
             if (user == null)
                 return Unauthorized(new { message = "Email không tồn tại hoặc tài khoản bị khóa." });
 
-            // Luôn dùng BCrypt để xác thực - KHÔNG so sánh plain text
-            bool isPasswordValid = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
+            // Xác thực mật khẩu: hỗ trợ cả BCrypt hash lẫn plain text (tài khoản cũ từ seed.sql)
+            bool isPasswordValid;
+            if (user.PasswordHash.StartsWith("$"))
+            {
+                // Mật khẩu đã được mã hóa BCrypt → verify bằng BCrypt
+                isPasswordValid = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
+            }
+            else
+            {
+                // Mật khẩu cũ lưu dạng plain text → so sánh trực tiếp
+                isPasswordValid = (user.PasswordHash == request.Password);
+
+                // Auto-migrate: Nếu đúng, tự động mã hóa lại bằng BCrypt cho lần sau
+                // Dùng ExecuteUpdate để CHỈ update cột password_hash, tránh lỗi NOT NULL ở các cột khác
+                if (isPasswordValid)
+                {
+                    var hashedPassword = BCrypt.Net.BCrypt.HashPassword(request.Password);
+                    await _context.Users
+                        .Where(u => u.Id == user.Id)
+                        .ExecuteUpdateAsync(s => s.SetProperty(u => u.PasswordHash, hashedPassword));
+                }
+            }
 
             if (!isPasswordValid)
                 return Unauthorized(new { message = "Mật khẩu không đúng." });

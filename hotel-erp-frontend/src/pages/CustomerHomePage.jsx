@@ -14,46 +14,6 @@ const { RangePicker } = DatePicker;
 
 const FALLBACK_IMG = 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=600';
 
-// Helper lấy hình ảnh phòng dựa trên tên loại phòng
-const getRoomImage = (room, typeInfo) => {
-  const typeName = (typeInfo.name || typeInfo.Name || '').toLowerCase().trim();
-  const rId = room.roomTypeId || room.RoomTypeId;
-  const imageByTypeName = {
-    'standard':   'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800',
-    'tiêu chuẩn': 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800',
-    'deluxe':     'https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=800',
-    'suite':      'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800',
-    'family':     'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=800',
-    'gia đình':   'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=800',
-    'executive':  'https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?w=800',
-    'villa':      'https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?w=800',
-    'vip':        'https://images.unsplash.com/photo-1505577058444-a3dab90d4253?w=800',
-    'president':  'https://images.unsplash.com/photo-1618221118493-9cfa1a1c00da?w=800',
-    'tổng thống': 'https://images.unsplash.com/photo-1618221118493-9cfa1a1c00da?w=800',
-    'honeymoon':  'https://images.unsplash.com/photo-1595576508898-0ad5c879a061?w=800',
-    'trăng mật':  'https://images.unsplash.com/photo-1595576508898-0ad5c879a061?w=800',
-    'bungalow':   'https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?w=800',
-  };
-  const matchedKey = Object.keys(imageByTypeName).find(k => typeName.includes(k));
-  const fallbackByTypeId = {
-    1: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800',
-    2: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=800',
-    3: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800',
-    4: 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=800',
-    5: 'https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?w=800',
-    6: 'https://images.unsplash.com/photo-1505577058444-a3dab90d4253?w=800',
-    7: 'https://images.unsplash.com/photo-1618221118493-9cfa1a1c00da?w=800',
-    8: 'https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?w=800',
-  };
-  return room.roomImages?.length > 0
-    ? room.roomImages[0].imageUrl
-    : room.RoomImages?.length > 0
-      ? room.RoomImages[0].imageUrl
-      : (matchedKey
-          ? imageByTypeName[matchedKey]
-          : (fallbackByTypeId[rId] || 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=800'));
-};
-
 // ── Dữ liệu tin tức mẫu (sẽ được i18n bên trong component) ────────────────────
 
 // ── Dữ liệu đánh giá mẫu ─────────────────────────────────────────────────────
@@ -149,22 +109,22 @@ const CustomerHomePage = () => {
   const allReviews = useReviewStore(state => state.reviews);
   const reviews = useMemo(() => allReviews.filter(r => !r.isHidden).slice(0, 4), [allReviews]);
 
-  // Lấy danh sách phòng được đặt nhiều nhất
-  const [rooms, setRooms] = useState([]);
+  // Lấy danh sách hạng phòng
   const [roomTypes, setRoomTypes] = useState([]);
   const [loadingRooms, setLoadingRooms] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [roomsRes, typesRes] = await Promise.all([
-          axiosClient.get('/Rooms'),
-          axiosClient.get('/RoomTypes')
-        ]);
-        setRooms(roomsRes.data);
-        setRoomTypes(typesRes.data);
+        const res = await axiosClient.get('/RoomTypes/availability');
+        setRoomTypes(res.data || []);
       } catch (error) {
-        console.error("Error loading data:", error);
+        console.error("Error loading room types:", error);
+        // Fallback to basic endpoint
+        try {
+          const res = await axiosClient.get('/RoomTypes');
+          setRoomTypes(res.data || []);
+        } catch { /* ignore */ }
       } finally {
         setLoadingRooms(false);
       }
@@ -172,21 +132,41 @@ const CustomerHomePage = () => {
     fetchData();
   }, []);
 
-  const popularRooms = useMemo(() => {
-    if (rooms.length === 0 || roomTypes.length === 0) return [];
-    
-    return rooms.slice(0, 4).map((room, index) => {
-      const typeInfo = roomTypes.find(t => t.id === (room.roomTypeId || room.RoomTypeId)) || {};
-      return {
-        ...room,
-        roomTypeName: typeInfo.name || typeInfo.Name || 'Standard',
-        basePrice: typeInfo.basePrice || typeInfo.BasePrice || 500000,
-        imgUrl: getRoomImage(room, typeInfo),
-        bookedCount: 150 + Math.floor(Math.random() * 300), // Số người đã đặt giả lập
-        rating: 4.8 + (Math.random() * 0.2) // Rating giả lập 4.8 -> 5.0
-      };
+  const popularRoomTypes = useMemo(() => {
+    if (roomTypes.length === 0) return [];
+    const imageByName = {
+      'standard': 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800',
+      'tiêu chuẩn': 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800',
+      'deluxe': 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=800',
+      'suite': 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800',
+      'hoàng gia': 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800',
+      'family': 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=800',
+      'cao cấp': 'https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?w=800',
+      'premium': 'https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?w=800',
+      'villa': 'https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?w=800',
+      'vip': 'https://images.unsplash.com/photo-1505577058444-a3dab90d4253?w=800',
+      'president': 'https://images.unsplash.com/photo-1618221118493-9cfa1a1c00da?w=800',
+      'tổng thống': 'https://images.unsplash.com/photo-1618221118493-9cfa1a1c00da?w=800',
+    };
+    const fallbackById = {
+      1: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800',
+      2: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=800',
+      3: 'https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?w=800',
+      4: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800',
+      5: 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=800',
+      6: 'https://images.unsplash.com/photo-1505577058444-a3dab90d4253?w=800',
+      7: 'https://images.unsplash.com/photo-1618221118493-9cfa1a1c00da?w=800',
+      8: 'https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?w=800',
+    };
+    return roomTypes.slice(0, 4).map(rt => {
+      const name = (rt.name || '').toLowerCase();
+      const key = Object.keys(imageByName).find(k => name.includes(k));
+      // Ưu tiên: Cloudinary → tên hạng phòng → ID → fallback
+      const img = (rt.images && rt.images.length > 0) ? rt.images[0]
+        : (key ? imageByName[key] : (fallbackById[rt.id] || FALLBACK_IMG));
+      return { ...rt, imgUrl: img, rating: 4.8 + Math.random() * 0.2 };
     });
-  }, [rooms, roomTypes]);
+  }, [roomTypes]);
 
   // State quản lý số phòng và khách
   const [roomGuests, setRoomGuests] = useState([{ id: 1, adults: 2, children: 0 }]);
@@ -366,29 +346,29 @@ const CustomerHomePage = () => {
           <div style={{ textAlign: 'center', padding: '60px 0' }}><Spin size="large" /></div>
         ) : (
           <Row gutter={[24, 24]}>
-            {popularRooms.map(room => (
-              <Col xs={24} sm={12} md={12} lg={6} key={room.id}>
-                <Badge.Ribbon text={t('offersPage.bestSeller') || 'Bán Chạy'} color="red">
+            {popularRoomTypes.map(rt => (
+              <Col xs={24} sm={12} md={12} lg={6} key={rt.id}>
+                <Badge.Ribbon text={t('offersPage.bestSeller') || 'Phổ biến'} color="gold">
                   <Card
                     hoverable
-                    cover={<img alt={room.roomNumber} src={room.imgUrl} onError={(e) => { e.target.src = FALLBACK_IMG; }} style={{ height: 200, objectFit: 'cover' }} />}
+                    cover={<img alt={rt.name} src={rt.imgUrl} onError={(e) => { e.target.src = FALLBACK_IMG; }} style={{ height: 200, objectFit: 'cover' }} />}
                     style={{ borderRadius: '12px', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}
                     bodyStyle={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 20 }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8, gap: 8 }}>
-                      <Tag color="blue" style={{ whiteSpace: 'normal', height: 'auto', padding: '2px 8px', flex: 1 }}>{room.roomTypeName}</Tag>
-                      <Text strong style={{ color: '#faad14', flexShrink: 0, marginTop: 2 }}><StarFilled /> {room.rating.toFixed(1)}</Text>
+                      <Tag color="geekblue" style={{ whiteSpace: 'normal', height: 'auto', padding: '2px 8px', flex: 1 }}>{rt.name}</Tag>
+                      <Text strong style={{ color: '#faad14', flexShrink: 0, marginTop: 2 }}><StarFilled /> {rt.rating.toFixed(1)}</Text>
                     </div>
-                    <Title level={4} style={{ marginBottom: 4 }}>{t('offersPage.room') || 'Phòng'} {room.roomNumber}</Title>
+                    <Title level={4} style={{ marginBottom: 4 }}>{rt.name}</Title>
                     <Text type="secondary" style={{ fontSize: 13, display: 'block', marginBottom: 16 }}>
-                      🔥 {t('offersPage.bookedThisMonth', { count: room.bookedCount }) || `${room.bookedCount} khách đặt tháng này`}
+                      {rt.availableRooms != null ? `✅ Còn ${rt.availableRooms} phòng trống` : (rt.description || `Hạng phòng sang trọng`)}
                     </Text>
                     
                     <div style={{ marginTop: 'auto', paddingTop: 16, borderTop: '1px solid #f0f0f0' }}>
                       <Text type="danger" strong style={{ fontSize: '1.2rem' }}>
-                        {room.basePrice.toLocaleString('vi-VN')} {t('offersPage.perNight') || 'đ / Đêm'}
+                        {(rt.basePrice || 0).toLocaleString('vi-VN')} {t('offersPage.perNight') || 'đ / Đêm'}
                       </Text>
-                      <Button type="primary" block style={{ marginTop: 12, borderRadius: 6, background: '#1890ff', borderColor: '#1890ff' }} onClick={() => navigate('/rooms')}>
+                      <Button type="primary" block style={{ marginTop: 12, borderRadius: 6, background: '#c9a961', borderColor: '#c9a961' }} onClick={() => navigate('/rooms')}>
                         {t('offersPage.bookNow') || 'Đặt Ngay'}
                       </Button>
                     </div>

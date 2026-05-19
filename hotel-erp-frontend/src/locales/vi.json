@@ -19,10 +19,8 @@
     "guest": "Khách"
   },
   "hero": {
-    "tagline1": "Một số nơi bạn ghé thăm.",
-    "tagline2": "Những nơi khác, bạn",
-    "taglineHighlight": "cảm nhận.",
-    "subtitle": "MỘT THẾ GIỚI XA HOA VƯỢT THỜI GIAN BÊN BỜ BIỂN VIỆT NAM",
+    "heading": "Nơi di sản giao hòa cùng sự xa hoa độc bản.",
+    "subtitle": "KIỆT TÁC NGHỈ DƯỠNG ĐẲNG CẤP QUỐC TẾ BÊN BỜ BIỂN VIỆT NAM",
     "exploreRooms": "Khám phá phòng"
   },
   "footer": {
@@ -146,16 +144,16 @@
   "footerText": "© 2026 The Royal Citadel. Nơi lưu giữ những khoảnh khắc tuyệt vời.",
 
   "offersPage": {
-    "title": "Ưu Đãi & Phòng Hot",
-    "subtitle": "Khám phá những căn phòng được săn đón nhiều nhất và các combo nghỉ dưỡng siêu tiết kiệm!",
-    "popularTitle": "Phòng Được Đặt Nhiều Nhất",
-    "popularSubtitle": "Những căn phòng được quý khách hàng yêu thích và săn đón nhiều nhất trong tháng này",
-    "viewAllRooms": "Xem tất cả phòng",
-    "bestSeller": "Best Seller",
-    "room": "Phòng",
-    "bookedThisMonth": "Đã có {{count}} lượt đặt tháng này",
-    "perNight": "đ/đêm",
+    "title": "Ưu Đãi Đặc Quyền",
+    "subtitle": "Khám phá các chương trình ưu đãi độc quyền và gói trải nghiệm đẳng cấp từ The Royal Citadel.",
     "bookNow": "Đặt Ngay",
+    "popularTitle": "Các Hạng Phòng Được Yêu Thích Nhất",
+    "popularSubtitle": "Những hạng phòng sang trọng được quý khách hàng yêu thích và lựa chọn nhiều nhất",
+    "viewAllRooms": "Xem tất cả hạng phòng",
+    "bestSeller": "Phổ biến",
+    "bookedThisMonth": "{{count}} lượt đặt tháng này",
+    "perNight": "₫ / Đêm",
+    "room": "Hạng phòng",
     "combosTitle": "Các Combo Tốt Nhất Hôm Nay",
     "claimOffer": "Nhận Ưu Đãi Này",
     "vouchersTitle": "Voucher Dành Riêng Cho Từng Hạng Phòng",
@@ -181,7 +179,26 @@
     "voucher3Desc": "Khách đặt phòng VIP Suite sẽ được tặng 1 bữa tối cao cấp dành cho 2 người.",
     "voucher4Discount": "Giảm 15%",
     "voucher4Title": "Ở lâu giảm sâu",
-    "voucher4Desc": "Áp dụng cho mọi loại phòng khi đặt từ 4 đêm trở lên."
+    "voucher4Desc": "Áp dụng cho mọi loại phòng khi đặt từ 4 đêm trở lên.",
+    "bespokeTitle": "Gói Trải Nghiệm Đặc Quyền",
+    "bespokeSubtitle": "Những trải nghiệm được thiết kế riêng dành cho kỳ nghỉ hoàn hảo của bạn",
+    "pkg1Title": "Stay & Spa Retreat",
+    "pkg1Desc": "2 đêm phòng Deluxe + liệu trình Spa 90 phút cho 2 người + bữa sáng buffet hàng ngày.",
+    "pkg1Badge": "Phổ biến nhất",
+    "pkg1Price": "Từ 4.500.000₫",
+    "pkg2Title": "Early Bird – Giảm 20%",
+    "pkg2Desc": "Đặt phòng trước 30 ngày, tiết kiệm 20% cho mọi hạng phòng. Áp dụng cho kỳ nghỉ từ 2 đêm.",
+    "pkg2Badge": "Tiết kiệm",
+    "pkg2Price": "Tiết kiệm đến 2.000.000₫",
+    "pkg3Title": "Romantic Getaway",
+    "pkg3Desc": "Phòng Suite view biển + trang trí hoa hồng + bữa tối nến ven biển + champagne chào đón.",
+    "pkg3Badge": "Lãng mạn",
+    "pkg3Price": "Từ 6.800.000₫",
+    "pkg4Title": "Beachfront Bliss",
+    "pkg4Desc": "3 đêm Villa ven biển + dịch vụ đưa đón sân bay + tour lặn biển + BBQ hải sản riêng tư.",
+    "pkg4Badge": "Cao cấp",
+    "pkg4Price": "Từ 12.500.000₫",
+    "pkgBookBtn": "Đặt Gói Ngay"
   },
 
   "attractionsPage": {

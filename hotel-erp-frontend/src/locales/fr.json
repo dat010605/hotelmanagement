@@ -9,10 +9,8 @@
     "adminPanel": "Panneau d'administration", "guest": "Invité"
   },
   "hero": {
-    "tagline1": "Certains lieux se visitent.",
-    "tagline2": "D'autres se",
-    "taglineHighlight": "ressentent.",
-    "subtitle": "UN MONDE DE LUXE INTEMPOREL SUR LA CÔTE VIETNAMIENNE",
+    "heading": "Là où le patrimoine rencontre le luxe sur mesure.",
+    "subtitle": "UN CHEF-D'ŒUVRE INTERNATIONAL DU LUXE SUR LA CÔTE VIETNAMIENNE",
     "exploreRooms": "Explorer les chambres"
   },
   "footer": { "copyright": "© 2026 The Royal Citadel. Là où les grands moments sont préservés." },
@@ -226,6 +224,18 @@
     "svc5Full": "Limousine & Transfers – Voyagez avec le style digne de The Royal Citadel.",
     "svc6Desc": "Un centre de conférence avec 5 salles de 10 à 500 personnes, technologie AV avancée et services de mariage de luxe.",
     "svc6Full": "Business & Events Center – L'espace parfait pour chaque occasion."
+  },
+
+  "offersPage": {
+    "title": "Offres Exclusives",
+    "subtitle": "Découvrez les promotions exclusives et les forfaits sur mesure de The Royal Citadel.",
+    "bookNow": "Réserver",
+    "popularTitle": "Catégories de Chambres les Plus Populaires",
+    "popularSubtitle": "Les catégories les plus appréciées par nos clients distingués",
+    "viewAllRooms": "Voir Toutes les Catégories",
+    "bestSeller": "Populaire",
+    "bookedThisMonth": "{{count}} réservations ce mois",
+    "perNight": "₫ / Nuit",
+    "room": "Catégorie"
   }
 }
-

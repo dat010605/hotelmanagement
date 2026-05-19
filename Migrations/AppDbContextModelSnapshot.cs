@@ -202,20 +202,33 @@ namespace HotelManagement.API.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("LogData")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("log_data");
+                    b.Property<string>("Action")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("action");
 
-                    b.Property<DateTime?>("LogDate")
+                    b.Property<DateTime?>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime")
-                        .HasColumnName("log_date")
+                        .HasColumnName("created_at")
                         .HasDefaultValueSql("(getdate())");
 
-                    b.Property<string>("RoleName")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("role_name");
+                    b.Property<string>("NewValue")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("new_value");
+
+                    b.Property<string>("OldValue")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("old_value");
+
+                    b.Property<int?>("RecordId")
+                        .HasColumnType("int")
+                        .HasColumnName("record_id");
+
+                    b.Property<string>("TableName")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("table_name");
 
                     b.Property<int?>("UserId")
                         .HasColumnType("int")
@@ -514,6 +527,10 @@ namespace HotelManagement.API.Migrations
                     b.Property<int?>("RoomInventoryId")
                         .HasColumnType("int")
                         .HasColumnName("room_inventory_id");
+
+                    b.Property<int?>("Status")
+                        .HasColumnType("int")
+                        .HasColumnName("status");
 
                     b.HasKey("Id")
                         .HasName("PK__Loss_And__3213E83FBB7A683B");
@@ -1203,6 +1220,10 @@ namespace HotelManagement.API.Migrations
                         .HasDefaultValue(0m)
                         .HasColumnName("min_booking_value");
 
+                    b.Property<int?>("RoomTypeId")
+                        .HasColumnType("int")
+                        .HasColumnName("room_type_id");
+
                     b.Property<int?>("UsageLimit")
                         .HasColumnType("int")
                         .HasColumnName("usage_limit");
@@ -1217,6 +1238,8 @@ namespace HotelManagement.API.Migrations
 
                     b.HasKey("Id")
                         .HasName("PK__Vouchers__3213E83FC9D228F7");
+
+                    b.HasIndex("RoomTypeId");
 
                     b.HasIndex(new[] { "Code" }, "UQ__Vouchers__357D4CF98290E970")
                         .IsUnique();
@@ -1482,6 +1505,16 @@ namespace HotelManagement.API.Migrations
                     b.Navigation("Membership");
 
                     b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("HotelManagement.API.Models.Voucher", b =>
+                {
+                    b.HasOne("HotelManagement.API.Models.RoomType", "RoomType")
+                        .WithMany()
+                        .HasForeignKey("RoomTypeId")
+                        .HasConstraintName("FK_Vouchers_RoomTypes");
+
+                    b.Navigation("RoomType");
                 });
 
             modelBuilder.Entity("RolePermission", b =>
