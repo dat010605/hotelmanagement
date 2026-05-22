@@ -2,12 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Badge, Popover, List } from 'antd'; 
 import { BellOutlined } from '@ant-design/icons'; 
 import useSignalR from '../hooks/useSignalR'; 
+import { HUB_URL } from '../api/config';
 
 const NotificationBell = () => {
   
-    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5057/api';
-    const hubUrl = apiBaseUrl.replace(/\/api$/, '') + '/notificationHub';
-    const connection = useSignalR(hubUrl);
+    const connection = useSignalR(HUB_URL);
     const [notifications, setNotifications] = useState([]);
 
     useEffect(() => {

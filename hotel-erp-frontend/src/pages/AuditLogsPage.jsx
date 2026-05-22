@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Table, Typography, Tag, Space, Card, Modal, Button, Row, Col, Select, DatePicker, Descriptions, message } from 'antd';
 import { UserOutlined, FileExcelOutlined, CloudDownloadOutlined, ReloadOutlined } from '@ant-design/icons';
 import axiosClient from '../api/axiosClient';
+import { API_BASE_URL } from '../api/config';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -244,7 +245,7 @@ const AuditLogsPage = () => {
     const handleDownloadAuditLog = async () => {
         const token = localStorage.getItem('token');
         try {
-            const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5057/api';
+            const apiBaseUrl = API_BASE_URL;
             const response = await fetch(`${apiBaseUrl}/Export/audit-log`, {
                 method: 'GET',
                 headers: { 'Authorization': `Bearer ${token}` }

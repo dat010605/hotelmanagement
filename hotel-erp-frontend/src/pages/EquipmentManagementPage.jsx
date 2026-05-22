@@ -3,6 +3,7 @@ import { Table, Button, Modal, Form, Input, InputNumber, Select, message, Card, 
 import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined, PictureOutlined, FileExcelOutlined } from '@ant-design/icons';
 import axiosClient from '../api/axiosClient';
 import axios from 'axios'; 
+import { API_BASE_URL } from '../api/config';
 
 const EquipmentManagementPage = () => {
   const [equipments, setEquipments] = useState([]);
@@ -71,7 +72,7 @@ const EquipmentManagementPage = () => {
     const fileName = type === 'excel' ? 'Bao_Cao_Vat_Tu.xlsx' : 'Kho_Vat_Tu_Anh.zip';
 
     try {
-        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5057/api';
+        const apiBaseUrl = API_BASE_URL;
         const response = await fetch(`${apiBaseUrl}/Export/${endpoint}`, {
             method: 'GET',
             headers: { 'Authorization': `Bearer ${token}` }

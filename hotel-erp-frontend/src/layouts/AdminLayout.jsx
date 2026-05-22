@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr'; 
 import { Layout, Menu, Button, theme, Avatar, Dropdown, Space, Badge, Typography, App, ConfigProvider } from 'antd';
+import { API_BASE_URL, HUB_URL } from '../api/config';
 import {
   MenuFoldOutlined, MenuUnfoldOutlined, UserOutlined, DashboardOutlined, TeamOutlined,
   LogoutOutlined, SettingOutlined, BellOutlined, HomeOutlined, LockOutlined,
@@ -16,8 +17,8 @@ import dayjs from 'dayjs';
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5057/api';
-const hubUrl = apiBaseUrl.replace(/\/api$/, '') + '/notificationHub';
+const apiBaseUrl = API_BASE_URL;
+const hubUrl = HUB_URL;
 
 const signalRConnection = new HubConnectionBuilder()
   .withUrl(hubUrl) 
