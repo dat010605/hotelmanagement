@@ -71,7 +71,8 @@ const EquipmentManagementPage = () => {
     const fileName = type === 'excel' ? 'Bao_Cao_Vat_Tu.xlsx' : 'Kho_Vat_Tu_Anh.zip';
 
     try {
-        const response = await fetch(`http://localhost:5057/api/Export/${endpoint}`, {
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5057/api';
+        const response = await fetch(`${apiBaseUrl}/Export/${endpoint}`, {
             method: 'GET',
             headers: { 'Authorization': `Bearer ${token}` }
         });

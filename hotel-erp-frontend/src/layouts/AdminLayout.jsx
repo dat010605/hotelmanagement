@@ -16,8 +16,11 @@ import dayjs from 'dayjs';
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
 
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5057/api';
+const hubUrl = apiBaseUrl.replace(/\/api$/, '') + '/notificationHub';
+
 const signalRConnection = new HubConnectionBuilder()
-  .withUrl("http://localhost:5057/notificationHub") 
+  .withUrl(hubUrl) 
   .configureLogging(LogLevel.Information) 
   .withAutomaticReconnect() 
   .build();

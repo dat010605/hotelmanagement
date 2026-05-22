@@ -244,7 +244,8 @@ const AuditLogsPage = () => {
     const handleDownloadAuditLog = async () => {
         const token = localStorage.getItem('token');
         try {
-            const response = await fetch(`http://localhost:5057/api/Export/audit-log`, {
+            const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5057/api';
+            const response = await fetch(`${apiBaseUrl}/Export/audit-log`, {
                 method: 'GET',
                 headers: { 'Authorization': `Bearer ${token}` }
             });

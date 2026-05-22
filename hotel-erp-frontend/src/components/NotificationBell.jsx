@@ -5,7 +5,9 @@ import useSignalR from '../hooks/useSignalR';
 
 const NotificationBell = () => {
   
-    const connection = useSignalR('http://localhost:5057/notificationHub');
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5057/api';
+    const hubUrl = apiBaseUrl.replace(/\/api$/, '') + '/notificationHub';
+    const connection = useSignalR(hubUrl);
     const [notifications, setNotifications] = useState([]);
 
     useEffect(() => {

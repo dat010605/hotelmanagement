@@ -22,7 +22,14 @@ namespace HotelManagement.API.Services
             // Vòng lặp vô hạn chạy ngầm chừng nào Server còn mở
             while (!stoppingToken.IsCancellationRequested)
             {
-                await ProcessBirthdayVouchers();
+                try
+                {
+                    await ProcessBirthdayVouchers();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error in BirthdayVoucherWorker: {ex.Message}");
+                }
 
                 // Chờ 24 tiếng (1 ngày) rồi mới quét lại
                 // (Khi test ngài có thể đổi thành TimeSpan.FromMinutes(1) để xem nó chạy)
