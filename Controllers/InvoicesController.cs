@@ -1,10 +1,12 @@
 using HotelManagement.API.DTOs;
+using HotelManagement.API.Hubs;
 using HotelManagement.API.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json; 
+using System.Text.Json;
 
 namespace HotelManagement.API.Controllers;
 
@@ -14,11 +16,13 @@ public class InvoicesController : ControllerBase
 {
     private readonly AppDbContext _context;
     private readonly IConfiguration _configuration;
+    private readonly IHubContext<NotificationHub> _hubContext;
 
-    public InvoicesController(AppDbContext context, IConfiguration configuration)
+    public InvoicesController(AppDbContext context, IConfiguration configuration, IHubContext<NotificationHub> hubContext)
     {
         _context = context;
         _configuration = configuration;
+        _hubContext = hubContext;
     }
 
     [HttpPost("create-momo-payment")]
@@ -153,11 +157,22 @@ public async Task<IActionResult> CreateMoMoPayment([FromBody] ProcessPaymentDto.
             .FirstOrDefaultAsync(b => b.Id == request.BookingId);
 
         if (booking == null) return NotFound("Không tìm thấy Booking.");
-        if (booking.Status == "Completed" || booking.Status == "Paid") 
-            return BadRequest("Lỗi: Booking này đã được thanh toán từ trước!");
+
+        // ✅ Chỉ cho phép thanh toán khi đang ở trạng thái hợp lệ (CheckedIn hoặc PendingCheckout)
+        if (booking.Status == "Completed" || booking.Status == "Paid")
+            return BadRequest(new { message = "Lỗi: Booking này đã được thanh toán từ trước!" });
+
+        if (booking.Status != "CheckedIn" && booking.Status != "PendingCheckout")
+            return BadRequest(new { message = $"Không thể thanh toán: Đơn đặt phòng đang ở trạng thái '{booking.Status}'. Chỉ có thể thanh toán khi đã nhận phòng (CheckedIn) hoặc đang chờ trả phòng (PendingCheckout)." });
+
+        // Kiểm tra nếu hóa đơn đã tồn tại (chống double-submit)
+        var existingInvoice = await _context.Invoices
+            .FirstOrDefaultAsync(i => i.BookingId == request.BookingId && i.Status == "Paid");
+        if (existingInvoice != null)
+            return BadRequest(new { message = "Hóa đơn cho đơn này đã được tạo và thanh toán rồi!" });
 
         var invoiceData = await CalculateInvoiceInternal(request.BookingId);
-        if (invoiceData == null) return BadRequest("Lỗi tính tiền.");
+        if (invoiceData == null) return BadRequest(new { message = "Lỗi tính tiền. Vui lòng thử lại." });
 
         var invoice = new Invoice
         {
@@ -167,10 +182,10 @@ public async Task<IActionResult> CreateMoMoPayment([FromBody] ProcessPaymentDto.
             DiscountAmount = invoiceData.DiscountAmount,
             TaxAmount = invoiceData.TaxAmount,
             FinalTotal = invoiceData.FinalTotal,
-            Status = "Paid" 
+            Status = "Paid"
         };
         _context.Invoices.Add(invoice);
-        await _context.SaveChangesAsync(); 
+        await _context.SaveChangesAsync();
 
         var payment = new Payment
         {
@@ -182,14 +197,25 @@ public async Task<IActionResult> CreateMoMoPayment([FromBody] ProcessPaymentDto.
         };
         _context.Payments.Add(payment);
 
-        booking.Status = "Completed"; 
+        // ✅ Chỉ set Completed SAU KHI đã tạo Invoice & Payment thành công
+        booking.Status = "Completed";
 
+        // Cập nhật phòng: chuyển sang Maintenance/Dirty để buồng phòng dọn
         foreach (var detail in booking.BookingDetails)
         {
-            if (detail.Room != null) detail.Room.Status = "Cleaning"; 
+            if (detail.Room != null)
+            {
+                detail.Room.Status = "Maintenance";
+                detail.Room.CleaningStatus = "Dirty";
+            }
         }
 
         await _context.SaveChangesAsync();
+
+        // Gửi thông báo realtime đến Lễ tân
+        await _hubContext.Clients.All.SendAsync("ReceiveNotification",
+            $"✅ Khách {booking.GuestName} đã thanh toán hóa đơn và trả phòng thành công! (Hóa đơn #{invoice.Id})");
+
         return Ok(new { Message = "Thanh toán thành công!", InvoiceId = invoice.Id });
     }
 

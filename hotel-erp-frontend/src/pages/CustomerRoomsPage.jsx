@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Typography, Row, Col, Card, Tag, Button, Spin, Empty, Select, Space, Rate, Modal, Form, Input, DatePicker, Divider, message, Alert, Drawer, Tabs, Progress, List, Avatar } from 'antd';
-import { CheckCircleOutlined, UserOutlined, FilterOutlined, SortAscendingOutlined, CalendarOutlined, PhoneOutlined, MailOutlined, GiftOutlined, WifiOutlined, CarOutlined, CoffeeOutlined, SafetyCertificateOutlined, CustomerServiceOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, UserOutlined, FilterOutlined, SortAscendingOutlined, CalendarOutlined, PhoneOutlined, MailOutlined, GiftOutlined, WifiOutlined, CarOutlined, CoffeeOutlined, SafetyCertificateOutlined, CustomerServiceOutlined, StarFilled, SendOutlined, LockOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
+import { useAdminAuthStore } from '../store/adminAuthStore';
 import axiosClient from '../api/axiosClient';
 import dayjs from 'dayjs';
 
@@ -43,8 +44,15 @@ const fallbackById = {
 };
 
 const getTypeImage = (rt) => {
-  // Ưu tiên ảnh từ API (Cloudinary)
-  if (rt.images && rt.images.length > 0) return rt.images[0];
+  // 1. Ưu tiên: mảng images từ API (Cloudinary) — lấy URL hợp lệ đầu tiên
+  if (Array.isArray(rt.images) && rt.images.length > 0) {
+    const valid = rt.images.find(url => url && typeof url === 'string' && url.startsWith('http'));
+    if (valid) return valid;
+  }
+  // 2. Fallback: thumbnailUrl hoặc imageUrl trên entity (nếu có)
+  if (rt.thumbnailUrl && rt.thumbnailUrl.startsWith('http')) return rt.thumbnailUrl;
+  if (rt.imageUrl && rt.imageUrl.startsWith('http')) return rt.imageUrl;
+  // 3. Cuối cùng: ảnh tĩnh theo tên/ID
   return getLocalFallback(rt);
 };
 
@@ -59,6 +67,7 @@ const getLocalFallback = (rt) => {
 
 const CustomerRoomsPage = () => {
   const { t } = useTranslation();
+  const { user } = useAdminAuthStore(); // Lấy user để check eligibility
   const [roomTypes, setRoomTypes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sortOrder, setSortOrder] = useState('default');
@@ -79,6 +88,17 @@ const CustomerRoomsPage = () => {
   // Detail drawer
   const [drawerType, setDrawerType] = useState(null);
 
+  // ── REVIEW SYSTEM ────────────────────────────────────────────────────────
+  // reviews: reviews thật từ API theo roomTypeId
+  // eligibility: { eligible, alreadyReviewed, reason } — kết quả check quyền
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [eligibility, setEligibility] = useState(null); // null = chưa check
+  const [reviewForm] = Form.useForm();
+  const [submittingReview, setSubmittingReview] = useState(false);
+  // Dùng ref để track roomTypeId đã load reviews — tránh gọi API trùng
+  const loadedReviewsForId = useRef(null);
+
   const fetchRoomTypes = async (dates) => {
     setLoading(true);
     try {
@@ -92,7 +112,16 @@ const CustomerRoomsPage = () => {
       console.error('Lỗi tải dữ liệu hạng phòng:', err);
       try {
         const res = await axiosClient.get('/RoomTypes');
-        setRoomTypes(res.data.map(rt => ({ ...rt, availableRooms: -1, totalRooms: 0, images: [], amenities: [] })));
+        // Giữ lại imageUrl nếu entity có, KHÔNG ghi đè images: []
+        setRoomTypes(res.data.map(rt => ({
+          ...rt,
+          availableRooms: -1,
+          totalRooms: 0,
+          // Nếu entity có imageUrl → wrap thành mảng để getTypeImage dùng được
+          images: rt.images?.length > 0 ? rt.images
+            : (rt.imageUrl ? [rt.imageUrl] : []),
+          amenities: rt.amenities || []
+        })));
       } catch { /* ignore */ }
     } finally {
       setLoading(false);
@@ -100,6 +129,63 @@ const CustomerRoomsPage = () => {
   };
 
   useEffect(() => { fetchRoomTypes(null); }, []);
+
+  // ────────────────────────────────────────────────────────────────────────
+  // REVIEW SYSTEM: Khi mở Drawer với một roomType mới → fetch reviews thật
+  // + kiểm tra eligibility một lần duy nhất.
+  //
+  // ✅ Chống infinite loop: deps chỉ là [drawerType, user]
+  //    loadedReviewsForId ref giúp bỏ qua lần re-render không cần thiết
+  // ────────────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!drawerType) {
+      // Drawer đóng → reset state review
+      setReviews([]);
+      setEligibility(null);
+      reviewForm.resetFields();
+      loadedReviewsForId.current = null;
+      return;
+    }
+
+    // Tránh fetch lại nếu cùng roomTypeId (user scroll/click cùng phòng)
+    if (loadedReviewsForId.current === drawerType.id) return;
+    loadedReviewsForId.current = drawerType.id;
+
+    const roomTypeId = drawerType.id;
+
+    // Fetch reviews thật
+    const fetchReviews = async () => {
+      setReviewsLoading(true);
+      try {
+        const res = await axiosClient.get(`/Reviews/by-room-type/${roomTypeId}`);
+        setReviews(res.data);
+      } catch (err) {
+        console.error('Lỗi tải reviews:', err);
+        setReviews([]);
+      } finally {
+        setReviewsLoading(false);
+      }
+    };
+
+    // Check eligibility (không throw nếu chưa login — API trả 200 với eligible=false)
+    const fetchEligibility = async () => {
+      if (!user) {
+        setEligibility({ eligible: false, alreadyReviewed: false, reason: 'not_authenticated' });
+        return;
+      }
+      try {
+        const res = await axiosClient.get(`/Reviews/check-eligibility?roomTypeId=${roomTypeId}`);
+        setEligibility(res.data);
+      } catch (err) {
+        console.error('Lỗi check eligibility:', err);
+        setEligibility({ eligible: false, alreadyReviewed: false, reason: 'error' });
+      }
+    };
+
+    fetchReviews();
+    fetchEligibility();
+  }, [drawerType, user]); // ← stable deps, không infinite loop
+
 
   const handleDateSearch = (dates) => {
     setDateRange(dates);
@@ -168,6 +254,38 @@ const CustomerRoomsPage = () => {
     }
   };
 
+  // ── Gửi đánh giá ──────────────────────────────────────────────────────────
+  // Guard: eligibility đã được check phía server — không trust frontend
+  const handleSubmitReview = async (values) => {
+    if (!drawerType) return;
+    setSubmittingReview(true);
+    try {
+      await axiosClient.post('/Reviews', {
+        roomTypeId: drawerType.id,
+        rating: values.rating,
+        comment: values.comment,
+      });
+      message.success('🌟 Đánh giá đã được gửi thành công! Cảm ơn bạn.');
+      reviewForm.resetFields();
+
+      // Refresh reviews + eligibility sau khi submit thành công
+      const [reviewsRes, eligRes] = await Promise.all([
+        axiosClient.get(`/Reviews/by-room-type/${drawerType.id}`),
+        axiosClient.get(`/Reviews/check-eligibility?roomTypeId=${drawerType.id}`)
+      ]);
+      setReviews(reviewsRes.data);
+      setEligibility(eligRes.data);
+    } catch (err) {
+      const errData = err.response?.data;
+      const errMsg = (typeof errData === 'object' && errData?.message)
+        ? errData.message
+        : (typeof errData === 'string' ? errData : 'Lỗi khi gửi đánh giá!');
+      message.error(errMsg);
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
   const getAvailabilityInfo = (rt) => {
     if (rt.availableRooms === -1 || !hasDateFilter) {
       return { type: 'total', text: `Tổng: ${rt.totalRooms} phòng`, canBook: true };
@@ -202,17 +320,17 @@ const CustomerRoomsPage = () => {
         <Row justify="space-between" align="middle" gutter={[16, 16]}>
           <Col xs={24} md={14}>
             <Space size="middle" wrap>
-              <Text strong><CalendarOutlined /> Chọn ngày:</Text>
+              <Text strong><CalendarOutlined /> {t('home.checkInOut')}:</Text>
               <RangePicker
                 value={dateRange}
                 onChange={handleDateSearch}
                 format="DD/MM/YYYY"
-                placeholder={['Nhận phòng', 'Trả phòng']}
+                placeholder={[t('home.checkIn'), t('home.checkOut')]}
                 disabledDate={(current) => current && current < dayjs().startOf('day')}
                 style={{ borderRadius: 8 }}
               />
               {hasDateFilter && (
-                <Button size="small" onClick={() => handleDateSearch(null)} type="link" danger>Xóa lọc</Button>
+                <Button size="small" onClick={() => handleDateSearch(null)} type="link" danger>{t('common.clearFilter')}</Button>
               )}
             </Space>
           </Col>
@@ -277,13 +395,13 @@ const CustomerRoomsPage = () => {
                 <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', flex: 1 }}>
                   <Title level={4} style={{ marginTop: 0, marginBottom: 6 }}>{rt.name}</Title>
                   <Space wrap size={[4, 4]} style={{ marginBottom: 10 }}>
-                    {rt.capacityAdults > 0 && <Tag style={{ borderRadius: 4 }}>👤 {rt.capacityAdults} người</Tag>}
+                    {rt.capacityAdults > 0 && <Tag style={{ borderRadius: 4 }}>👤 {rt.capacityAdults}</Tag>}
                     {rt.sizeSqm && <Tag style={{ borderRadius: 4 }}>{rt.sizeSqm} m²</Tag>}
                     {rt.bedType && <Tag style={{ borderRadius: 4 }}>🛏️ {rt.bedType}</Tag>}
                     {rt.viewType && <Tag style={{ borderRadius: 4 }}>🌅 {rt.viewType}</Tag>}
                   </Space>
                   <Paragraph ellipsis={{ rows: 2 }} style={{ color: '#595959', marginBottom: 12, fontSize: 13, flex: 1 }}>
-                    {rt.description || `Hạng phòng ${rt.name} sang trọng với đầy đủ tiện nghi cao cấp.`}
+                    {rt.description || t('rooms.defaultDesc')}
                   </Paragraph>
 
                   {/* Giá + Nút — luôn ở đáy */}
@@ -293,7 +411,7 @@ const CustomerRoomsPage = () => {
                       <Title level={4} style={{ color: '#c9a961', margin: 0 }}>{(rt.basePrice || 0).toLocaleString()}₫</Title>
                     </div>
                     <div style={{ display: 'flex', gap: 8 }}>
-                      <Button type="default" block onClick={() => setDrawerType(rt)} style={{ borderRadius: 8, fontWeight: 600, flex: 1 }}>Chi tiết</Button>
+                      <Button type="default" block onClick={() => setDrawerType(rt)} style={{ borderRadius: 8, fontWeight: 600, flex: 1 }}>{t('common.viewDetails')}</Button>
                       <Button type="primary" block disabled={!avail.canBook} onClick={() => handleSelectType(rt)}
                         style={{ borderRadius: 8, fontWeight: 'bold', flex: 2, background: avail.canBook ? '#c9a961' : undefined, borderColor: avail.canBook ? '#c9a961' : undefined }}>
                         {avail.canBook ? t('rooms.selectRoom') : t('rooms.soldOut')}
@@ -381,34 +499,34 @@ const CustomerRoomsPage = () => {
                 </div>
                 <div style={{ position: 'absolute', top: 16, right: 16 }}>
                   <Tag color={isAvailable ? 'success' : 'error'} style={{ fontSize: 13, padding: '4px 12px' }}>
-                    {isAvailable ? `✅ Còn ${drawerType.availableRooms} phòng` : '❌ Hết phòng'}
+                    {isAvailable ? `✅ ${t('rooms.available')}: ${drawerType.availableRooms}` : `❌ ${t('rooms.soldOut')}`}
                   </Tag>
                 </div>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', background: '#fffbf0', borderBottom: '1px solid #f0e9d2' }}>
                 <div>
-                  <Text type="secondary">Giá mỗi đêm</Text>
+                  <Text type="secondary">{t('rooms.pricePerNightLabel')}</Text>
                   <div style={{ fontSize: 26, fontWeight: 800, color: '#c9a961' }}>{drawerType.basePrice?.toLocaleString()}₫</div>
                 </div>
                 <Button type="primary" size="large" disabled={!isAvailable}
                   onClick={() => { setDrawerType(null); handleSelectType(drawerType); }}
                   style={{ background: '#c9a961', borderColor: '#c9a961', fontWeight: 700, borderRadius: 8, height: 46, padding: '0 28px' }}>
-                  {isAvailable ? '🛎️ Đặt phòng ngay' : 'Hết phòng'}
+                  {isAvailable ? t('rooms.bookNowBtn') : t('rooms.soldOut')}
                 </Button>
               </div>
               <Tabs defaultActiveKey="overview" style={{ padding: '0 24px' }} tabBarStyle={{ fontWeight: 600 }} items={[
-                { key: 'overview', label: '📋 Tổng quan', children: (
+                { key: 'overview', label: `📋 ${t('rooms.overviewTab')}`, children: (
                   <div style={{ paddingBottom: 32 }}>
-                    <Title level={5} style={{ marginTop: 16 }}>Mô tả</Title>
+                    <Title level={5} style={{ marginTop: 16 }}>{t('rooms.roomDescription')}</Title>
                     <Paragraph style={{ color: '#555', lineHeight: 1.8, fontSize: 14 }}>
-                      {drawerType.description || `Hạng phòng ${drawerType.name} sang trọng.`}
+                      {drawerType.description || t('rooms.defaultDesc')}
                     </Paragraph>
                     <Row gutter={[12, 12]} style={{ marginTop: 16 }}>
                       {[
-                        { label: 'Diện tích', value: drawerType.sizeSqm ? `${drawerType.sizeSqm} m²` : 'N/A' },
-                        { label: 'Loại giường', value: drawerType.bedType || 'King size' },
-                        { label: 'Sức chứa', value: `${drawerType.capacityAdults || 2} người lớn, ${drawerType.capacityChildren || 0} trẻ em` },
-                        { label: 'View', value: drawerType.viewType || 'City view' },
+                        { label: t('rooms.roomArea'), value: drawerType.sizeSqm ? `${drawerType.sizeSqm} m²` : 'N/A' },
+                        { label: t('rooms.roomBedType'), value: drawerType.bedType || 'King size' },
+                        { label: t('rooms.roomCapacity'), value: `${drawerType.capacityAdults || 2} ${t('rooms.roomCapacityVal', { adults: drawerType.capacityAdults || 2, children: drawerType.capacityChildren || 0 })}` },
+                        { label: t('rooms.roomView'), value: drawerType.viewType || 'City view' },
                       ].map(info => (
                         <Col span={12} key={info.label}>
                           <Card size="small" style={{ borderRadius: 10, background: '#fafafa', textAlign: 'center' }}>
@@ -420,7 +538,7 @@ const CustomerRoomsPage = () => {
                     </Row>
                   </div>
                 )},
-                { key: 'facilities', label: '🏨 Tiện nghi', children: (
+                { key: 'facilities', label: `🏨 ${t('rooms.facilitiesTab')}`, children: (
                   <div style={{ paddingBottom: 32 }}>
                     <Row gutter={[10, 10]} style={{ marginTop: 16 }}>
                       {facilities.map((item, i) => (
@@ -434,31 +552,144 @@ const CustomerRoomsPage = () => {
                     </Row>
                   </div>
                 )},
-                { key: 'reviews', label: '⭐ Đánh giá', children: (
+                { key: 'reviews', label: `⭐ Đánh giá (${reviews.length})`, children: (
                   <div style={{ paddingBottom: 32 }}>
-                    <List dataSource={fakeReviews} renderItem={rv => (
-                      <List.Item style={{ padding: '16px 0' }}>
-                        <div style={{ width: '100%' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-                            <Avatar src={rv.avatar} size={40} />
-                            <div>
-                              <Text strong>{rv.name}</Text>
-                              <div><Rate disabled defaultValue={rv.rating} style={{ fontSize: 12 }} />
-                              <Text type="secondary" style={{ fontSize: 12, marginLeft: 6 }}>{rv.date}</Text></div>
+                    {/* ─── Danh sách Reviews Thật ─────────────────────────── */}
+                    {reviewsLoading ? (
+                      <div style={{ textAlign: 'center', padding: 24 }}><Spin /></div>
+                    ) : reviews.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '24px 0', color: '#999' }}>
+                        <StarFilled style={{ fontSize: 32, color: '#faad14', marginBottom: 8 }} />
+                        <div>{t('rooms.noReviews')}</div>
+                      </div>
+                    ) : (
+                      <List
+                        dataSource={reviews}
+                        renderItem={rv => (
+                          <List.Item style={{ padding: '16px 0', borderBottom: '1px solid #f5f5f5' }}>
+                            <div style={{ width: '100%' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                                <Avatar
+                                  src={rv.userAvatar}
+                                  icon={!rv.userAvatar && <UserOutlined />}
+                                  size={40}
+                                  style={{ background: '#c9a961' }}
+                                />
+                                <div>
+                                  <Text strong>{rv.userName || t('header.guest')}</Text>
+                                  <div>
+                                    <Rate disabled value={rv.rating} style={{ fontSize: 12 }} />
+                                    <Text type="secondary" style={{ fontSize: 12, marginLeft: 6 }}>
+                                      {rv.createdAt ? new Date(rv.createdAt).toLocaleDateString('vi-VN') : ''}
+                                    </Text>
+                                  </div>
+                                </div>
+                              </div>
+                              <Paragraph style={{ color: '#444', margin: 0, fontStyle: 'italic', fontSize: 14 }}>
+                                "{rv.comment}"
+                              </Paragraph>
                             </div>
-                          </div>
-                          <Paragraph style={{ color: '#444', margin: 0, fontStyle: 'italic', fontSize: 14 }}>"{rv.comment}"</Paragraph>
-                        </div>
-                      </List.Item>
-                    )} />
+                          </List.Item>
+                        )}
+                      />
+                    )}
+
+                    {/* ─── Form Viết Review — CÓ GUARD ELIGIBILITY ─────────── */}
+                    <div style={{ marginTop: 24, borderTop: '2px solid #f0f0f0', paddingTop: 20 }}>
+                      <Title level={5} style={{ marginBottom: 12 }}>✍️ {t('rooms.writeReview')}</Title>
+
+                      {/* Case 1: Chưa đăng nhập */}
+                      {!user && (
+                        <Alert
+                          type="info"
+                          icon={<LockOutlined />}
+                          showIcon
+                          message={t('rooms.loginToReview')}
+                          style={{ borderRadius: 8 }}
+                        />
+                      )}
+
+                      {/* Case 2: Đã đăng nhập, đang check */}
+                      {user && eligibility === null && (
+                        <div style={{ textAlign: 'center', padding: 12 }}><Spin size="small" tip={t('rooms.checkingEligibility')} /></div>
+                      )}
+
+                      {/* Case 3: Đã đánh giá rồi */}
+                      {user && eligibility?.alreadyReviewed && (
+                        <Alert
+                          type="success"
+                          icon={<CheckCircleOutlined />}
+                          showIcon
+                          message={t('rooms.alreadyReviewed')}
+                          style={{ borderRadius: 8 }}
+                        />
+                      )}
+
+                      {/* Case 4: Chưa đặt hoặc chưa thanh toán */}
+                      {user && eligibility && !eligibility.eligible && !eligibility.alreadyReviewed && (
+                        <Alert
+                          type="warning"
+                          icon={<LockOutlined />}
+                          showIcon
+                          message={t('rooms.reviewNotEligible')}
+                          style={{ borderRadius: 8 }}
+                        />
+                      )}
+
+                      {/* Case 5: Đủ điều kiện → Hiển thị form */}
+                      {user && eligibility?.eligible && (
+                        <Form
+                          form={reviewForm}
+                          layout="vertical"
+                          onFinish={handleSubmitReview}
+                        >
+                          <Form.Item
+                            name="rating"
+                            label={t('rooms.reviewRating')}
+                            rules={[{ required: true, message: t('rooms.chooseRating') }]}
+                          >
+                            <Rate style={{ fontSize: 28 }} />
+                          </Form.Item>
+                          <Form.Item
+                            name="comment"
+                            label={t('rooms.reviewComment')}
+                            rules={[
+                              { required: true, message: t('rooms.reviewMinLength') },
+                              { min: 10, message: t('rooms.reviewMinLength') }
+                            ]}
+                          >
+                            <Input.TextArea
+                              rows={3}
+                              placeholder={t('rooms.reviewPlaceholder')}
+                              maxLength={500}
+                              showCount
+                              style={{ borderRadius: 8 }}
+                            />
+                          </Form.Item>
+                          <Form.Item style={{ marginBottom: 0 }}>
+                            <Button
+                              type="primary" htmlType="submit"
+                              loading={submittingReview}
+                              icon={<SendOutlined />}
+                              style={{
+                                background: '#c9a961', borderColor: '#c9a961',
+                                borderRadius: 8, fontWeight: 600
+                              }}
+                            >
+                              {submittingReview ? t('rooms.sendingReview') : t('rooms.sendReview')}
+                            </Button>
+                          </Form.Item>
+                        </Form>
+                      )}
+                    </div>
                   </div>
                 )},
-                { key: 'policy', label: '📜 Chính sách', children: (
+                { key: 'policy', label: `📜 ${t('rooms.policyTab')}`, children: (
                   <div style={{ paddingBottom: 32 }}>
                     {[
-                      { title: '🕐 Giờ nhận & trả phòng', items: ['Check-in: 14:00 — Check-out: 12:00', 'Nhận phòng sớm trước 10:00 tính thêm 50%'] },
-                      { title: '❌ Chính sách hủy phòng', items: ['Hủy trước 48 giờ: Hoàn tiền 100%', 'Hủy trong 24–48 giờ: Hoàn tiền 50%', 'Hủy trong vòng 24 giờ: Không hoàn tiền'] },
-                      { title: '👶 Trẻ em & giường phụ', items: ['Trẻ em dưới 6 tuổi: Miễn phí', 'Giường phụ người lớn: 500.000₫/đêm'] },
+                      { title: `🕐 ${t('rooms.checkInOutPolicy')}`, items: [t('rooms.checkInInfo'), t('rooms.earlyCheckinInfo')] },
+                      { title: `❌ ${t('rooms.cancelPolicy')}`, items: [t('rooms.cancelBefore48'), t('rooms.cancelIn24to48'), t('rooms.cancelIn24')] },
+                      { title: `👶 ${t('rooms.childrenPolicy')}`, items: [t('rooms.childrenUnder6'), t('rooms.extraBed')] },
                     ].map(section => (
                       <div key={section.title} style={{ marginBottom: 20 }}>
                         <Title level={5} style={{ marginTop: 16 }}>{section.title}</Title>

@@ -8,6 +8,7 @@ import {
   CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined,
   StarFilled, SendOutlined, LogoutOutlined
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import axiosClient from '../api/axiosClient';
 import { useAdminAuthStore } from '../store/adminAuthStore';
 import { useNavigate } from 'react-router-dom';
@@ -17,6 +18,7 @@ const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
 
 const CustomerBookingHistoryPage = () => {
+  const { t } = useTranslation();
   const { user } = useAdminAuthStore();
   const navigate = useNavigate();
   const [bookings, setBookings] = useState([]);
@@ -24,11 +26,10 @@ const CustomerBookingHistoryPage = () => {
   const [loading, setLoading] = useState(true);
 
   // Review Modal
-  const [reviewModal, setReviewModal] = useState(null); // { roomTypeId, roomTypeName, bookingCode }
+  const [reviewModal, setReviewModal] = useState(null);
   const [reviewForm] = Form.useForm();
   const [submittingReview, setSubmittingReview] = useState(false);
 
-  // Tải dữ liệu
   const fetchData = async () => {
     if (!user) {
       setLoading(false);
@@ -42,9 +43,9 @@ const CustomerBookingHistoryPage = () => {
     } catch (err) {
       console.error('Lỗi tải lịch sử:', err);
       if (err.response?.status === 401) {
-        message.warning('Vui lòng đăng nhập để xem lịch sử đặt phòng.');
+        message.warning(t('bookingHistory.loginWarning'));
       } else {
-        message.error('Không thể tải lịch sử đặt phòng.');
+        message.error(t('bookingHistory.loadError'));
       }
     } finally {
       setLoading(false);
@@ -55,7 +56,6 @@ const CustomerBookingHistoryPage = () => {
     fetchData();
   }, [user]);
 
-  // Gửi đánh giá
   const handleSubmitReview = async (values) => {
     if (!reviewModal) return;
     setSubmittingReview(true);
@@ -65,56 +65,46 @@ const CustomerBookingHistoryPage = () => {
         rating: values.rating,
         comment: values.comment,
       });
-      message.success('🌟 Đánh giá đã được gửi thành công! Cảm ơn bạn.');
+      message.success(t('bookingHistory.reviewSuccess'));
       setReviewModal(null);
       reviewForm.resetFields();
-      fetchData(); // Refresh data
+      fetchData();
     } catch (err) {
-      const errMsg = err.response?.data?.message || err.response?.data || 'Có lỗi xảy ra khi gửi đánh giá.';
-      message.error(typeof errMsg === 'string' ? errMsg : 'Có lỗi xảy ra.');
+      const errMsg = err.response?.data?.message || err.response?.data || t('bookingHistory.reviewError');
+      message.error(typeof errMsg === 'string' ? errMsg : t('bookingHistory.reviewError'));
     } finally {
       setSubmittingReview(false);
     }
   };
 
-  // Trả phòng (Check-out)
-  const handleCheckOut = (bookingId) => {
-    Modal.confirm({
-      title: 'Xác nhận Trả phòng',
-      content: 'Bạn có chắc chắn muốn trả phòng? Sau khi trả phòng, bạn có thể đánh giá trải nghiệm của mình.',
-      okText: 'Trả phòng',
-      okType: 'danger',
-      cancelText: 'Hủy',
-      onOk: async () => {
-        try {
-          await axiosClient.patch(`/Bookings/${bookingId}/checkout`);
-          message.success('Trả phòng thành công! Cảm ơn bạn đã sử dụng dịch vụ.');
-          fetchData();
-        } catch (err) {
-          message.error(err.response?.data || 'Lỗi khi trả phòng.');
-        }
-      }
-    });
+  const handleCheckOut = async (bookingId) => {
+    try {
+      await axiosClient.patch(`/Bookings/${bookingId}/request-checkout`);
+      message.info(t('bookingHistory.checkoutRedirecting'));
+      navigate(`/customer-checkout/${bookingId}`);
+    } catch (err) {
+      message.error(err.response?.data?.message || err.response?.data || t('bookingHistory.checkoutError'));
+    }
   };
 
-  // Render trạng thái booking
   const getStatusTag = (status) => {
     switch (status) {
       case 'Completed':
       case 'CheckedOut':
-        return <Tag icon={<CheckCircleOutlined />} color="success">Đã hoàn thành</Tag>;
+        return <Tag icon={<CheckCircleOutlined />} color="success">{t('bookingHistory.statusCompleted')}</Tag>;
+      case 'PendingCheckout':
+        return <Tag icon={<ClockCircleOutlined />} color="warning">{t('bookingHistory.statusPendingCheckout')}</Tag>;
       case 'CheckedIn':
-        return <Tag icon={<ClockCircleOutlined />} color="processing">Đang lưu trú</Tag>;
+        return <Tag icon={<ClockCircleOutlined />} color="processing">{t('bookingHistory.statusCheckedIn')}</Tag>;
       case 'Cancelled':
-        return <Tag icon={<CloseCircleOutlined />} color="error">Đã hủy</Tag>;
+        return <Tag icon={<CloseCircleOutlined />} color="error">{t('bookingHistory.statusCancelled')}</Tag>;
       case 'Pending':
-        return <Tag icon={<ClockCircleOutlined />} color="warning">Chờ nhận phòng</Tag>;
+        return <Tag icon={<ClockCircleOutlined />} color="warning">{t('bookingHistory.statusPending')}</Tag>;
       default:
         return <Tag color="default">{status}</Tag>;
     }
   };
 
-  // Kiểm tra booking đã hoàn thành chưa
   const isCompleted = (status) => status === 'Completed' || status === 'CheckedOut';
 
   if (!user) {
@@ -123,13 +113,13 @@ const CustomerBookingHistoryPage = () => {
         <Empty
           description={
             <div>
-              <Title level={4}>Vui lòng đăng nhập</Title>
-              <Paragraph type="secondary">Bạn cần đăng nhập để xem lịch sử đặt phòng của mình.</Paragraph>
+              <Title level={4}>{t('bookingHistory.loginRequired')}</Title>
+              <Paragraph type="secondary">{t('bookingHistory.loginRequiredDesc')}</Paragraph>
             </div>
           }
         >
           <Button type="primary" size="large" onClick={() => navigate('/login')}>
-            Đăng nhập ngay
+            {t('bookingHistory.loginBtn')}
           </Button>
         </Empty>
       </div>
@@ -142,10 +132,10 @@ const CustomerBookingHistoryPage = () => {
       <div style={{ textAlign: 'center', marginBottom: 40 }}>
         <Title level={2}>
           <HistoryOutlined style={{ marginRight: 12 }} />
-          Lịch Sử Đặt Phòng
+          {t('bookingHistory.title')}
         </Title>
         <Paragraph type="secondary" style={{ fontSize: 16 }}>
-          Xem lại các đơn đặt phòng và đánh giá trải nghiệm của bạn
+          {t('bookingHistory.subtitle')}
         </Paragraph>
         <div style={{ width: 60, height: 4, background: '#c9a961', margin: '12px auto 0', borderRadius: 2 }} />
       </div>
@@ -153,19 +143,19 @@ const CustomerBookingHistoryPage = () => {
       {loading ? (
         <div style={{ textAlign: 'center', padding: 80 }}>
           <Spin size="large" />
-          <Paragraph type="secondary" style={{ marginTop: 16 }}>Đang tải lịch sử...</Paragraph>
+          <Paragraph type="secondary" style={{ marginTop: 16 }}>{t('bookingHistory.loading')}</Paragraph>
         </div>
       ) : bookings.length === 0 ? (
         <Empty
           description={
             <div>
-              <Title level={4} type="secondary">Chưa có đơn đặt phòng nào</Title>
-              <Paragraph type="secondary">Hãy đặt phòng để có trải nghiệm tuyệt vời tại The Royal Citadel!</Paragraph>
+              <Title level={4} type="secondary">{t('bookingHistory.noBookings')}</Title>
+              <Paragraph type="secondary">{t('bookingHistory.noBookingsDesc')}</Paragraph>
             </div>
           }
         >
           <Button type="primary" size="large" onClick={() => navigate('/rooms')}>
-            Đặt phòng ngay
+            {t('bookingHistory.bookNowBtn')}
           </Button>
         </Empty>
       ) : (
@@ -194,7 +184,7 @@ const CustomerBookingHistoryPage = () => {
                 }}>
                   <div>
                     <Text strong style={{ fontSize: 16 }}>
-                      Đơn: <Text style={{ color: '#1890ff', fontWeight: 700 }}>{booking.bookingCode}</Text>
+                      {t('bookingHistory.orderLabel')} <Text style={{ color: '#1890ff', fontWeight: 700 }}>{booking.bookingCode}</Text>
                     </Text>
                     {booking.guestName && (
                       <Text type="secondary" style={{ marginLeft: 16 }}>{booking.guestName}</Text>
@@ -202,14 +192,24 @@ const CustomerBookingHistoryPage = () => {
                   </div>
                   <Space>
                     {getStatusTag(booking.status)}
-                    {booking.status === 'CheckedIn' && (
-                      <Button 
+                    {(booking.status === 'CheckedIn') && (
+                      <Button
                         type="primary" danger size="small"
                         icon={<LogoutOutlined />}
                         onClick={() => handleCheckOut(booking.id)}
                         style={{ borderRadius: 6, fontWeight: 600 }}
                       >
-                        Trả phòng
+                        {t('bookingHistory.checkOutBtn')}
+                      </Button>
+                    )}
+                    {(booking.status === 'PendingCheckout') && (
+                      <Button
+                        type="primary" size="small"
+                        icon={<LogoutOutlined />}
+                        onClick={() => navigate(`/customer-checkout/${booking.id}`)}
+                        style={{ borderRadius: 6, fontWeight: 600, background: '#fa8c16', borderColor: '#fa8c16' }}
+                      >
+                        {t('bookingHistory.payNowBtn')}
                       </Button>
                     )}
                   </Space>
@@ -224,18 +224,18 @@ const CustomerBookingHistoryPage = () => {
                     size="small"
                     columns={[
                       {
-                        title: 'Phòng',
+                        title: t('bookingHistory.colRoom'),
                         dataIndex: 'roomNumber',
-                        render: (r) => <Text strong>Phòng {r}</Text>,
+                        render: (r) => <Text strong>{t('bookingHistory.colRoomPrefix')} {r}</Text>,
                         width: 120,
                       },
                       {
-                        title: 'Hạng phòng',
+                        title: t('bookingHistory.colRoomType'),
                         dataIndex: 'roomTypeName',
                         render: (name) => <Tag color="blue">{name}</Tag>,
                       },
                       {
-                        title: 'Thời gian lưu trú',
+                        title: t('bookingHistory.colStayPeriod'),
                         render: (_, r) => (
                           <Text>
                             <CalendarOutlined style={{ marginRight: 6, color: '#c9a961' }} />
@@ -244,14 +244,14 @@ const CustomerBookingHistoryPage = () => {
                         ),
                       },
                       {
-                        title: 'Giá/Đêm',
+                        title: t('bookingHistory.colPricePerNight'),
                         dataIndex: 'pricePerNight',
                         render: (p) => <Text type="danger" strong>{p?.toLocaleString()}₫</Text>,
                         width: 130,
                         align: 'right',
                       },
                       ...(completed ? [{
-                        title: 'Đánh giá',
+                        title: t('bookingHistory.colReview'),
                         key: 'review',
                         width: 160,
                         align: 'center',
@@ -260,7 +260,7 @@ const CustomerBookingHistoryPage = () => {
                           if (alreadyReviewed) {
                             return (
                               <Tag icon={<CheckCircleOutlined />} color="success">
-                                Đã đánh giá
+                                {t('bookingHistory.alreadyReviewed')}
                               </Tag>
                             );
                           }
@@ -282,7 +282,7 @@ const CustomerBookingHistoryPage = () => {
                                 borderRadius: 6, fontWeight: 600,
                               }}
                             >
-                              Đánh giá
+                              {t('bookingHistory.reviewBtn')}
                             </Button>
                           );
                         },
@@ -296,18 +296,18 @@ const CustomerBookingHistoryPage = () => {
         </Space>
       )}
 
-      {/* ── MODAL ĐÁNH GIÁ ──────────────────────────────────────── */}
+      {/* ── REVIEW MODAL ─────────────────────────────────────────────── */}
       <Modal
         title={
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <StarFilled style={{ color: '#faad14', fontSize: 20 }} />
-              <Title level={4} style={{ margin: 0 }}>Đánh giá trải nghiệm</Title>
+              <Title level={4} style={{ margin: 0 }}>{t('bookingHistory.reviewModalTitle')}</Title>
             </div>
             {reviewModal && (
               <div style={{ marginTop: 8 }}>
                 <Tag color="blue">{reviewModal.roomTypeName}</Tag>
-                <Text type="secondary">Đơn: {reviewModal.bookingCode}</Text>
+                <Text type="secondary">{t('bookingHistory.reviewOrderLabel')} {reviewModal.bookingCode}</Text>
               </div>
             )}
           </div>
@@ -327,8 +327,8 @@ const CustomerBookingHistoryPage = () => {
         >
           <Form.Item
             name="rating"
-            label="Đánh giá sao"
-            rules={[{ required: true, message: 'Vui lòng chọn số sao!' }]}
+            label={t('bookingHistory.reviewRatingLabel')}
+            rules={[{ required: true, message: t('bookingHistory.reviewRatingRequired') }]}
           >
             <Rate
               allowHalf={false}
@@ -350,15 +350,15 @@ const CustomerBookingHistoryPage = () => {
 
           <Form.Item
             name="comment"
-            label="Nhận xét chi tiết"
+            label={t('bookingHistory.reviewCommentLabel')}
             rules={[
-              { required: true, message: 'Vui lòng viết nhận xét!' },
-              { min: 10, message: 'Nhận xét phải có ít nhất 10 ký tự.' }
+              { required: true, message: t('bookingHistory.reviewCommentRequired') },
+              { min: 10, message: t('bookingHistory.reviewCommentMin') }
             ]}
           >
             <TextArea
               rows={4}
-              placeholder="Chia sẻ trải nghiệm của bạn: phòng ốc, dịch vụ, nhân viên, vệ sinh..."
+              placeholder={t('bookingHistory.reviewCommentPlaceholder')}
               maxLength={500}
               showCount
               style={{ borderRadius: 8 }}
@@ -366,7 +366,7 @@ const CustomerBookingHistoryPage = () => {
           </Form.Item>
 
           <Alert
-            message="Lưu ý: Mỗi hạng phòng chỉ được đánh giá một lần."
+            message={t('bookingHistory.reviewNote')}
             type="info"
             showIcon
             style={{ marginBottom: 16, borderRadius: 8 }}
@@ -374,7 +374,7 @@ const CustomerBookingHistoryPage = () => {
 
           <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
             <Space>
-              <Button onClick={() => setReviewModal(null)}>Hủy</Button>
+              <Button onClick={() => setReviewModal(null)}>{t('bookingHistory.reviewCancelBtn')}</Button>
               <Button
                 type="primary"
                 htmlType="submit"
@@ -385,7 +385,7 @@ const CustomerBookingHistoryPage = () => {
                   borderRadius: 8, fontWeight: 600,
                 }}
               >
-                {submittingReview ? 'Đang gửi...' : 'Gửi đánh giá'}
+                {submittingReview ? t('bookingHistory.reviewSubmitting') : t('bookingHistory.reviewSubmitBtn')}
               </Button>
             </Space>
           </Form.Item>

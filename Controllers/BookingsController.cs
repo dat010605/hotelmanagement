@@ -351,6 +351,22 @@ namespace HotelManagement.API.Controllers
             return Ok(new { Message = "Check-in thành công!", BookingId = booking.Id });
         }
 
+        // Khách hàng yêu cầu trả phòng (chuyển sang chờ thanh toán)
+        [HttpPatch("{id}/request-checkout")]
+        public async Task<IActionResult> RequestCheckOut(int id)
+        {
+            var booking = await _context.Bookings
+                .FirstOrDefaultAsync(b => b.Id == id);
+            if (booking == null) return NotFound("Không tìm thấy đơn.");
+            if (booking.Status != "CheckedIn") return BadRequest("Đơn này chưa Check-in hoặc đã trả phòng.");
+            
+            booking.Status = "PendingCheckout";
+            await _context.SaveChangesAsync();
+            await _hubContext.Clients.All.SendAsync("ReceiveNotification", $"Khách {booking.GuestName} yêu cầu trả phòng & đang chờ thanh toán.");
+            return Ok(new { Message = "Yêu cầu trả phòng đã được ghi nhận. Vui lòng thanh toán để hoàn tất.", BookingId = booking.Id });
+        }
+
+        // Lễ tân trực tiếp checkout (dùng cho admin)
         [HttpPatch("{id}/checkout")]
         public async Task<IActionResult> CheckOutBooking(int id)
         {
@@ -358,7 +374,8 @@ namespace HotelManagement.API.Controllers
                 .Include(b => b.BookingDetails)
                 .FirstOrDefaultAsync(b => b.Id == id);
             if (booking == null) return NotFound("Không tìm thấy đơn.");
-            if (booking.Status != "CheckedIn") return BadRequest("Đơn này chưa Check-in hoặc đã trả phòng.");
+            if (booking.Status != "CheckedIn" && booking.Status != "PendingCheckout") 
+                return BadRequest("Đơn này chưa Check-in hoặc đã trả phòng.");
             
             booking.Status = "Completed";
             var roomIds = booking.BookingDetails.Select(bd => bd.RoomId).ToList();

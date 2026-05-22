@@ -410,9 +410,9 @@ const CustomerLayout = () => {
           <div style={{ width: 40, height: 1, background: '#c9a961', margin: '12px auto 24px' }} />
           
           <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem', marginBottom: 24, lineHeight: 1.8 }}>
-            <p style={{ margin: 0 }}><strong>Dương Duy Khánh</strong> | Email: <a href="mailto:duongduykhanh06072005@gmail.com" style={{ color: '#c9a961', textDecoration: 'none' }}>duongduykhanh06072005@gmail.com</a></p>
+            <p style={{ margin: 0 }}><strong>The Royal Citadel</strong> | Email: <a href="mailto:hotelnhuongnguoiban@gmail.com" style={{ color: '#c9a961', textDecoration: 'none' }}>hotelnhuongnguoiban@gmail.com</a></p>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 8 }}>
-              <span>Tìm kiếm chúng tôi trên facebook:</span>
+              <span>{t('footer.findUsOn')}</span>
               <a href="https://www.facebook.com/profile.php?id=61589457996947" target="_blank" rel="noopener noreferrer" style={{ color: '#1877f2', fontSize: 24, display: 'flex' }}>
                 <FacebookFilled />
               </a>

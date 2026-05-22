@@ -722,6 +722,7 @@ public partial class AppDbContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
             entity.Property(e => e.DateOfBirth).HasColumnName("date_of_birth");
+            entity.Property(e => e.LastVoucherYear).HasColumnName("last_voucher_year");
             entity.Property(e => e.Email)
                 .HasMaxLength(255)
                 .HasColumnName("email");

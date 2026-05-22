@@ -92,7 +92,8 @@ const BookingListPage = () => {
       dataIndex: 'status',
       render: (status) => {
         if (status === 'CheckedIn') return <Tag color="red">Đang ở</Tag>;
-        if (status === 'Completed') return <Tag color="default">Đã trả phòng</Tag>;
+        if (status === 'PendingCheckout') return <Tag color="orange">Chờ thanh toán</Tag>;
+        if (status === 'Completed') return <Tag color="default">Đã thanh toán</Tag>;
         if (status === 'Cancelled') return <Tag color="default">Đã hủy</Tag>;
         return <Tag color="green">Chờ nhận phòng</Tag>;
       }
@@ -114,8 +115,8 @@ const BookingListPage = () => {
             </Button>
           )}
 
-          {/* Nút Check-out: Chỉ hiện khi đang lưu trú (CheckedIn) */}
-          {record.status === 'CheckedIn' && (
+          {/* Nút Check-out: Hiện khi đang lưu trú hoặc chờ thanh toán */}
+          {(record.status === 'CheckedIn' || record.status === 'PendingCheckout') && (
             <Button 
               size="small" type="primary" danger
               icon={<CheckCircleOutlined />} onClick={() => handleCheckOut(record.id)}
