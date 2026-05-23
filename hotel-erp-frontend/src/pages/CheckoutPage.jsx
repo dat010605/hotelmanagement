@@ -36,7 +36,7 @@ const CheckoutPage = () => {
     const fetchActiveBookings = async () => {
       try {
         const res = await axiosClient.get('/Bookings');
-        const active = res.data.filter(b => b.status === 'CheckedIn');
+        const active = res.data.filter(b => b.status === 'CheckedIn' || b.status === 'PendingCheckout');
         setActiveBookings(active);
       } catch (error) {
         message.error("Lỗi tải danh sách đơn đặt phòng!");
@@ -170,7 +170,7 @@ const CheckoutPage = () => {
       setExtraFees([]);
       try {
         const res = await axiosClient.get('/Bookings');
-        setActiveBookings(res.data.filter(b => b.status === 'CheckedIn'));
+        setActiveBookings(res.data.filter(b => b.status === 'CheckedIn' || b.status === 'PendingCheckout'));
       } catch (_) { }
     } catch (error) {
       const errMsg = error?.response?.data || "Lỗi khi trả phòng!";
@@ -211,7 +211,7 @@ const CheckoutPage = () => {
               >
                 {activeBookings.map(b => (
                   <Option key={b.id} value={b.id}>
-                    {b.bookingCode} - Khách: {b.guestName}
+                    {b.bookingCode} - Khách: {b.guestName} {b.status === 'PendingCheckout' ? ' ⚠️ Yêu cầu trả phòng' : ''}
                   </Option>
                 ))}
               </Select>

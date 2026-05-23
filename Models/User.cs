@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace HotelManagement.API.Models;
@@ -26,6 +26,11 @@ public partial class User
     public DateTime? CreatedAt { get; set; }
 
     public DateOnly? DateOfBirth { get; set; }
+
+    /// <summary>
+    /// Năm đã gửi voucher sinh nhật lần cuối. Dùng để chống bào mã (mỗi năm chỉ gửi 1 lần).
+    /// </summary>
+    public int? LastVoucherYear { get; set; }
 
     public string? Address { get; set; }
 

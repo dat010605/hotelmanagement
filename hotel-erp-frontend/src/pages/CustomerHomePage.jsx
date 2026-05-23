@@ -14,46 +14,6 @@ const { RangePicker } = DatePicker;
 
 const FALLBACK_IMG = 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=600';
 
-// Helper lấy hình ảnh phòng dựa trên tên loại phòng
-const getRoomImage = (room, typeInfo) => {
-  const typeName = (typeInfo.name || typeInfo.Name || '').toLowerCase().trim();
-  const rId = room.roomTypeId || room.RoomTypeId;
-  const imageByTypeName = {
-    'standard':   'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800',
-    'tiêu chuẩn': 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800',
-    'deluxe':     'https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=800',
-    'suite':      'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800',
-    'family':     'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=800',
-    'gia đình':   'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=800',
-    'executive':  'https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?w=800',
-    'villa':      'https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?w=800',
-    'vip':        'https://images.unsplash.com/photo-1505577058444-a3dab90d4253?w=800',
-    'president':  'https://images.unsplash.com/photo-1618221118493-9cfa1a1c00da?w=800',
-    'tổng thống': 'https://images.unsplash.com/photo-1618221118493-9cfa1a1c00da?w=800',
-    'honeymoon':  'https://images.unsplash.com/photo-1595576508898-0ad5c879a061?w=800',
-    'trăng mật':  'https://images.unsplash.com/photo-1595576508898-0ad5c879a061?w=800',
-    'bungalow':   'https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?w=800',
-  };
-  const matchedKey = Object.keys(imageByTypeName).find(k => typeName.includes(k));
-  const fallbackByTypeId = {
-    1: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800',
-    2: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=800',
-    3: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800',
-    4: 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=800',
-    5: 'https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?w=800',
-    6: 'https://images.unsplash.com/photo-1505577058444-a3dab90d4253?w=800',
-    7: 'https://images.unsplash.com/photo-1618221118493-9cfa1a1c00da?w=800',
-    8: 'https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?w=800',
-  };
-  return room.roomImages?.length > 0
-    ? room.roomImages[0].imageUrl
-    : room.RoomImages?.length > 0
-      ? room.RoomImages[0].imageUrl
-      : (matchedKey
-          ? imageByTypeName[matchedKey]
-          : (fallbackByTypeId[rId] || 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=800'));
-};
-
 // ── Dữ liệu tin tức mẫu (sẽ được i18n bên trong component) ────────────────────
 
 // ── Dữ liệu đánh giá mẫu ─────────────────────────────────────────────────────
@@ -149,22 +109,22 @@ const CustomerHomePage = () => {
   const allReviews = useReviewStore(state => state.reviews);
   const reviews = useMemo(() => allReviews.filter(r => !r.isHidden).slice(0, 4), [allReviews]);
 
-  // Lấy danh sách phòng được đặt nhiều nhất
-  const [rooms, setRooms] = useState([]);
+  // Lấy danh sách hạng phòng
   const [roomTypes, setRoomTypes] = useState([]);
   const [loadingRooms, setLoadingRooms] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [roomsRes, typesRes] = await Promise.all([
-          axiosClient.get('/Rooms'),
-          axiosClient.get('/RoomTypes')
-        ]);
-        setRooms(roomsRes.data);
-        setRoomTypes(typesRes.data);
+        const res = await axiosClient.get('/RoomTypes/availability');
+        setRoomTypes(res.data || []);
       } catch (error) {
-        console.error("Error loading data:", error);
+        console.error("Error loading room types:", error);
+        // Fallback to basic endpoint
+        try {
+          const res = await axiosClient.get('/RoomTypes');
+          setRoomTypes(res.data || []);
+        } catch { /* ignore */ }
       } finally {
         setLoadingRooms(false);
       }
@@ -172,21 +132,55 @@ const CustomerHomePage = () => {
     fetchData();
   }, []);
 
-  const popularRooms = useMemo(() => {
-    if (rooms.length === 0 || roomTypes.length === 0) return [];
-    
-    return rooms.slice(0, 4).map((room, index) => {
-      const typeInfo = roomTypes.find(t => t.id === (room.roomTypeId || room.RoomTypeId)) || {};
-      return {
-        ...room,
-        roomTypeName: typeInfo.name || typeInfo.Name || 'Standard',
-        basePrice: typeInfo.basePrice || typeInfo.BasePrice || 500000,
-        imgUrl: getRoomImage(room, typeInfo),
-        bookedCount: 150 + Math.floor(Math.random() * 300), // Số người đã đặt giả lập
-        rating: 4.8 + (Math.random() * 0.2) // Rating giả lập 4.8 -> 5.0
-      };
+  const popularRoomTypes = useMemo(() => {
+    if (roomTypes.length === 0) return [];
+
+    // Map tên hạng phòng → ảnh tĩnh fallback
+    const imageByName = {
+      'standard': 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800',
+      'tiêu chuẩn': 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800',
+      'deluxe': 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=800',
+      'suite': 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800',
+      'hoàng gia': 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800',
+      'family': 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=800',
+      'gia đình': 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=800',
+      'cao cấp': 'https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?w=800',
+      'premium': 'https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?w=800',
+      'villa': 'https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?w=800',
+      'vip': 'https://images.unsplash.com/photo-1505577058444-a3dab90d4253?w=800',
+      'president': 'https://images.unsplash.com/photo-1618221118493-9cfa1a1c00da?w=800',
+      'tổng thống': 'https://images.unsplash.com/photo-1618221118493-9cfa1a1c00da?w=800',
+    };
+    const fallbackById = {
+      1: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800',
+      2: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=800',
+      3: 'https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?w=800',
+      4: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800',
+      5: 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=800',
+      6: 'https://images.unsplash.com/photo-1505577058444-a3dab90d4253?w=800',
+      7: 'https://images.unsplash.com/photo-1618221118493-9cfa1a1c00da?w=800',
+      8: 'https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?w=800',
+    };
+
+    return roomTypes.slice(0, 4).map(rt => {
+      // 1. Ưu tiên: mảng images[] từ Cloudinary — lấy URL hợp lệ đầu tiên
+      let imgUrl = null;
+      if (Array.isArray(rt.images) && rt.images.length > 0) {
+        imgUrl = rt.images.find(url => url && typeof url === 'string' && url.startsWith('http')) || null;
+      }
+      // 2. thumbnailUrl / imageUrl trên entity
+      if (!imgUrl && rt.thumbnailUrl?.startsWith('http')) imgUrl = rt.thumbnailUrl;
+      if (!imgUrl && rt.imageUrl?.startsWith('http')) imgUrl = rt.imageUrl;
+      // 3. Fallback tĩnh theo tên rồi theo ID
+      if (!imgUrl) {
+        const name = (rt.name || '').toLowerCase();
+        const key = Object.keys(imageByName).find(k => name.includes(k));
+        imgUrl = key ? imageByName[key] : (fallbackById[rt.id] || FALLBACK_IMG);
+      }
+
+      return { ...rt, imgUrl, rating: 4.8 + Math.random() * 0.2 };
     });
-  }, [rooms, roomTypes]);
+  }, [roomTypes]);
 
   // State quản lý số phòng và khách
   const [roomGuests, setRoomGuests] = useState([{ id: 1, adults: 2, children: 0 }]);
@@ -218,19 +212,19 @@ const CustomerHomePage = () => {
       {roomGuests.map((room, index) => (
         <div key={room.id} style={{ marginBottom: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, borderBottom: '1px solid #f0f0f0', paddingBottom: 6 }}>
-            <Text strong style={{ color: '#595959' }}>Phòng {index + 1}</Text>
+            <Text strong style={{ color: '#595959' }}>{t('home.roomLabel', { num: index + 1 })}</Text>
             {roomGuests.length > 1 && (
               <span 
                 onClick={() => handleRemoveRoom(room.id)}
                 style={{ color: '#9e6285', cursor: 'pointer', fontSize: 13 }}
               >
-                Xóa phòng
+                {t('home.removeRoom')}
               </span>
             )}
           </div>
           
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <Text style={{ color: '#595959', fontSize: 15 }}>Người lớn</Text>
+            <Text style={{ color: '#595959', fontSize: 15 }}>{t('home.adults')}</Text>
             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
               <Button 
                 shape="square" 
@@ -249,7 +243,7 @@ const CustomerHomePage = () => {
           </div>
           
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text style={{ color: '#595959', fontSize: 15 }}>Trẻ em</Text>
+            <Text style={{ color: '#595959', fontSize: 15 }}>{t('home.children')}</Text>
             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
               <Button 
                 shape="square" 
@@ -272,14 +266,14 @@ const CustomerHomePage = () => {
         onClick={handleAddRoom}
         style={{ color: '#9e6285', cursor: 'pointer', fontSize: 13, display: 'inline-block', marginTop: 4 }}
       >
-        + Thêm phòng
+        {t('home.addRoom')}
       </span>
     </div>
   );
 
   const totalAdults = roomGuests.reduce((sum, r) => sum + r.adults, 0);
   const totalChildren = roomGuests.reduce((sum, r) => sum + r.children, 0);
-  const summaryText = `${totalAdults} Người lớn, ${totalChildren} Trẻ em`;
+  const summaryText = t('home.guestSummary', { adults: totalAdults, children: totalChildren });
 
   const NEWS_DATA = [
     { 
@@ -316,7 +310,7 @@ const CustomerHomePage = () => {
               <RangePicker size="large" bordered={false} style={{ borderBottom: '1px solid #d9d9d9', width: '100%' }} placeholder={[t('home.checkIn'), t('home.checkOut')]} />
             </Col>
             <Col xs={12} md={6}>
-              <Text strong style={{ display: 'block', marginBottom: '8px' }}><TeamOutlined /> Khách và Phòng</Text>
+              <Text strong style={{ display: 'block', marginBottom: '8px' }}><TeamOutlined /> {t('home.guestsAndRooms')}</Text>
               <Popover placement="bottomLeft" content={guestPopoverContent} trigger="click" overlayStyle={{ zIndex: 1050 }}>
                 <div style={{ 
                   borderBottom: '1px solid #d9d9d9', 
@@ -351,14 +345,14 @@ const CustomerHomePage = () => {
           <div>
             <Title level={2} style={{ margin: 0 }}>
               <FireOutlined style={{ color: '#fa541c', marginRight: 8 }} />
-              {t('offersPage.popularTitle') || 'Phòng Được Đặt Nhiều Nhất'}
+              {t('offersPage.popularTitle')}
             </Title>
             <p style={{ color: '#595959', fontSize: 15, margin: '8px 0 0' }}>
-              {t('offersPage.popularSubtitle') === 'offersPage.popularSubtitle' ? 'Những căn phòng được quý khách hàng yêu thích và săn đón nhiều nhất trong tháng này' : t('offersPage.popularSubtitle')}
+              {t('offersPage.popularSubtitle')}
             </p>
           </div>
           <Button type="primary" size="large" onClick={() => navigate('/rooms')} style={{ borderRadius: 8, background: '#c9a961', borderColor: '#c9a961' }}>
-            {t('offersPage.viewAllRooms') || 'Xem Tất Cả'} <ArrowRightOutlined />
+            {t('offersPage.viewAllRooms')} <ArrowRightOutlined />
           </Button>
         </div>
 
@@ -366,30 +360,30 @@ const CustomerHomePage = () => {
           <div style={{ textAlign: 'center', padding: '60px 0' }}><Spin size="large" /></div>
         ) : (
           <Row gutter={[24, 24]}>
-            {popularRooms.map(room => (
-              <Col xs={24} sm={12} md={12} lg={6} key={room.id}>
-                <Badge.Ribbon text={t('offersPage.bestSeller') || 'Bán Chạy'} color="red">
+            {popularRoomTypes.map(rt => (
+              <Col xs={24} sm={12} md={12} lg={6} key={rt.id}>
+                <Badge.Ribbon text={t('offersPage.bestSeller')} color="gold">
                   <Card
                     hoverable
-                    cover={<img alt={room.roomNumber} src={room.imgUrl} onError={(e) => { e.target.src = FALLBACK_IMG; }} style={{ height: 200, objectFit: 'cover' }} />}
+                    cover={<img alt={rt.name} src={rt.imgUrl} onError={(e) => { e.target.src = FALLBACK_IMG; }} style={{ height: 200, objectFit: 'cover' }} />}
                     style={{ borderRadius: '12px', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}
                     bodyStyle={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 20 }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8, gap: 8 }}>
-                      <Tag color="blue" style={{ whiteSpace: 'normal', height: 'auto', padding: '2px 8px', flex: 1 }}>{room.roomTypeName}</Tag>
-                      <Text strong style={{ color: '#faad14', flexShrink: 0, marginTop: 2 }}><StarFilled /> {room.rating.toFixed(1)}</Text>
+                      <Tag color="geekblue" style={{ whiteSpace: 'normal', height: 'auto', padding: '2px 8px', flex: 1 }}>{rt.name}</Tag>
+                      <Text strong style={{ color: '#faad14', flexShrink: 0, marginTop: 2 }}><StarFilled /> {rt.rating.toFixed(1)}</Text>
                     </div>
-                    <Title level={4} style={{ marginBottom: 4 }}>{t('offersPage.room') || 'Phòng'} {room.roomNumber}</Title>
+                    <Title level={4} style={{ marginBottom: 4 }}>{rt.name}</Title>
                     <Text type="secondary" style={{ fontSize: 13, display: 'block', marginBottom: 16 }}>
-                      🔥 {t('offersPage.bookedThisMonth', { count: room.bookedCount }) || `${room.bookedCount} khách đặt tháng này`}
+                      {rt.availableRooms != null ? t('home.roomAvailable', { count: rt.availableRooms }) : (rt.description || t('home.roomLuxury'))}
                     </Text>
                     
                     <div style={{ marginTop: 'auto', paddingTop: 16, borderTop: '1px solid #f0f0f0' }}>
                       <Text type="danger" strong style={{ fontSize: '1.2rem' }}>
-                        {room.basePrice.toLocaleString('vi-VN')} {t('offersPage.perNight') || 'đ / Đêm'}
+                        {(rt.basePrice || 0).toLocaleString('vi-VN')} {t('offersPage.perNight')}
                       </Text>
-                      <Button type="primary" block style={{ marginTop: 12, borderRadius: 6, background: '#1890ff', borderColor: '#1890ff' }} onClick={() => navigate('/rooms')}>
-                        {t('offersPage.bookNow') || 'Đặt Ngay'}
+                      <Button type="primary" block style={{ marginTop: 12, borderRadius: 6, background: '#c9a961', borderColor: '#c9a961' }} onClick={() => navigate('/rooms')}>
+                        {t('offersPage.bookNow')}
                       </Button>
                     </div>
                   </Card>
@@ -460,7 +454,7 @@ const CustomerHomePage = () => {
                   </p>
                   <div style={{ display: 'flex', gap: '10px', marginTop: 'auto' }}>
                     <Button type="primary" ghost style={{ borderRadius: '6px' }} onClick={() => setSelectedDetail(item)}>
-                      {t('viewDetails')} <ArrowRightOutlined />
+                      {t('common.viewDetails')} <ArrowRightOutlined />
                     </Button>
                     {item.lat && item.lng && (
                       <Button 
@@ -485,7 +479,7 @@ const CustomerHomePage = () => {
             onClick={() => navigate('/attractions')} 
             style={{ borderRadius: '8px', padding: '0 32px', background: '#fff', color: '#333', borderColor: '#d9d9d9', fontWeight: 500 }}
           >
-            Xem thêm
+            {t('home.viewMore')}
           </Button>
         </div>
       </div>
@@ -611,12 +605,12 @@ const CustomerHomePage = () => {
 
       {/* ── NEWS MODAL ────────────────────────────────────────────────────── */}
       <Modal
-        title={selectedNews?.title || 'Chi tiết tin tức'}
+        title={selectedNews?.title || t('home.newsDetail')}
         open={!!selectedNews}
         onCancel={() => setSelectedNews(null)}
         footer={[
           <Button key="close" type="primary" onClick={() => setSelectedNews(null)} style={{ borderRadius: '8px' }}>
-            Đóng
+            {t('common.close')}
           </Button>
         ]}
         width={700}

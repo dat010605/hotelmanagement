@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Form, Input, Button, Card, App, Typography, Divider } from 'antd';
-import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons';
+import { Form, Input, Button, Card, App, Typography, Divider, DatePicker } from 'antd';
+import { UserOutlined, LockOutlined, MailOutlined, CalendarOutlined } from '@ant-design/icons';
 import { useNavigate, Link } from 'react-router-dom';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import axiosClient from '../api/axiosClient';
@@ -23,7 +23,8 @@ const RegisterPage = () => {
       await axiosClient.post('/Auth/register', {
         fullName: values.fullName,
         email: values.email,
-        password: values.password
+        password: values.password,
+        dateOfBirth: values.dateOfBirth ? values.dateOfBirth.format('YYYY-MM-DD') : null
       });
       notification.success({
         message: 'Đăng ký thành công!',
@@ -100,6 +101,10 @@ const RegisterPage = () => {
 
           <Form.Item name="email" validateTrigger="onSubmit" rules={[{ required: true, message: 'Vui lòng nhập Email!' }, { type: 'email', message: 'Email không hợp lệ!' }]} style={{ marginBottom: 15 }}>
             <Input prefix={<MailOutlined style={{ fontSize: '20px', color: '#90949c', marginRight: 8 }} />} placeholder="Email" size="large" style={bigInputStyle} />
+          </Form.Item>
+
+          <Form.Item name="dateOfBirth" label={<span style={{ fontWeight: 500 }}>Ngày sinh <Text type="secondary" style={{ fontWeight: 400 }}>(để nhận voucher sinh nhật)</Text></span>} style={{ marginBottom: 15 }}>
+            <DatePicker size="large" style={{ ...bigInputStyle, width: '100%' }} placeholder="Chọn ngày sinh" format="DD/MM/YYYY" suffixIcon={<CalendarOutlined style={{ color: '#c9a961' }} />} />
           </Form.Item>
 
           <Form.Item name="password" rules={[{ required: true, message: 'Vui lòng nhập Mật khẩu!' }]} style={{ marginBottom: 15 }}>

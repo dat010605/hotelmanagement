@@ -69,19 +69,16 @@ builder.Services.AddDbContext<AppDbContext>((sp, options) =>
            .AddInterceptors(interceptor);
 });
 
-var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() 
-                     ?? new[] { 
-                         "http://localhost:5173", 
-                         "http://localhost:5174", 
-                         "http://localhost:5175", 
-                         "http://localhost:5176" 
-                     };
-
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReact", builder =>
     {
-        builder.WithOrigins(allowedOrigins)
+        builder.WithOrigins(
+                    "http://localhost:5173",
+                    "http://localhost:5174",
+                    "http://localhost:5175",
+                    "http://localhost:5176"
+                ) // Địa chỉ của React FE (Vite tự tăng port khi bị chiếm)
                .AllowAnyHeader()
                .AllowAnyMethod()
                .AllowCredentials(); // BẮT BUỘC PHẢI CÓ DÒNG NÀY CHO SIGNALR

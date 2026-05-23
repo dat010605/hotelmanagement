@@ -217,19 +217,22 @@ const CustomerLayout = () => {
 
   return (
     <Layout style={{ minHeight: '100vh', background: '#f5f5f5' }}>
-      {/* ── Header thống nhất giống trang chủ (dark style) ──────────── */}
-      {!isHomePage && (
-        <header style={{
+      {/* ── Header thống nhất — hiển thị trên mọi trang ──────────── */}
+      <header style={{
           position: 'sticky',
           top: 0,
+          left: 0,
+          width: '100%',
           zIndex: 999,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '16px 48px',
-          background: 'rgba(10, 10, 26, 0.95)',
-          backdropFilter: 'blur(12px)',
+          margin: 0,
+          background: 'rgba(10, 10, 26, 0.97)',
+          backdropFilter: 'blur(16px)',
           boxShadow: '0 2px 24px rgba(0,0,0,0.3)',
+          boxSizing: 'border-box',
         }}>
           {/* Logo */}
           <div
@@ -328,7 +331,6 @@ const CustomerLayout = () => {
             {mobileOpen ? <CloseOutlined /> : <MenuOutlined />}
           </button>
         </header>
-      )}
 
       {/* Mobile nav overlay */}
       {mobileOpen && <div className="layout-mobile-overlay" onClick={() => setMobileOpen(false)} />}
@@ -408,9 +410,9 @@ const CustomerLayout = () => {
           <div style={{ width: 40, height: 1, background: '#c9a961', margin: '12px auto 24px' }} />
           
           <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem', marginBottom: 24, lineHeight: 1.8 }}>
-            <p style={{ margin: 0 }}><strong>Dương Duy Khánh</strong> | Email: <a href="mailto:duongduykhanh06072005@gmail.com" style={{ color: '#c9a961', textDecoration: 'none' }}>duongduykhanh06072005@gmail.com</a></p>
+            <p style={{ margin: 0 }}><strong>The Royal Citadel</strong> | Email: <a href="mailto:hotelnhuongnguoiban@gmail.com" style={{ color: '#c9a961', textDecoration: 'none' }}>hotelnhuongnguoiban@gmail.com</a></p>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 8 }}>
-              <span>Tìm kiếm chúng tôi trên facebook:</span>
+              <span>{t('footer.findUsOn')}</span>
               <a href="https://www.facebook.com/profile.php?id=61589457996947" target="_blank" rel="noopener noreferrer" style={{ color: '#1877f2', fontSize: 24, display: 'flex' }}>
                 <FacebookFilled />
               </a>

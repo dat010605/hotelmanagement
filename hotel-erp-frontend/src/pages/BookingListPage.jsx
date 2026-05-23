@@ -63,6 +63,25 @@ const BookingListPage = () => {
     }
   };
 
+  const handleCheckOut = (bookingId) => {
+    Modal.confirm({
+      title: 'Xác nhận Trả phòng (Check-out)',
+      content: 'Bạn có chắc chắn làm thủ tục trả phòng? Các phòng sẽ chuyển sang trạng thái bảo trì/dọn dẹp.',
+      okText: 'Xác nhận trả phòng',
+      okType: 'danger',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          await axiosClient.patch(`/Bookings/${bookingId}/checkout`);
+          message.success('Trả phòng thành công!');
+          fetchBookings();
+        } catch (error) {
+          message.error(error.response?.data || 'Lỗi khi trả phòng!');
+        }
+      }
+    });
+  };
+
   const columns = [
     { title: 'Mã đơn', dataIndex: 'bookingCode', render: (code) => <b>{code}</b> },
     { title: 'Khách hàng', dataIndex: 'guestName', render: (name) => <span style={{ color: '#1890ff', fontWeight: 'bold' }}>{name}</span> },
@@ -73,7 +92,8 @@ const BookingListPage = () => {
       dataIndex: 'status',
       render: (status) => {
         if (status === 'CheckedIn') return <Tag color="red">Đang ở</Tag>;
-        if (status === 'Completed') return <Tag color="default">Đã trả phòng</Tag>;
+        if (status === 'PendingCheckout') return <Tag color="orange">Chờ thanh toán</Tag>;
+        if (status === 'Completed') return <Tag color="default">Đã thanh toán</Tag>;
         if (status === 'Cancelled') return <Tag color="default">Đã hủy</Tag>;
         return <Tag color="green">Chờ nhận phòng</Tag>;
       }
@@ -83,15 +103,25 @@ const BookingListPage = () => {
       align: 'center',
       render: (_, record) => (
         <Space>
-          {/*  Nút Chi tiết nay đã có linh hồn */}
           <Button size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record.id)}>Chi tiết</Button>
           
+          {/* Nút Check-in: Chỉ hiện khi chưa Check-in */}
           {record.status !== 'CheckedIn' && record.status !== 'Cancelled' && record.status !== 'Completed' && record.status !== 'Paid' && (
             <Button 
               size="small" type="primary" style={{ backgroundColor: '#52c41a' }}
               icon={<CheckCircleOutlined />} onClick={() => handleCheckIn(record.id)}
             >
               Check-in
+            </Button>
+          )}
+
+          {/* Nút Check-out: Hiện khi đang lưu trú hoặc chờ thanh toán */}
+          {(record.status === 'CheckedIn' || record.status === 'PendingCheckout') && (
+            <Button 
+              size="small" type="primary" danger
+              icon={<CheckCircleOutlined />} onClick={() => handleCheckOut(record.id)}
+            >
+              Trả phòng
             </Button>
           )}
         </Space>

@@ -47,7 +47,8 @@ namespace HotelManagement.API.Controllers
                 Email = request.Email,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
                 RoleId = GuestRole.Id,
-                Status = true
+                Status = true,
+                DateOfBirth = !string.IsNullOrEmpty(request.DateOfBirth) && DateOnly.TryParse(request.DateOfBirth, out var dob) ? dob : null
             };
 
             _context.Users.Add(newUser);
@@ -62,32 +63,48 @@ namespace HotelManagement.API.Controllers
         [HttpPost("Login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            var user = await _context.Users.Include(u => u.Role)
+            var user = await _context.Users
+                                     .Include(u => u.Role).ThenInclude(r => r.Permissions)
                                      .FirstOrDefaultAsync(u => u.Email == request.Email && u.Status == true);
 
             if (user == null)
                 return Unauthorized(new { message = "Email không tồn tại hoặc tài khoản bị khóa." });
 
-            bool isPasswordValid = false;
+            // Xác thực mật khẩu: hỗ trợ cả BCrypt hash lẫn plain text (tài khoản cũ từ seed.sql)
+            bool isPasswordValid;
             if (user.PasswordHash.StartsWith("$"))
             {
+                // Mật khẩu đã được mã hóa BCrypt → verify bằng BCrypt
                 isPasswordValid = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
             }
             else
             {
+                // Mật khẩu cũ lưu dạng plain text → so sánh trực tiếp
                 isPasswordValid = (user.PasswordHash == request.Password);
+
+                // Auto-migrate: Nếu đúng, tự động mã hóa lại bằng BCrypt cho lần sau
+                // Dùng ExecuteUpdate để CHỈ update cột password_hash, tránh lỗi NOT NULL ở các cột khác
+                if (isPasswordValid)
+                {
+                    var hashedPassword = BCrypt.Net.BCrypt.HashPassword(request.Password);
+                    await _context.Users
+                        .Where(u => u.Id == user.Id)
+                        .ExecuteUpdateAsync(s => s.SetProperty(u => u.PasswordHash, hashedPassword));
+                }
             }
 
             if (!isPasswordValid)
                 return Unauthorized(new { message = "Mật khẩu không đúng." });
 
             var token = GenerateJwtToken(user);
+            var permissions = user.Role?.Permissions?.Select(p => p.Name).ToList() ?? new List<string>();
             
             // Trả về đúng format để Frontend không bị sập
             return Ok(new
             {
                 message = "Đăng nhập thành công",
                 token = token,
+                permissions = permissions,
                 user = new
                 {
                     id = user.Id,
@@ -98,6 +115,27 @@ namespace HotelManagement.API.Controllers
                 }
             });
         }
+
+        // ====================================================
+        // 2b. LẤY PERMISSIONS CỦA USER HIỆN TẠI (dùng để reload sidebar khi quyền thay đổi)
+        // ====================================================
+        [HttpGet("my-permissions")]
+        [Microsoft.AspNetCore.Authorization.Authorize]
+        public async Task<IActionResult> GetMyPermissions()
+        {
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userIdClaim == null) return Unauthorized();
+
+            var user = await _context.Users
+                .Include(u => u.Role).ThenInclude(r => r.Permissions)
+                .FirstOrDefaultAsync(u => u.Id.ToString() == userIdClaim);
+
+            if (user == null) return NotFound();
+
+            var permissions = user.Role?.Permissions?.Select(p => p.Name).ToList() ?? new List<string>();
+            return Ok(new { permissions });
+        }
+
 
         // ====================================================
         // 3. REFRESH TOKEN 

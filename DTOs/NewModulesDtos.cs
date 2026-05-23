@@ -20,7 +20,7 @@ namespace HotelManagement.API.DTOs
     public class UpdateRoomInventoryDto { public bool IsAvailable { get; set; } }
 
     // DTOs cho UserProfile
-    public class UpdateProfileDto { public string FullName { get; set; } = null!; public string? Phone { get; set; } }
+    public class UpdateProfileDto { public string FullName { get; set; } = null!; public string? Phone { get; set; } public string? DateOfBirth { get; set; } }
     
     // ĐÃ XÓA BẢN TRÙNG Ở ĐÂY - CHỈ GIỮ LẠI BẢN DƯỚI ĐÂY
     public class ChangePasswordDto

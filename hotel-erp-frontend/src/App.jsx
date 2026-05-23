@@ -15,6 +15,7 @@ import CustomerServicesPage from './pages/CustomerServicesPage';
 import CustomerAttractionsPage from './pages/CustomerAttractionsPage';
 import CustomerContactPage from './pages/CustomerContactPage';
 import CustomerBookingHistoryPage from './pages/CustomerBookingHistoryPage';
+import CustomerCheckoutPage from './pages/CustomerCheckoutPage';
 import RoleGuard from './routes/RoleGuard';
 import RoomGridPage from './pages/RoomGridPage';
 import CheckoutPage from './pages/CheckoutPage';
@@ -83,6 +84,7 @@ function App() {
               <Route path="/reviews" element={<CustomerReviewsPage />} />
               <Route path="/offers" element={<CustomerOffersPage />} />
               <Route path="/my-bookings" element={<CustomerBookingHistoryPage />} />
+              <Route path="/customer-checkout/:bookingId" element={<CustomerCheckoutPage />} />
             </Route>
 
             {/* ADMIN ROUTES - ProtectedRoute chặn Guest, RoleGuard phân quyền chi tiết */}
@@ -96,8 +98,8 @@ function App() {
                   <Route path="/admin/dashboard" element={<DashboardPage />} />
                 </Route>
 
-                {/* Quản lý Quỹ Phòng - Chỉ Admin & Manager */}
-                <Route element={<RoleGuard allowedRoles={[]} />}>
+                {/* Quản lý Quỹ Phòng - Admin, Manager & Lễ tân */}
+                <Route element={<RoleGuard allowedRoles={['receptionist', 'lễ tân']} />}>
                   <Route path="/admin/rooms" element={<RoomManagementPage />} />
                 </Route>
 

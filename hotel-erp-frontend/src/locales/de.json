@@ -9,10 +9,8 @@
     "adminPanel": "Admin-Bereich", "guest": "Gast"
   },
   "hero": {
-    "tagline1": "Manche Orte besucht man.",
-    "tagline2": "Andere",
-    "taglineHighlight": "fühlt man.",
-    "subtitle": "EINE WELT ZEITLOSEN LUXUS AN DER VIETNAMESISCHEN KÜSTE",
+    "heading": "Wo Erbe auf exklusiven Luxus trifft.",
+    "subtitle": "EIN INTERNATIONALES MEISTERWERK DES LUXUS AN DER VIETNAMESISCHEN KÜSTE",
     "exploreRooms": "Zimmer entdecken"
   },
   "footer": { "copyright": "© 2026 The Royal Citadel. Wo große Momente bewahrt werden." },
@@ -226,6 +224,18 @@
     "svc5Full": "Limousine & Transfers – Reisen Sie stilvoll, würdig des The Royal Citadel.",
     "svc6Desc": "Ein Konferenzzentrum mit 5 Räumen für 10-500 Gäste, modernster AV-Technik und luxuriösen Hochzeitsservices.",
     "svc6Full": "Business & Events Center – Der perfekte Raum für jeden Anlass."
+  },
+
+  "offersPage": {
+    "title": "Exklusive Angebote",
+    "subtitle": "Entdecken Sie exklusive Aktionen und maßgeschneiderte Pakete von The Royal Citadel.",
+    "bookNow": "Jetzt Buchen",
+    "popularTitle": "Beliebteste Zimmerkategorien",
+    "popularSubtitle": "Die von unseren Gästen am meisten geschätzten Luxuskategorien",
+    "viewAllRooms": "Alle Kategorien Anzeigen",
+    "bestSeller": "Beliebt",
+    "bookedThisMonth": "{{count}} Buchungen diesen Monat",
+    "perNight": "₫ / Nacht",
+    "room": "Kategorie"
   }
 }
-

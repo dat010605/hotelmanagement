@@ -96,6 +96,58 @@ namespace HotelManagement.API.Controllers
 
             return Ok(new { message = "Xóa hạng phòng thành công!" });
         }
+
+        // ====================================================
+        // 6. GET /api/RoomTypes/availability — Lấy hạng phòng + số lượng phòng trống
+        // ====================================================
+        [HttpGet("availability")]
+        public async Task<IActionResult> GetAvailability([FromQuery] DateTime? checkIn, [FromQuery] DateTime? checkOut)
+        {
+            bool hasDateFilter = checkIn.HasValue && checkOut.HasValue;
+            var ci = checkIn ?? DateTime.Today;
+            var co = checkOut ?? DateTime.Today.AddDays(1);
+
+            var busyRoomIds = hasDateFilter
+                ? await _context.BookingDetails
+                    .Include(bd => bd.Booking)
+                    .Where(bd => bd.CheckInDate < co && bd.CheckOutDate > ci
+                                 && bd.Booking != null && bd.Booking.Status != "Cancelled"
+                                 && bd.RoomId != null)
+                    .Select(bd => (int)bd.RoomId!)
+                    .Distinct()
+                    .ToListAsync()
+                : new List<int>();
+
+            var roomTypes = await _context.RoomTypes
+                .Where(rt => rt.IsActive != false)
+                .Select(rt => new
+                {
+                    rt.Id,
+                    rt.Name,
+                    rt.BasePrice,
+                    rt.CapacityAdults,
+                    rt.CapacityChildren,
+                    rt.Description,
+                    rt.SizeSqm,
+                    rt.BedType,
+                    rt.ViewType,
+                    TotalRooms = rt.Rooms.Count(r => r.Status != "Maintenance"),
+                    AvailableRooms = hasDateFilter
+                        ? rt.Rooms.Count(r => !busyRoomIds.Contains(r.Id) && r.Status != "Maintenance")
+                        : -1, // -1 = chưa lọc ngày, frontend hiển thị "Chọn ngày để xem"
+                    HasDateFilter = hasDateFilter,
+                    Images = rt.RoomImages
+                        .Where(img => img.IsActive != false)
+                        .OrderByDescending(img => img.IsPrimary)
+                        .Select(img => img.ImageUrl)
+                        .ToList(),
+                    Amenities = rt.Amenities.Select(a => a.Name).ToList()
+                })
+                .OrderBy(rt => rt.BasePrice)
+                .ToListAsync();
+
+            return Ok(roomTypes);
+        }
         // ... (Code hiện tại) ...
 
 // ==========================================
