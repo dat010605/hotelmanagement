@@ -1,9 +1,9 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Row, Col, Card, Typography, Button, Input, DatePicker, InputNumber, Rate, Avatar, Tag, Divider, Modal, Carousel, Popover, Badge, Spin } from 'antd';
-import { EnvironmentOutlined, ArrowRightOutlined, SearchOutlined, CalendarOutlined, TeamOutlined, TagOutlined, ReadOutlined, UserOutlined, StarFilled, ClockCircleOutlined, LeftOutlined, RightOutlined, MinusOutlined, PlusOutlined, FireOutlined } from '@ant-design/icons';
+import { EnvironmentOutlined, ArrowRightOutlined, SearchOutlined, CalendarOutlined, TeamOutlined, TagOutlined, ReadOutlined, UserOutlined, StarFilled, ClockCircleOutlined, LeftOutlined, RightOutlined, MinusOutlined, PlusOutlined, FireOutlined, CompassOutlined, CarOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useAttractionsStore } from '../store/useAttractionsStore';
+import { LOCAL_GUIDES_DATA } from './CustomerAttractionsPage';
 import { useReviewStore } from '../store/useReviewStore';
 import FreeMap from '../components/FreeMap';
 import HeroSection from '../components/HeroSection';
@@ -99,8 +99,24 @@ const ReviewCard = ({ review }) => (
 
 // ── Trang chủ chính ───────────────────────────────────────────────────────────
 const CustomerHomePage = () => {
-  const { attractions } = useAttractionsStore();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language?.startsWith('vi') ? 'vi' : 'en';
+
+  const resolveItem = (item) => {
+    if (!item) return {};
+    const title   = item.titleKey   ? t(item.titleKey)   : (lang === 'vi' ? item.title_vi   : item.title_en)   || item.title_vi;
+    const desc    = item.descKey    ? t(item.descKey)    : (lang === 'vi' ? item.desc_vi    : item.desc_en)    || item.desc_vi;
+    const category = item.categoryKey ? t(item.categoryKey) : (lang === 'vi' ? item.category : item.category);
+    const tags    = item.tagsKey    ? t(item.tagsKey, { returnObjects: true }) : (lang === 'vi' ? item.tags_vi : item.tags_en) || item.tags_vi || [];
+    const duration = item.durationKey ? t(item.durationKey) : (lang === 'vi' ? item.duration_vi : item.duration_en) || item.duration_vi;
+    
+    const fullContent = item.content_vi || item.content_en 
+      ? (lang === 'vi' ? item.content_vi : item.content_en)
+      : (item.fullContentKey ? t(item.fullContentKey) : (lang === 'vi' ? item.desc_vi : item.desc_en) || '');
+      
+    return { ...item, resolvedTitle: title, resolvedDesc: desc, resolvedCategory: category, resolvedTags: Array.isArray(tags) ? tags : [], resolvedDuration: duration, resolvedFullContent: fullContent };
+  };
+
   const navigate = useNavigate();
   const [selectedMap, setSelectedMap] = useState(null);
   const [selectedDetail, setSelectedDetail] = useState(null);
@@ -426,50 +442,53 @@ const CustomerHomePage = () => {
               { breakpoint: 600, settings: { slidesToShow: 1 } }
             ]}
           >
-            {attractions.map((item) => (
-              <div key={item.id} style={{ padding: '0 12px' }}>
-                <Card
-                  hoverable
-                  style={{ borderRadius: '12px', overflow: 'hidden', display: 'flex', flexDirection: 'column', margin: '0 12px 16px' }}
-                  cover={
-                    <div style={{ overflow: 'hidden', height: '200px' }}>
-                      <img
-                        alt={item.title}
-                        src={item.img}
-                        onError={(e) => { e.target.src = FALLBACK_IMG; }}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s' }}
-                        onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-                        onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                      />
-                    </div>
-                  }
-                  bodyStyle={{ display: 'flex', flexDirection: 'column', height: '160px' }}
-                >
-                  <Title level={4} style={{ marginBottom: '12px' }}>
-                    <EnvironmentOutlined style={{ color: '#1890ff', marginRight: '8px' }} />
-                    {item.title}
-                  </Title>
-                  <p style={{ color: '#595959', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', margin: 0, marginBottom: '16px' }}>
-                    {item.desc || ''}
-                  </p>
-                  <div style={{ display: 'flex', gap: '10px', marginTop: 'auto' }}>
-                    <Button type="primary" ghost style={{ borderRadius: '6px' }} onClick={() => setSelectedDetail(item)}>
-                      {t('common.viewDetails')} <ArrowRightOutlined />
-                    </Button>
-                    {item.lat && item.lng && (
-                      <Button 
-                        type="default" 
-                        onClick={() => setSelectedMap(item)} 
-                        icon={<EnvironmentOutlined />} 
-                        style={{ borderRadius: '6px', color: '#52c41a', borderColor: '#52c41a' }}
-                      >
-                        {t('common.map')}
+            {LOCAL_GUIDES_DATA.map((rawItem) => {
+              const item = resolveItem(rawItem);
+              return (
+                <div key={item.id} style={{ padding: '0 12px' }}>
+                  <Card
+                    hoverable
+                    style={{ borderRadius: '12px', overflow: 'hidden', display: 'flex', flexDirection: 'column', margin: '0 12px 16px' }}
+                    cover={
+                      <div style={{ overflow: 'hidden', height: '200px' }}>
+                        <img
+                          alt={item.resolvedTitle}
+                          src={item.img}
+                          onError={(e) => { e.target.src = FALLBACK_IMG; }}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s' }}
+                          onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                          onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                        />
+                      </div>
+                    }
+                    bodyStyle={{ display: 'flex', flexDirection: 'column', height: '160px' }}
+                  >
+                    <Title level={4} style={{ marginBottom: '12px' }}>
+                      <EnvironmentOutlined style={{ color: '#1890ff', marginRight: '8px' }} />
+                      {item.resolvedTitle}
+                    </Title>
+                    <p style={{ color: '#595959', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', margin: 0, marginBottom: '16px' }}>
+                      {item.resolvedDesc || ''}
+                    </p>
+                    <div style={{ display: 'flex', gap: '10px', marginTop: 'auto' }}>
+                      <Button type="primary" ghost style={{ borderRadius: '6px' }} onClick={() => setSelectedDetail(rawItem)}>
+                        {t('common.viewDetails')} <ArrowRightOutlined />
                       </Button>
-                    )}
-                  </div>
-                </Card>
-              </div>
-            ))}
+                      {item.lat && item.lng && (
+                        <Button 
+                          type="default" 
+                          onClick={() => setSelectedMap(item)} 
+                          icon={<EnvironmentOutlined />} 
+                          style={{ borderRadius: '6px', color: '#52c41a', borderColor: '#52c41a' }}
+                        >
+                          {t('common.map')}
+                        </Button>
+                      )}
+                    </div>
+                  </Card>
+                </div>
+              );
+            })}
           </Carousel>
         </div>
         <div style={{ textAlign: 'center', marginTop: 32 }}>
@@ -574,33 +593,51 @@ const CustomerHomePage = () => {
       </Modal>
 
       <Modal
-        title={selectedDetail?.title || t('viewDetails')}
+        title={selectedDetail ? resolveItem(selectedDetail).resolvedTitle : t('viewDetails')}
         open={!!selectedDetail}
         onCancel={() => setSelectedDetail(null)}
         footer={null}
-        width={700}
+        width={720}
         centered
         destroyOnClose
       >
-        {selectedDetail && (
-          <div>
-            <div style={{ width: '100%', height: '350px', borderRadius: '8px', overflow: 'hidden', marginBottom: '20px' }}>
-              <img 
-                src={selectedDetail.img} 
-                alt={selectedDetail.title} 
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                onError={(e) => { e.target.src = FALLBACK_IMG; }}
-              />
+        {selectedDetail && (() => {
+          const resolved = resolveItem(selectedDetail);
+          return (
+            <div>
+              <div style={{ width: '100%', height: '350px', borderRadius: '8px', overflow: 'hidden', marginBottom: '20px' }}>
+                <img 
+                  src={resolved.img} 
+                  alt={resolved.resolvedTitle} 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                  onError={(e) => { e.target.src = FALLBACK_IMG; }}
+                />
+              </div>
+              <Title level={3} style={{ color: '#1890ff', marginBottom: '16px' }}>
+                <EnvironmentOutlined style={{ marginRight: '8px' }} />
+                {resolved.resolvedTitle}
+              </Title>
+              <div 
+                style={{ 
+                  maxHeight: "350px", 
+                  overflowY: "auto", 
+                  paddingRight: "12px", 
+                  scrollbarWidth: "thin", 
+                  scrollbarColor: "#c9a961 #f5f5f5"
+                }}
+              >
+                {typeof resolved.resolvedFullContent === 'string' ? (
+                  <div 
+                    style={{ fontSize: '1.05rem', lineHeight: 1.8, color: '#333', textAlign: 'justify' }}
+                    dangerouslySetInnerHTML={{ __html: resolved.resolvedFullContent }}
+                  />
+                ) : (
+                  resolved.resolvedFullContent
+                )}
+              </div>
             </div>
-            <Title level={3} style={{ color: '#1890ff', marginBottom: '16px' }}>
-              <EnvironmentOutlined style={{ marginRight: '8px' }} />
-              {selectedDetail.title}
-            </Title>
-            <p style={{ fontSize: '1.05rem', lineHeight: 1.8, color: '#333' }}>
-              {selectedDetail.desc}
-            </p>
-          </div>
-        )}
+          );
+        })()}
       </Modal>
 
       {/* ── NEWS MODAL ────────────────────────────────────────────────────── */}

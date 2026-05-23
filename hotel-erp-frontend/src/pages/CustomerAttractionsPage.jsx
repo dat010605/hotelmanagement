@@ -13,7 +13,7 @@ const { Title, Paragraph, Text } = Typography;
 const FALLBACK_IMG = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600';
 
 // Style tiện ích dùng chung cho các đoạn văn blog để code gọn gàng hơn
-const blogContainerStyle = {
+export const blogContainerStyle = {
   display: 'flex',
   flexDirection: 'column',
   gap: '16px',
@@ -23,7 +23,7 @@ const blogContainerStyle = {
   fontSize: '0.95rem'
 };
 
-const blogHeadingStyle = {
+export const blogHeadingStyle = {
   fontWeight: 'bold',
   fontSize: '1.25rem',
   color: '#1a1a1a',
@@ -34,7 +34,7 @@ const blogHeadingStyle = {
 };
 
 // ── Data tĩnh (LOCAL_GUIDES_DATA) chứa blog chi tiết dạng JSX cho các địa điểm TP.HCM ──
-const LOCAL_GUIDES_DATA = [
+export const LOCAL_GUIDES_DATA = [
   { id: 'g1', titleKey: 'attractionsPage.hoian_title', categoryKey: 'explore.catHeritage', descKey: 'attractionsPage.hoian_desc', fullContentKey: 'attractionsPage.hoian_full', img: 'https://images.unsplash.com/photo-1679033932050-831ace7a226f?w=800&q=80', distance: '5 km', durationKey: 'attractionsPage.hoian_duration', rating: 4.9, tagsKey: 'attractionsPage.hoian_tags', mapUrl: '', location: 'Đà Nẵng', lat: 15.8801, lng: 108.3380 },
   { id: 'g2', titleKey: 'attractionsPage.bana_title', categoryKey: 'explore.catEntertainment', descKey: 'attractionsPage.bana_desc', fullContentKey: 'attractionsPage.bana_full', img: 'https://images.unsplash.com/photo-1663684591502-93887202a863?w=800&q=80', distance: '25 km', durationKey: 'attractionsPage.bana_duration', rating: 4.8, tagsKey: 'attractionsPage.bana_tags', mapUrl: '', location: 'Đà Nẵng', lat: 15.9961, lng: 107.9880 },
   { id: 'g3', titleKey: 'attractionsPage.mykhe_title', categoryKey: 'explore.catNature', descKey: 'attractionsPage.mykhe_desc', fullContentKey: 'attractionsPage.mykhe_full', img: 'https://images.unsplash.com/photo-1723142282970-1fd415eec1ad?w=800&q=80', distance: '1 km', durationKey: 'attractionsPage.mykhe_duration', rating: 4.7, tagsKey: 'attractionsPage.mykhe_tags', mapUrl: '', location: 'Đà Nẵng', lat: 16.0610, lng: 108.2483 },
