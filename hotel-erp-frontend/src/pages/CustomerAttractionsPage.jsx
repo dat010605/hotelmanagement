@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Typography, Row, Col, Card, Tag, Button, Rate, Modal, Input, Divider, Popover, Spin, message } from 'antd';
 import {
   EnvironmentOutlined, ArrowRightOutlined, SearchOutlined,
@@ -18,11 +18,251 @@ const LOCAL_GUIDES_DATA = [
   { id: 'g2', titleKey: 'attractionsPage.bana_title', categoryKey: 'explore.catEntertainment', descKey: 'attractionsPage.bana_desc', fullContentKey: 'attractionsPage.bana_full', img: 'https://images.unsplash.com/photo-1663684591502-93887202a863?w=800&q=80', distance: '25 km', durationKey: 'attractionsPage.bana_duration', rating: 4.8, tagsKey: 'attractionsPage.bana_tags', mapUrl: '', location: 'Đà Nẵng', lat: 15.9961, lng: 107.9880 },
   { id: 'g3', titleKey: 'attractionsPage.mykhe_title', categoryKey: 'explore.catNature', descKey: 'attractionsPage.mykhe_desc', fullContentKey: 'attractionsPage.mykhe_full', img: 'https://images.unsplash.com/photo-1723142282970-1fd415eec1ad?w=800&q=80', distance: '1 km', durationKey: 'attractionsPage.mykhe_duration', rating: 4.7, tagsKey: 'attractionsPage.mykhe_tags', mapUrl: '', location: 'Đà Nẵng', lat: 16.0610, lng: 108.2483 },
   { id: 'g4', titleKey: 'attractionsPage.marble_title', categoryKey: 'explore.catSpiritual', descKey: 'attractionsPage.marble_desc', fullContentKey: 'attractionsPage.marble_full', img: 'https://images.unsplash.com/photo-1699195139838-1cc3516aece2?w=800&q=80', distance: '8 km', durationKey: 'attractionsPage.marble_duration', rating: 4.6, tagsKey: 'attractionsPage.marble_tags', mapUrl: '', location: 'Đà Nẵng', lat: 16.0028, lng: 108.2618 },
-  { id: 'g_vt1', titleKey: null, title_vi: 'Công viên Tropicana', title_en: 'Tropicana Park', categoryKey: 'explore.catAttraction', descKey: null, desc_vi: 'Công viên giải trí nước kết hợp các trò chơi cảm giác mạnh mang phong cách nhiệt đới tại Hồ Tràm, Vũng Tàu.', desc_en: 'A tropical water park with thrilling rides at Ho Tram, Vung Tau.', img: 'https://images.unsplash.com/photo-1773226315041-f49c8e90c9d3?w=600&q=80', distance: 'Gần Vũng Tàu', duration_vi: '1 ngày', duration_en: '1 day', rating: 4.8, tags_vi: ['Giải trí', 'Công viên nước'], tags_en: ['Entertainment', 'Water Park'], mapUrl: '', location: 'Vũng Tàu', lat: 10.4682, lng: 107.4526 },
-  { id: 'g_vt2', titleKey: null, title_vi: 'Bảo tàng Vũ khí cổ Robert Taylor', title_en: 'Robert Taylor Arms Museum', categoryKey: 'explore.catAttraction', descKey: null, desc_vi: 'Bộ sưu tập vũ khí cổ khổng lồ từ khắp nơi trên thế giới được trưng bày trong không gian cổ kính.', desc_en: 'A massive ancient weapons collection from around the world in a historic setting.', img: 'https://images.unsplash.com/photo-1568754690049-5a2c02df0efa?w=600&q=80', distance: 'Trung tâm Vũng Tàu', duration_vi: '2 giờ', duration_en: '2 hours', rating: 4.7, tags_vi: ['Bảo tàng', 'Lịch sử'], tags_en: ['Museum', 'History'], mapUrl: '', location: 'Vũng Tàu', lat: 10.3458, lng: 107.0765 },
-  { id: 'g_vt3', titleKey: null, title_vi: 'Tượng Chúa Giêsu Kytô Vua', title_en: 'Christ the King Statue', categoryKey: 'explore.catSpiritual', descKey: null, desc_vi: 'Tượng Chúa dang tay ngoạn mục nằm trên đỉnh Núi Nhỏ của thành phố biển Vũng Tàu.', desc_en: 'A spectacular statue of Christ with outstretched arms atop Nui Nho in Vung Tau.', img: 'https://images.unsplash.com/photo-1713845693881-b120cf5aacc8?w=800&q=80', distance: 'Núi Nhỏ', duration_vi: 'Nửa ngày', duration_en: 'Half day', rating: 4.9, tags_vi: ['Biểu tượng', 'Kiến trúc', 'Ngắm cảnh'], tags_en: ['Landmark', 'Architecture', 'Scenic'], mapUrl: '', location: 'Vũng Tàu', lat: 10.3275, lng: 107.0850 },
-  { id: 'g_hn1', titleKey: null, title_vi: 'Hồ Hoàn Kiếm', title_en: 'Hoan Kiem Lake', categoryKey: 'explore.catHeritage', descKey: null, desc_vi: 'Biểu tượng lịch sử thiêng liêng giữa lòng thủ đô Hà Nội ngàn năm văn hiến.', desc_en: 'A sacred historical landmark in the heart of Hanoi\'s ancient capital.', img: 'https://images.unsplash.com/photo-1581551457835-3e4604d7f05c?w=800&q=80', distance: 'Trung tâm Hà Nội', duration_vi: 'Nửa ngày', duration_en: 'Half day', rating: 4.9, tags_vi: ['Biểu tượng', 'Lịch sử', 'Đi dạo'], tags_en: ['Landmark', 'History', 'Walking'], mapUrl: '', location: 'Hà Nội', lat: 21.0285, lng: 105.8523 },
-  { id: 'g_hcm1', titleKey: null, title_vi: 'Chợ Bến Thành', title_en: 'Ben Thanh Market', categoryKey: 'explore.catHeritage', descKey: null, desc_vi: 'Biểu tượng lịch sử lâu đời, nơi hội tụ tinh hoa ẩm thực Sài Gòn và là điểm mua sắm sầm uất.', desc_en: 'A historical icon and bustling market, hub of Saigon street food and shopping.', img: 'https://images.unsplash.com/photo-1680783307371-749c26e0f5c3?w=800&q=80', distance: 'Quận 1', duration_vi: 'Vài giờ', duration_en: 'A few hours', rating: 4.6, tags_vi: ['Mua sắm', 'Ẩm thực', 'Lịch sử'], tags_en: ['Shopping', 'Cuisine', 'History'], mapUrl: '', location: 'Hồ Chí Minh', lat: 10.7725, lng: 106.6980 }
+  
+  // HCM 1: Chợ Bến Thành
+  {
+    id: 'g_hcm1',
+    titleKey: null,
+    title_vi: 'Chợ Bến Thành',
+    title_en: 'Ben Thanh Market',
+    categoryKey: 'explore.catHeritage',
+    descKey: null,
+    desc_vi: 'Biểu tượng lịch sử lâu đời, nơi hội tụ tinh hoa ẩm thực Sài Gòn và là điểm mua sắm sầm uất.',
+    desc_en: 'A historical icon and bustling market, hub of Saigon street food and shopping.',
+    img: 'https://images.unsplash.com/photo-1680783307371-749c26e0f5c3?w=800&q=80',
+    distance: '1.5 km',
+    duration_vi: 'Vài giờ',
+    duration_en: 'A few hours',
+    rating: 4.6,
+    tags_vi: ['Mua sắm', 'Ẩm thực', 'Lịch sử'],
+    tags_en: ['Shopping', 'Cuisine', 'History'],
+    mapUrl: '',
+    location: 'Hồ Chí Minh',
+    lat: 10.7725,
+    lng: 106.6980,
+    fullContent_vi: `
+      <h3>Vài nét về Chợ Bến Thành</h3>
+      <p>Nằm ngay tại trung tâm Quận 1, Chợ Bến Thành không chỉ đơn thuần là một địa điểm buôn bán sầm uất mà còn là nhân chứng lịch sử kiêu hãnh của Sài Gòn qua hơn một thế kỷ. Được xây dựng từ năm 1912 bởi người Pháp, ngôi chợ này đã trở thành biểu tượng văn hóa và du lịch không thể thiếu của thành phố mang tên Bác.</p>
+      
+      <h3>Kiến trúc độc đáo mang dấu ấn thời gian</h3>
+      <p>Điểm nhấn đặc biệt nhất của Chợ Bến Thành chính là ngôi tháp đồng hồ bốn mặt sừng sững tại cửa Nam - biểu tượng nhận diện nổi tiếng trên toàn thế giới. Chợ có thiết kế thông thoáng với 4 cửa chính (Đông, Tây, Nam, Bắc) hướng ra các ngã đường huyết mạch của trung tâm Sài Gòn, cùng với 12 cửa phụ tạo nên một mạng lưới giao thương vô cùng nhộn nhịp.</p>
+      
+      <h3>Trải nghiệm ẩm thực phong phú khó cưỡng</h3>
+      <p>Bước chân vào khu ẩm thực trong chợ, bạn sẽ bị choáng ngợp bởi hàng trăm gian hàng tỏa hương thơm nức mũi. Tại đây, bạn có thể thưởng thức những món ăn đặc sản đậm chất Nam Bộ như hủ tiếu Nam Vang, bánh xèo giòn rụm, bún thịt nướng thơm lừng, cho đến các ly chè Sài Gòn thanh mát, ngọt lịm ngọt ngào.</p>
+      
+      <h3>Kinh nghiệm mua sắm và quà lưu niệm</h3>
+      <p>Chợ Bến Thành là thiên đường của các loại hàng thủ công mỹ nghệ, đồ da, quần áo, vải vóc và các loại cà phê, trà thượng hạng. Một mẹo nhỏ cho du khách khi mua sắm tại đây là hãy thương lượng giá cả một cách vui vẻ để có được những món quà lưu niệm ý nghĩa với mức giá ưng ý nhất.</p>
+    `,
+    fullContent_en: `
+      <h3>Introduction to Ben Thanh Market</h3>
+      <p>Located in the heart of District 1, Ben Thanh Market is not just a bustling trading hub but also a proud historical witness of Saigon for over a century. Built in 1912 by the French, this market has become an indispensable cultural and tourism icon of Ho Chi Minh City.</p>
+      
+      <h3>Unique Architecture & Timeless Landmark</h3>
+      <p>The most prominent feature of Ben Thanh Market is the three-domed clock tower at the South Gate, a globally recognized symbol of Saigon. The market features a spacious design with 4 main gates (East, West, South, North) facing major streets in central Saigon, along with 12 side gates forming a lively trading network.</p>
+      
+      <h3>Unmissable Culinary Experiences</h3>
+      <p>Stepping into the market's food court, you will be overwhelmed by hundreds of stalls offering aromatic local dishes. Here, you can savor authentic Southern specialties such as Hu Tieu Nam Vang, crispy Banh Xeo, fragrant Bun Thit Nuong, and sweet, refreshing Saigon sweet soups.</p>
+      
+      <h3>Shopping Tips & Souvenirs</h3>
+      <p>Ben Thanh Market is a paradise for handicrafts, leather goods, textiles, and premium coffee and tea. A small tip for travelers shopping here is to bargain politely and cheerfully to get the best prices for your souvenirs.</p>
+    `
+  },
+
+  // HCM 2: Dinh Độc Lập
+  {
+    id: 'g_hcm2',
+    titleKey: null,
+    title_vi: 'Dinh Độc Lập',
+    title_en: 'Independence Palace',
+    categoryKey: 'explore.catHeritage',
+    descKey: null,
+    desc_vi: 'Chứng nhân lịch sử kiêu hùng, một kiệt tác kiến trúc kết hợp hài hòa giữa nét hiện đại và triết lý Á Đông.',
+    desc_en: 'A historic witness and architectural masterpiece combining modern style and Eastern philosophy.',
+    img: 'https://images.unsplash.com/photo-1605884952010-b98967812e96?w=800&q=80',
+    distance: '2.0 km',
+    duration_vi: '2 - 3 giờ',
+    duration_en: '2 - 3 hours',
+    rating: 4.8,
+    tags_vi: ['Lịch sử', 'Kiến trúc', 'Di tích'],
+    tags_en: ['History', 'Architecture', 'Heritage'],
+    mapUrl: '',
+    location: 'Hồ Chí Minh',
+    lat: 10.7770,
+    lng: 106.6953,
+    fullContent_vi: `
+      <h3>Chứng nhân lịch sử kiêu hùng của dân tộc</h3>
+      <p>Dinh Độc Lập (hay còn gọi là Dinh Thống Nhất) là một trong những di tích quốc gia đặc biệt quan trọng của Việt Nam. Đây là nơi ghi dấu thời khắc lịch sử trọng đại vào trưa ngày 30/4/1975, khi chiếc xe tăng số hiệu 390 của quân giải phóng húc đổ cánh cổng sắt, đánh dấu sự thống nhất hoàn toàn của đất nước.</p>
+      
+      <h3>Kiến trúc Á Đông hiện đại đầy chiều sâu</h3>
+      <p>Công trình được thiết kế bởi kiến trúc sư tài hoa Ngô Viết Thụ - người Việt Nam đầu tiên đạt giải Khôi nguyên La Mã. Dinh có bố cục mặt bằng hình chữ "CÁT" mang ý nghĩa tốt lành, kết hợp khéo léo giữa đường nét hình khối hiện đại của phương Tây và các yếu tố phong thủy truyền thống đầy chiều sâu của phương Đông.</p>
+      
+      <h3>Khám phá các gian phòng quyền lực và khu hầm trú ẩn</h3>
+      <p>Hành trình tham quan Dinh Độc Lập sẽ đưa bạn qua hơn 100 căn phòng được trang trí lộng lẫy như phòng khánh tiết, phòng đại yến, phòng trình quốc thư. Đặc biệt, khu vực tầng hầm kiên cố với hệ thống thông tin liên lạc cổ kính cùng bản đồ tác chiến thời chiến vẫn được bảo tồn nguyên vẹn.</p>
+      
+      <h3>Khuôn viên xanh mát giữa lòng thành phố</h3>
+      <p>Bao quanh Dinh là thảm cỏ xanh mướt hình oval rộng lớn và những hàng cây cổ thụ hàng trăm năm tuổi rợp bóng mát. Đây là không gian yên bình tuyệt đối, tách biệt hoàn toàn khỏi sự ồn ào, náo nhiệt của phố thị Sài Gòn bên ngoài.</p>
+    `,
+    fullContent_en: `
+      <h3>A Historic Witness of National Unity</h3>
+      <p>The Independence Palace (also known as Reunification Palace) is one of Vietnam's most important national historic sites. It marked the historic moment on April 30, 1975, when liberation army tanks crashed through the gates, symbolizing the reunification of Vietnam.</p>
+      
+      <h3>Masterful Fusion of Modern & Eastern Architecture</h3>
+      <p>Designed by the talented architect Ngo Viet Thu, the palace's layout resembles the Chinese character for "Good Fortune". It seamlessly combines modern Western geometric design with traditional Eastern feng shui and philosophical elements.</p>
+      
+      <h3>Explore the Power Rooms & Underground Bunker</h3>
+      <p>Your journey through the palace will take you through over 100 beautifully decorated rooms, including the Reception Room, Banqueting Room, and Cabinet Room. The highlight is the underground bunker with vintage communications equipment and military maps preserved in their original state.</p>
+      
+      <h3>A Green Oasis in the City Center</h3>
+      <p>Surrounding the Palace is a vast oval lawn and century-old trees offering cool shade. It is a peaceful green oasis, completely detached from the hustle and bustle of modern Saigon outside.</p>
+    `
+  },
+
+  // HCM 3: Landmark 81
+  {
+    id: 'g_hcm3',
+    titleKey: null,
+    title_vi: 'Tòa nhà Landmark 81',
+    title_en: 'Landmark 81 Building',
+    categoryKey: 'explore.catEntertainment',
+    descKey: null,
+    desc_vi: 'Biểu tượng mới của sự thịnh vượng, nó sở hữu đài quan sát Skyview cao nhất Đông Nam Á cùng nhiều khu mua sắm sầm uất.',
+    desc_en: 'A new icon of prosperity, featuring the highest Skyview observatory in SE Asia and luxury shopping.',
+    img: 'https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=800&q=80',
+    distance: '5.0 km',
+    duration_vi: 'Vài giờ',
+    duration_en: 'A few hours',
+    rating: 4.9,
+    tags_vi: ['Hiện đại', 'Mua sắm', 'Ngắm cảnh'],
+    tags_en: ['Modern', 'Shopping', 'Scenic'],
+    mapUrl: '',
+    location: 'Hồ Chí Minh',
+    lat: 10.7948,
+    lng: 106.7218,
+    fullContent_vi: `
+      <h3>Đỉnh cao mới vươn tầm thế giới</h3>
+      <p>Với chiều cao ấn tượng 461.3m gồm 81 tầng, Landmark 81 tự hào là tòa nhà cao nhất Việt Nam và là biểu tượng của sự năng động, phát triển vượt bậc của TP.HCM. Lấy cảm hứng từ hình ảnh "bó tre" truyền thống - biểu tượng cho sức mạnh kiên cường và tinh thần đoàn kết của người Việt, tòa nhà vươn cao kiêu hãnh bên bờ sông Sài Gòn thơ mộng.</p>
+      
+      <h3>Trải nghiệm Skyview ngắm trọn Sài Gòn 360 độ</h3>
+      <p>Nằm tại 3 tầng cao nhất (tầng 79, 80, 81), đài quan sát Skyview mang đến cho du khách trải nghiệm độc nhất vô nhị khi được ngắm nhìn toàn cảnh thành phố từ độ cao gần 400m. Cảm giác bước chân ra cầu kính SkyTouch lơ lửng giữa không trung chắc chắn sẽ khiến những tín đồ mê mạo hiểm phấn khích tột độ.</p>
+      
+      <h3>Thiên đường mua sắm và vui chơi giải trí cao cấp</h3>
+      <p>Bên trong tòa nhà là trung tâm thương mại Vincom Center sầm uất quy tụ hàng loạt thương hiệu thời trang cao cấp thế giới. Nơi đây còn sở hữu rạp chiếu phim CGV với phòng chiếu IMAX siêu lớn, sân băng tự nhiên Vincom Ice Rink lớn nhất Việt Nam và hệ thống nhà hàng ẩm thực đa quốc gia sang trọng.</p>
+      
+      <h3>Gợi ý thời điểm check-in lý tưởng nhất</h3>
+      <p>Thời điểm tuyệt vời nhất để ghé thăm Landmark 81 là vào khoảng 4h30 chiều. Bạn có thể đón trọn khoảnh khắc hoàng hôn lãng mạn nhuộm vàng cả thành phố và ngắm nhìn Sài Gòn chuyển mình rực rỡ, lung linh sắc màu khi lên đèn.</p>
+    `,
+    fullContent_en: `
+      <h3>A New Architectural Peak of Vietnam</h3>
+      <p>Standing at 461.3 meters with 81 stories, Landmark 81 is the tallest skyscraper in Vietnam and a symbol of Ho Chi Minh City's rapid development. Inspired by the traditional Vietnamese "bamboo bundle" - representing strength and solidarity - the building rises proudly along the Saigon River.</p>
+      
+      <h3>Landmark 81 Skyview Observatory</h3>
+      <p>Spanning the top three floors (79, 80, 81), the Skyview Observatory offers visitors the unique experience of viewing the entire city from nearly 400 meters high. Walking on the transparent glass bridge "SkyTouch" suspended in the air is an unforgettable thrill for adventure seekers.</p>
+      
+      <h3>Luxury Shopping & Entertainment Destination</h3>
+      <p>Inside the skyscraper is the Vincom Center, a premium shopping mall home to world-class brands. It also features a giant CGV IMAX theater, Vincom Ice Rink (Vietnam's largest natural ice rink), and a diverse array of fine dining restaurants.</p>
+      
+      <h3>Best Time to Visit</h3>
+      <p>The best time to visit Landmark 81 is around 4:30 PM. You can catch the stunning sunset over the Saigon River and watch the city transform into a sea of glittering lights as night falls.</p>
+    `
+  },
+
+  // HCM 4: Phố Đi Bộ Nguyễn Huệ
+  {
+    id: 'g_hcm4',
+    titleKey: null,
+    title_vi: 'Phố đi bộ Nguyễn Huệ',
+    title_en: 'Nguyen Hue Walking Street',
+    categoryKey: 'explore.catEntertainment',
+    descKey: null,
+    desc_vi: 'Trái tim sôi động của Sài Gòn về đêm, nơi giao lưu văn hóa và ngắm nhìn nhịp sống hiện đại.',
+    desc_en: 'The vibrant heart of Saigon at night, a hub of cultural exchange and modern city life.',
+    img: 'https://images.unsplash.com/photo-1549488344-1f9b8d2bd1f3?w=800&q=80',
+    distance: '1.2 km',
+    duration_vi: '1 - 2 giờ',
+    duration_en: '1 - 2 hours',
+    rating: 4.7,
+    tags_vi: ['Sôi động', 'Đi dạo', 'Ẩm thực'],
+    tags_en: ['Vibrant', 'Walking', 'Cuisine'],
+    mapUrl: '',
+    location: 'Hồ Chí Minh',
+    lat: 10.7740,
+    lng: 106.7038,
+    fullContent_vi: `
+      <h3>Trái tim sôi động của thành phố không ngủ</h3>
+      <p>Phố đi bộ Nguyễn Huệ là con đường quảng trường hiện đại bậc nhất Việt Nam, nối liền Trụ sở UBND Thành phố đến bờ sông Sài Gòn. Nơi đây được ví như trái tim của Sài Gòn, luôn ngập tràn năng lượng trẻ trung và là điểm vui chơi quen thuộc của người dân lẫn du khách mỗi tối.</p>
+      
+      <h3>Không gian trình diễn nghệ thuật đường phố đa sắc màu</h3>
+      <p>Mỗi khi đêm xuống, con phố khoác lên mình vẻ ngoài lung linh nhờ hệ thống nhạc nước nghệ thuật. Bạn sẽ dễ dàng bắt gặp những nhóm bạn trẻ say mê biểu diễn âm nhạc acoustic, nhảy hiện đại, hay các chương trình lễ hội quy mô lớn được tổ chức định kỳ đầy ấn tượng.</p>
+      
+      <h3>Huyền thoại Chung cư 42 Nguyễn Huệ</h3>
+      <p>Một điểm nhấn không thể bỏ qua chính là Chung cư 42 Nguyễn Huệ. Tòa nhà cổ kính này đã được cải tạo thành tổ hợp quán cà phê, trà chiều và cửa hàng thời trang xinh xắn xếp lớp như những khối rubik màu sắc. Đây là địa điểm lý tưởng để ngồi nhâm nhi cà phê và ngắm nhìn dòng người nhộn nhịp bên dưới.</p>
+      
+      <h3>Thưởng thức tinh hoa ẩm thực đường phố</h3>
+      <p>Quanh khu vực phố đi bộ là thế giới ẩm thực đường phố đầy màu sắc với trà sữa sang chảnh, bánh tráng nướng giòn rụm, kem bơ béo ngậy, bingsu mát lạnh... hứa hẹn mang lại những trải nghiệm ẩm thực vô cùng thú vị.</p>
+    `,
+    fullContent_en: `
+      <h3>The Heart of the City That Never Sleeps</h3>
+      <p>Nguyen Hue Walking Street is Vietnam's most modern boulevard plaza, connecting the City Hall to the Saigon River bank. It is widely considered the heart of Saigon, brimming with youth energy and serving as a prime gathering spot for locals and tourists alike.</p>
+      
+      <h3>Vibrant Street Art & Music Performances</h3>
+      <p>At night, the street lights up beautifully with colorful musical fountains. You will easily spot local youth groups performing acoustic sets, street dance, and magic tricks, alongside large-scale cultural festivals held during holidays.</p>
+      
+      <h3>The Iconic Cafe Apartment at 42 Nguyen Hue</h3>
+      <p>A must-visit highlight is the historic Cafe Apartment building at No. 42. This old apartment block has been transformed into a charming vertical grid of coffee shops and fashion boutiques. It's the perfect place to sit back, sip Vietnamese coffee, and watch the bustling street below.</p>
+      
+      <h3>Street Food Paradise</h3>
+      <p>Surrounding the walking street is a vibrant culinary world featuring trendy bubble teas, crispy grilled rice paper (Vietnamese pizza), creamy avocado ice cream, and modern desserts, guaranteeing an exciting street food tour.</p>
+    `
+  },
+
+  // HCM 5: Bưu điện Thành phố
+  {
+    id: 'g_hcm5',
+    titleKey: null,
+    title_vi: 'Bưu điện Thành phố Hồ Chí Minh',
+    title_en: 'Saigon Central Post Office',
+    categoryKey: 'explore.catHeritage',
+    descKey: null,
+    desc_vi: 'Kiệt tác kiến trúc Phục Hưng Pháp cổ kính, điểm check-in lịch sử tuyệt đẹp nằm cạnh Nhà thờ Đức Bà.',
+    desc_en: 'A French Renaissance masterpiece and stunning historic landmark next to Notre Dame Cathedral.',
+    img: 'https://images.unsplash.com/photo-1571867424488-4565932edb41?w=800&q=80',
+    distance: '2.2 km',
+    duration_vi: '1 giờ',
+    duration_en: '1 hour',
+    rating: 4.8,
+    tags_vi: ['Kiến trúc', 'Lịch sử', 'Chụp ảnh'],
+    tags_en: ['Architecture', 'History', 'Photography'],
+    mapUrl: '',
+    location: 'Hồ Chí Minh',
+    lat: 10.7798,
+    lng: 106.6999,
+    fullContent_vi: `
+      <h3>Kiệt tác kiến trúc Phục Hưng Pháp cổ kính</h3>
+      <p>Tọa lạc tại Công xã Paris, Bưu điện Thành phố Hồ Chí Minh là một trong những công trình kiến trúc Pháp cổ kính đẹp nhất Đông Dương còn sót lại. Được xây dựng từ năm 1886 đến 1891 bởi kiến trúc sư lừng danh người Pháp Gustave Eiffel, tòa nhà mang vẻ đẹp sang trọng, quý phái của phong cách Phục Hưng Âu châu.</p>
+      
+      <h3>Không gian nội thất cổ điển đầy hoài niệm</h3>
+      <p>Bước qua cánh cổng sắt, bạn sẽ được chiêm ngưỡng mái vòm cuốn cao vút nâng đỡ bởi hàng cột sắt kiên cố nhuốm màu thời gian. Điểm độc đáo bên trong bưu điện chính là hai bản đồ cổ vẽ tay tỉ mỉ mô tả Sài Gòn xưa, cùng những bốt điện thoại bằng gỗ cổ kính đưa du khách quay về thế kỷ 19.</p>
+      
+      <h3>Nơi lưu giữ nét đẹp gửi thư tay truyền thống</h3>
+      <p>Dù xã hội hiện đại phát triển, Bưu điện Trung tâm Sài Gòn vẫn thực hiện chức năng bưu chính của mình. Du khách ghé thăm thường thích thú tự tay chọn những tấm bưu thiếp phong cảnh đẹp đẽ, viết những lời chúc đong đầy yêu thương để gửi về cho người thân, bạn bè.</p>
+      
+      <h3>Góc chụp ảnh triệu view khó lòng bỏ qua</h3>
+      <p>Với gam màu vàng pastel đặc trưng, những ô cửa sổ hình vòm cuốn duyên dáng và ban công gỗ cổ xưa, bưu điện là phông nền hoàn hảo cho mọi bức ảnh check-in. Vị trí đắc địa ngay cạnh Nhà thờ Đức Bà cổ kính càng tạo nên một cụm di tích tham quan tuyệt đẹp giữa lòng thành phố.</p>
+    `,
+    fullContent_en: `
+      <h3>A Classic French Renaissance Masterpiece</h3>
+      <p>Located at Paris Square, the Saigon Central Post Office is one of the most beautiful French colonial buildings in Indochina. Built between 1886 and 1891 by the famous architect Gustave Eiffel, the building boasts the elegant and classic beauty of European Renaissance architecture.</p>
+      
+      <h3>Nostalgic Classical Interior Space</h3>
+      <p>Passing through the iron gates, you will marvel at the high vaulted ceilings supported by historic iron pillars. Inside, two hand-painted historical maps depicting old Saigon and vintage wooden telephone booths transport visitors back to the late 19th century.</p>
+      
+      <h3>Preserving the Tradition of Handwritten Letters</h3>
+      <p>Despite modern technology, the post office still operates fully. Visitors love choosing postcards featuring local landmarks, writing heartfelt wishes, and mailing them directly to family and friends worldwide.</p>
+      
+      <h3>An Iconic Photo Spot Next to Notre Dame</h3>
+      <p>With its signature pastel yellow walls, graceful arched windows, and old wooden shutters, the post office is a perfect backdrop for travel photos. Its prime location next to the historic Notre Dame Cathedral forms a magnificent sightseeing complex in Saigon.</p>
+    `
+  }
 ];
 
 // ── Categories dùng key i18n ──────────────────────────────────────────────────
@@ -47,7 +287,7 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   return R * c;
 };
 
-// ── AttractionCard — nhận props đã được resolve bằng t() từ parent ───────────
+// ── AttractionCard ───────────
 const AttractionCard = ({ item, onDetail, resolvedTitle, resolvedDesc, resolvedCategory, resolvedTags, resolvedDuration, t }) => {
   const [hovered, setHovered] = useState(false);
 
@@ -153,7 +393,7 @@ const CustomerAttractionsPage = () => {
     const category = item.categoryKey ? t(item.categoryKey) : (lang === 'vi' ? item.category : item.category);
     const tags    = item.tagsKey    ? t(item.tagsKey, { returnObjects: true }) : (lang === 'vi' ? item.tags_vi : item.tags_en) || item.tags_vi || [];
     const duration = item.durationKey ? t(item.durationKey) : (lang === 'vi' ? item.duration_vi : item.duration_en) || item.duration_vi;
-    const fullContent = item.fullContentKey ? t(item.fullContentKey) : (lang === 'vi' ? item.desc_vi : item.desc_en) || '';
+    const fullContent = item.fullContentKey ? t(item.fullContentKey) : (lang === 'vi' ? item.fullContent_vi : item.fullContent_en) || (lang === 'vi' ? item.desc_vi : item.desc_en) || '';
     return { ...item, resolvedTitle: title, resolvedDesc: desc, resolvedCategory: category, resolvedTags: Array.isArray(tags) ? tags : [], resolvedDuration: duration, resolvedFullContent: fullContent };
   };
 
@@ -218,19 +458,17 @@ const CustomerAttractionsPage = () => {
     setSearchOpen(false);
   };
 
-  // ── Search suggestions (tiêu đề địa điểm không dịch vì là tên riêng) ───────
+  // ── Search suggestions ───────
   const SEARCH_SUGGESTIONS = {
     activities: [
-      { title: lang === 'vi' ? 'Vé vào cổng Công viên Tropicana' : 'Tropicana Park Ticket', subtitle: lang === 'vi' ? 'Điểm tham quan • Vũng Tàu' : 'Attraction • Vung Tau', id: 'g_vt1', icon: <CameraOutlined /> },
-      { title: lang === 'vi' ? 'Vé vào cửa Bảo tàng Vũ khí cổ Robert Taylor' : 'Robert Taylor Arms Museum Ticket', subtitle: lang === 'vi' ? 'Điểm tham quan • Vũng Tàu' : 'Attraction • Vung Tau', id: 'g_vt2', icon: <CameraOutlined /> },
-      { title: lang === 'vi' ? 'Khám phá Tượng Chúa Giêsu Kytô Vua' : 'Visit Christ the King Statue', subtitle: lang === 'vi' ? 'Chuyến tham quan • Vũng Tàu' : 'Tour • Vung Tau', id: 'g_vt3', icon: <CompassOutlined /> },
+      { title: lang === 'vi' ? 'Khám phá Chợ Bến Thành' : 'Explore Ben Thanh Market', subtitle: lang === 'vi' ? 'Di sản • TP. Hồ Chí Minh' : 'Heritage • Ho Chi Minh', id: 'g_hcm1', icon: <CompassOutlined /> },
+      { title: lang === 'vi' ? 'Tham quan Dinh Độc Lập' : 'Visit Independence Palace', subtitle: lang === 'vi' ? 'Lịch sử • TP. Hồ Chí Minh' : 'History • Ho Chi Minh', id: 'g_hcm2', icon: <EnvironmentOutlined /> },
+      { title: lang === 'vi' ? 'Ngắm cảnh từ Landmark 81 Skyview' : 'Landmark 81 Skyview Observatory', subtitle: lang === 'vi' ? 'Giải trí • TP. Hồ Chí Minh' : 'Entertainment • Ho Chi Minh', id: 'g_hcm3', icon: <CameraOutlined /> },
       { title: lang === 'vi' ? 'Tham quan Phố cổ Hội An' : 'Hoi An Ancient Town Tour', subtitle: lang === 'vi' ? 'Di sản • Đà Nẵng' : 'Heritage • Da Nang', id: 'g1', icon: <EnvironmentOutlined /> },
     ],
     destinations: [
-      { title: 'Vũng Tàu',     subtitle: 'Việt Nam', filterVal: 'Vũng Tàu' },
       { title: 'Hồ Chí Minh', subtitle: 'Việt Nam', filterVal: 'Hồ Chí Minh' },
       { title: 'Đà Nẵng',     subtitle: 'Việt Nam', filterVal: 'Đà Nẵng' },
-      { title: 'Hà Nội',      subtitle: 'Việt Nam', filterVal: 'Hà Nội' },
     ]
   };
 
@@ -289,6 +527,35 @@ const CustomerAttractionsPage = () => {
 
   return (
     <div style={{ paddingBottom: 60 }}>
+      {/* CSS custom cho phần hiển thị blog trong Modal */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        .blog-content h3 {
+          font-size: 1.25rem !important;
+          color: #1a1a1a !important;
+          margin-top: 24px !important;
+          margin-bottom: 12px !important;
+          font-weight: 600 !important;
+          border-left: 4px solid #c9a961 !important;
+          padding-left: 12px !important;
+        }
+        .blog-content p {
+          margin-bottom: 16px !important;
+          text-align: justify !important;
+          font-size: 0.95rem !important;
+          line-height: 1.8 !important;
+          color: #444 !important;
+        }
+        .blog-content ul {
+          margin-bottom: 16px !important;
+          padding-left: 20px !important;
+        }
+        .blog-content li {
+          margin-bottom: 8px !important;
+          font-size: 0.95rem !important;
+          color: #444 !important;
+        }
+      `}} />
+
       {/* ── Hero Banner ──────────────────────────────────────────────────────── */}
       <div style={{
         position: "relative", height: "450px", borderRadius: 16, marginBottom: 48,
@@ -443,9 +710,11 @@ const CustomerAttractionsPage = () => {
 
                 <Divider />
 
-                <Paragraph style={{ fontSize: "0.95rem", lineHeight: 2, whiteSpace: "pre-line", color: "#444" }}>
-                  {resolved.resolvedFullContent || resolved.resolvedDesc}
-                </Paragraph>
+                {/* Render nội dung chi tiết dạng HTML sạch */}
+                <div 
+                  className="blog-content"
+                  dangerouslySetInnerHTML={{ __html: resolved.resolvedFullContent || resolved.resolvedDesc }}
+                />
 
                 {detailModal.lat && detailModal.lng && (
                   <>
