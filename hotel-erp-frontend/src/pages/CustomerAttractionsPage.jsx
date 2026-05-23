@@ -12,7 +12,28 @@ const { Title, Paragraph, Text } = Typography;
 
 const FALLBACK_IMG = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600';
 
-// ── Data tĩnh (title/desc/tag dùng key i18n khi có, còn lại là tiếng Việt không dịch) ──
+// Style tiện ích dùng chung cho các đoạn văn blog để code gọn gàng hơn
+const blogContainerStyle = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '16px',
+  color: '#444',
+  textAlign: 'justify',
+  lineHeight: '1.8',
+  fontSize: '0.95rem'
+};
+
+const blogHeadingStyle = {
+  fontWeight: 'bold',
+  fontSize: '1.25rem',
+  color: '#1a1a1a',
+  borderLeft: '4px solid #c9a961',
+  paddingLeft: '12px',
+  marginTop: '20px',
+  marginBottom: '4px'
+};
+
+// ── Data tĩnh (LOCAL_GUIDES_DATA) chứa blog chi tiết dạng JSX cho các địa điểm TP.HCM ──
 const LOCAL_GUIDES_DATA = [
   { id: 'g1', titleKey: 'attractionsPage.hoian_title', categoryKey: 'explore.catHeritage', descKey: 'attractionsPage.hoian_desc', fullContentKey: 'attractionsPage.hoian_full', img: 'https://images.unsplash.com/photo-1679033932050-831ace7a226f?w=800&q=80', distance: '5 km', durationKey: 'attractionsPage.hoian_duration', rating: 4.9, tagsKey: 'attractionsPage.hoian_tags', mapUrl: '', location: 'Đà Nẵng', lat: 15.8801, lng: 108.3380 },
   { id: 'g2', titleKey: 'attractionsPage.bana_title', categoryKey: 'explore.catEntertainment', descKey: 'attractionsPage.bana_desc', fullContentKey: 'attractionsPage.bana_full', img: 'https://images.unsplash.com/photo-1663684591502-93887202a863?w=800&q=80', distance: '25 km', durationKey: 'attractionsPage.bana_duration', rating: 4.8, tagsKey: 'attractionsPage.bana_tags', mapUrl: '', location: 'Đà Nẵng', lat: 15.9961, lng: 107.9880 },
@@ -40,32 +61,40 @@ const LOCAL_GUIDES_DATA = [
     location: 'Hồ Chí Minh',
     lat: 10.7725,
     lng: 106.6980,
-    fullContent_vi: `
-      <h3>Vài nét về Chợ Bến Thành</h3>
-      <p>Nằm ngay tại trung tâm Quận 1, Chợ Bến Thành không chỉ đơn thuần là một địa điểm buôn bán sầm uất mà còn là nhân chứng lịch sử kiêu hãnh của Sài Gòn qua hơn một thế kỷ. Được xây dựng từ năm 1912 bởi người Pháp, ngôi chợ này đã trở thành biểu tượng văn hóa và du lịch không thể thiếu của thành phố mang tên Bác.</p>
-      
-      <h3>Kiến trúc độc đáo mang dấu ấn thời gian</h3>
-      <p>Điểm nhấn đặc biệt nhất của Chợ Bến Thành chính là ngôi tháp đồng hồ bốn mặt sừng sững tại cửa Nam - biểu tượng nhận diện nổi tiếng trên toàn thế giới. Chợ có thiết kế thông thoáng với 4 cửa chính (Đông, Tây, Nam, Bắc) hướng ra các ngã đường huyết mạch của trung tâm Sài Gòn, cùng với 12 cửa phụ tạo nên một mạng lưới giao thương vô cùng nhộn nhịp.</p>
-      
-      <h3>Trải nghiệm ẩm thực phong phú khó cưỡng</h3>
-      <p>Bước chân vào khu ẩm thực trong chợ, bạn sẽ bị choáng ngợp bởi hàng trăm gian hàng tỏa hương thơm nức mũi. Tại đây, bạn có thể thưởng thức những món ăn đặc sản đậm chất Nam Bộ như hủ tiếu Nam Vang, bánh xèo giòn rụm, bún thịt nướng thơm lừng, cho đến các ly chè Sài Gòn thanh mát, ngọt lịm ngọt ngào.</p>
-      
-      <h3>Kinh nghiệm mua sắm và quà lưu niệm</h3>
-      <p>Chợ Bến Thành là thiên đường của các loại hàng thủ công mỹ nghệ, đồ da, quần áo, vải vóc và các loại cà phê, trà thượng hạng. Một mẹo nhỏ cho du khách khi mua sắm tại đây là hãy thương lượng giá cả một cách vui vẻ để có được những món quà lưu niệm ý nghĩa với mức giá ưng ý nhất.</p>
-    `,
-    fullContent_en: `
-      <h3>Introduction to Ben Thanh Market</h3>
-      <p>Located in the heart of District 1, Ben Thanh Market is not just a bustling trading hub but also a proud historical witness of Saigon for over a century. Built in 1912 by the French, this market has become an indispensable cultural and tourism icon of Ho Chi Minh City.</p>
-      
-      <h3>Unique Architecture & Timeless Landmark</h3>
-      <p>The most prominent feature of Ben Thanh Market is the three-domed clock tower at the South Gate, a globally recognized symbol of Saigon. The market features a spacious design with 4 main gates (East, West, South, North) facing major streets in central Saigon, along with 12 side gates forming a lively trading network.</p>
-      
-      <h3>Unmissable Culinary Experiences</h3>
-      <p>Stepping into the market's food court, you will be overwhelmed by hundreds of stalls offering aromatic local dishes. Here, you can savor authentic Southern specialties such as Hu Tieu Nam Vang, crispy Banh Xeo, fragrant Bun Thit Nuong, and sweet, refreshing Saigon sweet soups.</p>
-      
-      <h3>Shopping Tips & Souvenirs</h3>
-      <p>Ben Thanh Market is a paradise for handicrafts, leather goods, textiles, and premium coffee and tea. A small tip for travelers shopping here is to bargain politely and cheerfully to get the best prices for your souvenirs.</p>
-    `
+    content_vi: (
+      <div style={blogContainerStyle}>
+        <p>Nếu Hà Nội tự hào có chợ Đồng Xuân nghìn năm văn hiến thì Sài Gòn cũng kiêu hãnh sở hữu <strong>Chợ Bến Thành</strong> - khu chợ sầm uất mang đậm nét văn hóa đặc trưng nhất của người dân miền Nam. Trải qua bao biến động lịch sử, ngôi chợ trăm tuổi này vẫn đứng sừng sững như một nhân chứng lịch sử kiêu hãnh, một biểu tượng trường tồn của thành phố mang tên Bác.</p>
+        
+        <h4 style={blogHeadingStyle}>Vài nét về lịch sử thăng trầm của Chợ Bến Thành</h4>
+        <p>Ngôi chợ có nguồn gốc từ trước khi người Pháp đặt chân tới đất Gia Định. Ban đầu, chợ nằm ven sông Bến Nghé, cạnh một bến sông gần thành Gia Định nên được gọi là Chợ Bến Thành. Đến năm 1912, người Pháp đã cho xây dựng lại chợ tại vị trí hiện tại và khánh thành vào năm 1914. Trải qua hơn một thế kỷ hoạt động liên tục, chợ Bến Thành không chỉ là nơi buôn bán giao thương mà còn là điểm giao thoa văn hóa giữa Sài Gòn xưa và nay.</p>
+        
+        <h4 style={blogHeadingStyle}>Kiến trúc bốn cửa độc đáo và Tháp đồng hồ biểu tượng</h4>
+        <p>Điểm nhấn kiến trúc nổi tiếng nhất toàn thế giới của Chợ Bến Thành chính là ngôi tháp đồng hồ ba mặt nằm sừng sững tại Cửa Nam - lối vào chính của chợ. Ngôi chợ được thiết kế vô cùng khoa học với 4 cửa chính quay về 4 hướng đường huyết mạch của Quận 1, mỗi cửa chuyên kinh doanh các mặt hàng đặc trưng khác nhau: Cửa Nam hướng ra quảng trường Quách Thị Trang chuyên quần áo, vải vóc; Cửa Bắc hướng ra Lê Thánh Tôn rực rỡ sắc hoa tươi và trái cây; Cửa Đông hướng ra Phan Bội Châu đầy mứt kẹo ngon lành; và Cửa Tây hướng ra Phan Chu Trinh nhộn nhịp giày dép, đồ lưu niệm.</p>
+        
+        <h4 style={blogHeadingStyle}>Trải nghiệm ẩm thực phong phú khó lòng bỏ qua</h4>
+        <p>Khu ẩm thực bên trong Chợ Bến Thành được ví như "bản đồ thu nhỏ" của ẩm thực Việt Nam. Đi vào đây, bạn sẽ bị cuốn hút bởi hương thơm ngào ngạt tỏa ra từ các gian hàng. Hãy thử một tô hủ tiếu Nam Vang nước dùng thanh ngọt, bánh xèo chiên giòn tan đầy ắp tôm thịt, bún mắm đậm đà hương vị miền Tây hay một ly chè Sài Gòn ngọt mát lịm để xua tan đi cái nóng oi bức của thành phố.</p>
+        
+        <h4 style={blogHeadingStyle}>Kinh nghiệm mua sắm làm quà cho du khách</h4>
+        <p>Chợ Bến Thành là kho báu của các loại đồ thủ công mỹ nghệ như tranh sơn mài, đồ gốm sứ, đồ da handmade hay các đặc sản chè, cà phê hạt xay nguyên chất cực thơm ngon. Vì đây là chợ du lịch sầm uất, các bạn du khách nên thương lượng giá cả một cách cởi mở, thân thiện với các cô chú tiểu thương để có những trải nghiệm mua sắm vui vẻ và rinh về những món đồ ưng ý nhất.</p>
+      </div>
+    ),
+    content_en: (
+      <div style={blogContainerStyle}>
+        <p>While Hanoi takes pride in Dong Xuan Market, Saigon is equally proud of <strong>Ben Thanh Market</strong> - a bustling commercial hub embodying the rich Southern Vietnamese lifestyle. Surviving multiple historical eras, this century-old market remains an eternal symbol of Saigon.</p>
+        
+        <h4 style={blogHeadingStyle}>The Historic Evolution of Ben Thanh Market</h4>
+        <p>The market's history dates back to the early days of Gia Dinh land. Originally situated on the banks of the Ben Nghe River near the Gia Dinh Citadel, it was named "Ben Thanh" (Harbor Gate). In 1912, the French rebuilt the market at its current location and officially opened it in 1914. Operating for over a century, Ben Thanh is not just a marketplace but a historic meeting point of old and new Saigon.</p>
+        
+        <h4 style={blogHeadingStyle}>Iconic Clock Tower and Cross-Shaped Architecture</h4>
+        <p>The main visual attraction is the three-sided clock tower standing proudly at the South Gate. The market forms a rectangular layout with 4 main gates facing major commercial streets: South Gate facing Quach Thi Trang Square (clothing and textiles), North Gate on Le Thánh Tôn (fresh flowers and fruits), East Gate on Phan Bội Châu (sweets and jams), and West Gate on Phan Chu Trinh (shoes and handicrafts).</p>
+        
+        <h4 style={blogHeadingStyle}>Dive into Saigon Street Food Paradise</h4>
+        <p>Walking into the food court of Ben Thanh Market is like embarking on a rich culinary adventure. It features iconic Southern dishes such as savory Hu Tieu, crispy gold Banh Xeo, rich Bun Mam, and colorful Saigon sweet soup bowls served with shaved ice.</p>
+        
+        <h4 style={blogHeadingStyle}>Smart Shopping Tips for First-Time Visitors</h4>
+        <p>Ben Thanh Market is the ultimate place to shop for local souvenirs, lacquerware paintings, conical hats, and premium roasted coffee beans. As a popular tourist hub, we recommend bargaining gently and cheerfully to secure the best deals.</p>
+      </div>
+    )
   },
 
   // HCM 2: Dinh Độc Lập
@@ -89,32 +118,40 @@ const LOCAL_GUIDES_DATA = [
     location: 'Hồ Chí Minh',
     lat: 10.7770,
     lng: 106.6953,
-    fullContent_vi: `
-      <h3>Chứng nhân lịch sử kiêu hùng của dân tộc</h3>
-      <p>Dinh Độc Lập (hay còn gọi là Dinh Thống Nhất) là một trong những di tích quốc gia đặc biệt quan trọng của Việt Nam. Đây là nơi ghi dấu thời khắc lịch sử trọng đại vào trưa ngày 30/4/1975, khi chiếc xe tăng số hiệu 390 của quân giải phóng húc đổ cánh cổng sắt, đánh dấu sự thống nhất hoàn toàn của đất nước.</p>
-      
-      <h3>Kiến trúc Á Đông hiện đại đầy chiều sâu</h3>
-      <p>Công trình được thiết kế bởi kiến trúc sư tài hoa Ngô Viết Thụ - người Việt Nam đầu tiên đạt giải Khôi nguyên La Mã. Dinh có bố cục mặt bằng hình chữ "CÁT" mang ý nghĩa tốt lành, kết hợp khéo léo giữa đường nét hình khối hiện đại của phương Tây và các yếu tố phong thủy truyền thống đầy chiều sâu của phương Đông.</p>
-      
-      <h3>Khám phá các gian phòng quyền lực và khu hầm trú ẩn</h3>
-      <p>Hành trình tham quan Dinh Độc Lập sẽ đưa bạn qua hơn 100 căn phòng được trang trí lộng lẫy như phòng khánh tiết, phòng đại yến, phòng trình quốc thư. Đặc biệt, khu vực tầng hầm kiên cố với hệ thống thông tin liên lạc cổ kính cùng bản đồ tác chiến thời chiến vẫn được bảo tồn nguyên vẹn.</p>
-      
-      <h3>Khuôn viên xanh mát giữa lòng thành phố</h3>
-      <p>Bao quanh Dinh là thảm cỏ xanh mướt hình oval rộng lớn và những hàng cây cổ thụ hàng trăm năm tuổi rợp bóng mát. Đây là không gian yên bình tuyệt đối, tách biệt hoàn toàn khỏi sự ồn ào, náo nhiệt của phố thị Sài Gòn bên ngoài.</p>
-    `,
-    fullContent_en: `
-      <h3>A Historic Witness of National Unity</h3>
-      <p>The Independence Palace (also known as Reunification Palace) is one of Vietnam's most important national historic sites. It marked the historic moment on April 30, 1975, when liberation army tanks crashed through the gates, symbolizing the reunification of Vietnam.</p>
-      
-      <h3>Masterful Fusion of Modern & Eastern Architecture</h3>
-      <p>Designed by the talented architect Ngo Viet Thu, the palace's layout resembles the Chinese character for "Good Fortune". It seamlessly combines modern Western geometric design with traditional Eastern feng shui and philosophical elements.</p>
-      
-      <h3>Explore the Power Rooms & Underground Bunker</h3>
-      <p>Your journey through the palace will take you through over 100 beautifully decorated rooms, including the Reception Room, Banqueting Room, and Cabinet Room. The highlight is the underground bunker with vintage communications equipment and military maps preserved in their original state.</p>
-      
-      <h3>A Green Oasis in the City Center</h3>
-      <p>Surrounding the Palace is a vast oval lawn and century-old trees offering cool shade. It is a peaceful green oasis, completely detached from the hustle and bustle of modern Saigon outside.</p>
-    `
+    content_vi: (
+      <div style={blogContainerStyle}>
+        <p>Nằm yên bình dưới những tán cây cổ thụ xanh mát giữa trung tâm Quận 1, <strong>Dinh Độc Lập</strong> (hay còn gọi là Dinh Thống Nhất) là một trong những công trình kiến trúc lịch sử thiêng liêng nhất Việt Nam. Đây là nơi hội tụ hào khí lịch sử, chứng kiến sự kết thúc hoàn toàn của cuộc kháng chiến lâu dài và mở ra kỷ nguyên độc lập cho đất nước.</p>
+        
+        <h4 style={blogHeadingStyle}>Nhân chứng lịch sử của thời khắc thống nhất</h4>
+        <p>Dinh Độc Lập từng là nơi cư trú và làm việc của Tổng thống Việt Nam Cộng hòa. Vào thời khắc lịch sử trưa ngày 30 tháng 4 năm 1975, chiếc xe tăng mang số hiệu 390 của quân giải phóng đã húc đổ cánh cổng sắt kiên cố của dinh, đánh dấu sự thống nhất hoàn toàn của non sông bờ cõi sau nhiều năm chia cắt.</p>
+        
+        <h4 style={blogHeadingStyle}>Kiệt tác kiến trúc Á Đông hiện đại và Triết lý sâu sắc</h4>
+        <p>Dinh được thiết kế bởi kiến trúc sư tài hoa Ngô Viết Thụ - người Việt Nam duy nhất đạt giải Khôi nguyên La Mã. Công trình thể hiện sự kết hợp vô cùng hài hòa giữa đường nét vuông vức, tinh gọn của kiến trúc hiện đại phương Tây và các chi tiết mang triết lý truyền thống phương Đông. Bố cục mặt bằng dinh được tạo hình thành chữ "CÁT" (mang ý nghĩa tốt lành), mặt tiền dinh nổi bật với hệ thống lam bê tông cách điệu từ những đốt tre thanh nhã. Các gian phòng lớn bên trong như phòng khánh tiết, phòng đại yến được trang hoàng lộng lẫy và vô cùng uy nghiêm.</p>
+        
+        <h4 style={blogHeadingStyle}>Khám phá căn hầm trú ẩn kiên cố thời chiến</h4>
+        <p>Hành trình khám phá Dinh Độc Lập sẽ đưa du khách đi sâu xuống khu hầm trú ẩn ngầm. Đây là một hệ thống phòng thủ kiên cố làm bằng bê tông cốt thép dày, được thiết kế để chống lại bom đạn hạng nặng. Bên trong hầm vẫn lưu giữ nguyên vẹn các bản đồ quân sự lớn, phòng thông tin liên lạc cổ kính và chiếc xe Jeep tác chiến lịch sử.</p>
+        
+        <h4 style={blogHeadingStyle}>Mẹo nhỏ khi ghé thăm Dinh</h4>
+        <p>Bao quanh Dinh là một bãi cỏ xanh hình oval khổng lồ và khuôn viên xanh rợp mát bóng cây cổ thụ. Bạn nên dành khoảng nửa ngày để đi dạo, chụp ảnh cùng hai chiếc xe tăng lịch sử mang số hiệu 390 và 843 đặt trên bãi cỏ, đồng thời tận hưởng không gian trong lành tĩnh lặng tách biệt khỏi sự ồn ào đô thị.</p>
+      </div>
+    ),
+    content_en: (
+      <div style={blogContainerStyle}>
+        <p>Nestled under lush green canopies in District 1, the <strong>Independence Palace</strong> (also known as Reunification Palace) is one of the most sacred historical landmarks in Vietnam. This building witnessed the official end of the Vietnam War, marking a new era of peace and independence.</p>
+        
+        <h4 style={blogHeadingStyle}>The Stage of Modern Vietnamese History</h4>
+        <p>The palace served as the home and workplace of the President of South Vietnam during the war. At noon on April 30, 1975, tank number 390 crashed through the palace gates, hoisting the revolutionary flag on the rooftop, symbolizing the official reunification of the nation.</p>
+        
+        <h4 style={blogHeadingStyle}>An Eastern Philosophical Masterpiece</h4>
+        <p>Designed by the Roman Prize winner architect Ngo Viet Thu, the palace is a perfect mix of Western modernist geometry and traditional Asian philosophy. The floor plan forms the Chinese character for "Good Fortune", and the facade features elegant concrete sunshades styled like bamboo segments. Important halls like the Reception Hall and Banquet Hall are decorated with solemn and regal aesthetics.</p>
+        
+        <h4 style={blogHeadingStyle}>Explore the Subterranean Military Bunker</h4>
+        <p>The most fascinating part for adventurers is the underground bunker system. Designed to withstand heavy bombing, this bunker houses command center rooms, maps, vintage radio broadcasting equipment, and transmitters preserved in pristine condition.</p>
+        
+        <h4 style={blogHeadingStyle}>A Serene Oasis in a Bustling City</h4>
+        <p>Surrounding the palace is a massive oval lawn and a park filled with century-old trees. Walking under the cool shade, looking at the water fountain and the historical tanks displayed in the yard offers a quiet moment of reflection away from the city's frantic traffic.</p>
+      </div>
+    )
   },
 
   // HCM 3: Landmark 81
@@ -138,32 +175,37 @@ const LOCAL_GUIDES_DATA = [
     location: 'Hồ Chí Minh',
     lat: 10.7948,
     lng: 106.7218,
-    fullContent_vi: `
-      <h3>Đỉnh cao mới vươn tầm thế giới</h3>
-      <p>Với chiều cao ấn tượng 461.3m gồm 81 tầng, Landmark 81 tự hào là tòa nhà cao nhất Việt Nam và là biểu tượng của sự năng động, phát triển vượt bậc của TP.HCM. Lấy cảm hứng từ hình ảnh "bó tre" truyền thống - biểu tượng cho sức mạnh kiên cường và tinh thần đoàn kết của người Việt, tòa nhà vươn cao kiêu hãnh bên bờ sông Sài Gòn thơ mộng.</p>
-      
-      <h3>Trải nghiệm Skyview ngắm trọn Sài Gòn 360 độ</h3>
-      <p>Nằm tại 3 tầng cao nhất (tầng 79, 80, 81), đài quan sát Skyview mang đến cho du khách trải nghiệm độc nhất vô nhị khi được ngắm nhìn toàn cảnh thành phố từ độ cao gần 400m. Cảm giác bước chân ra cầu kính SkyTouch lơ lửng giữa không trung chắc chắn sẽ khiến những tín đồ mê mạo hiểm phấn khích tột độ.</p>
-      
-      <h3>Thiên đường mua sắm và vui chơi giải trí cao cấp</h3>
-      <p>Bên trong tòa nhà là trung tâm thương mại Vincom Center sầm uất quy tụ hàng loạt thương hiệu thời trang cao cấp thế giới. Nơi đây còn sở hữu rạp chiếu phim CGV với phòng chiếu IMAX siêu lớn, sân băng tự nhiên Vincom Ice Rink lớn nhất Việt Nam và hệ thống nhà hàng ẩm thực đa quốc gia sang trọng.</p>
-      
-      <h3>Gợi ý thời điểm check-in lý tưởng nhất</h3>
-      <p>Thời điểm tuyệt vời nhất để ghé thăm Landmark 81 là vào khoảng 4h30 chiều. Bạn có thể đón trọn khoảnh khắc hoàng hôn lãng mạn nhuộm vàng cả thành phố và ngắm nhìn Sài Gòn chuyển mình rực rỡ, lung linh sắc màu khi lên đèn.</p>
-    `,
-    fullContent_en: `
-      <h3>A New Architectural Peak of Vietnam</h3>
-      <p>Standing at 461.3 meters with 81 stories, Landmark 81 is the tallest skyscraper in Vietnam and a symbol of Ho Chi Minh City's rapid development. Inspired by the traditional Vietnamese "bamboo bundle" - representing strength and solidarity - the building rises proudly along the Saigon River.</p>
-      
-      <h3>Landmark 81 Skyview Observatory</h3>
-      <p>Spanning the top three floors (79, 80, 81), the Skyview Observatory offers visitors the unique experience of viewing the entire city from nearly 400 meters high. Walking on the transparent glass bridge "SkyTouch" suspended in the air is an unforgettable thrill for adventure seekers.</p>
-      
-      <h3>Luxury Shopping & Entertainment Destination</h3>
-      <p>Inside the skyscraper is the Vincom Center, a premium shopping mall home to world-class brands. It also features a giant CGV IMAX theater, Vincom Ice Rink (Vietnam's largest natural ice rink), and a diverse array of fine dining restaurants.</p>
-      
-      <h3>Best Time to Visit</h3>
-      <p>The best time to visit Landmark 81 is around 4:30 PM. You can catch the stunning sunset over the Saigon River and watch the city transform into a sea of glittering lights as night falls.</p>
-    `
+    content_vi: (
+      <div style={blogContainerStyle}>
+        <p>Nếu bạn muốn nhìn ngắm một góc độ hoàn toàn mới, hiện đại và xa hoa của Thành phố Hồ Chí Minh thì hãy đến với <strong>Landmark 81</strong>. Đứng kiêu hãnh bên bờ sông Sài Gòn uốn lượn, tòa nhà chọc trời này không chỉ nắm giữ danh hiệu cao nhất Việt Nam mà còn là biểu tượng rực rỡ của sự thịnh vượng, khát vọng vươn mình ra biển lớn của thế giới.</p>
+        
+        <h4 style={blogHeadingStyle}>Kiến trúc bó tre truyền thống độc đáo</h4>
+        <p>Landmark 81 cao kỷ lục 461.3 mét với 81 tầng nổi. Thiết kế của tòa nhà được lấy cảm hứng từ hình ảnh "bó tre" truyền thống - biểu tượng vô giá của người Việt Nam đại diện cho sự đoàn kết, kiên cường bất khuất. Những khối tháp nhỏ xếp chồng đan xen vươn thẳng lên trời tạo nên nét kiến trúc vô cùng hiện đại nhưng vẫn mang đậm bản sắc văn hóa Việt.</p>
+        
+        <h4 style={blogHeadingStyle}>Chiêm ngưỡng toàn cảnh thành phố từ Đài quan sát Skyview</h4>
+        <p>Đến với Landmark 81, du khách không thể bỏ lỡ cơ hội khám phá đài quan sát Skyview nằm ở ba tầng cao nhất 79, 80 và 81. Ở độ cao gần 400 mét, qua những tấm kính cường lực lớn, bạn sẽ ngắm trọn vẹn bức tranh Sài Gòn phồn hoa chuyển mình tuyệt đẹp. Đặc biệt, cầu kính SkyTouch nhô ra ngoài không trung sẽ đem lại cho những ai đam mê mạo hiểm cảm giác như đang dạo bước trên mây.</p>
+        
+        <h4 style={blogHeadingStyle}>Tổ hợp vui chơi giải trí và ẩm thực đẳng cấp</h4>
+        <p>Vincom Center Landmark 81 dưới chân tòa nhà là một thiên đường mua sắm đích thực với hàng trăm thương hiệu xa xỉ. Nơi đây sở hữu sân băng tự nhiên Vincom Ice Rink lớn nhất Việt Nam rộng hơn 2000 mét vuông, rạp chiếu phim CGV IMAX màn hình khổng lồ, và vô vàn nhà hàng ẩm thực Á - Âu sang trọng nhìn ra công viên ven sông xanh mướt.</p>
+        
+        <h4 style={blogHeadingStyle}>Thời điểm ngắm cảnh hoàn hảo</h4>
+        <p>Thời điểm lý tưởng nhất để lên đài quan sát là từ 16h30 đến 18h00. Bạn sẽ được chiêm ngưỡng khoảnh khắc hoàng hôn buông xuống rực rỡ trên dòng sông Sài Gòn trước khi cả thành phố rực rỡ thắp lên những ánh đèn lung linh tuyệt đẹp tựa dải ngân hà.</p>
+      </div>
+    ),
+    content_en: (
+      <div style={blogContainerStyle}>
+        <p>Representing a young, dynamic, and ultra-modern Saigon is the iconic skyscraper <strong>Landmark 81</strong>. Rising proudly along the Saigon River, it is not only the tallest building in Vietnam but also a proud symbol of the nation's international aspiration and technological growth.</p>
+        
+        <h4 style={blogHeadingStyle}>Bamboo Bundle Design Honoring Vietnamese Roots</h4>
+        <p>Standing at a record height of 461.3 meters with 81 stories, the tower features a stunning structural design inspired by the traditional Vietnamese "bamboo bundle". The segments of bamboo rising together symbolize strength, resilience, and national solidarity reaching for the sky.</p>
+        
+        <h4 style={blogHeadingStyle}>Soak in 360-Degree Views at Skyview Observatory</h4>
+        <p>The ultimate experience at Landmark 81 is visiting the Skyview Observatory spanning floors 79, 80, and 81. At nearly 400 meters high, you can view the entire Ho Chi Minh City skyline hugging the Saigon River. Thrill-seekers can try walking on the "SkyTouch" open-air glass bridge suspended high in the clouds.</p>
+        
+        <h4 style={blogHeadingStyle}>A Luxury Shopping and Entertainment Hub</h4>
+        <p>The bustling Vincom Center shopping mall at the base of the tower gathers global luxury fashion brands. Landmark 81 also houses Vincom Ice Rink, the largest natural ice rink in Vietnam (over 2,000 sqm), a premium CGV IMAX cinema, and a wide collection of upscale international dining spots.</p>
+      </div>
+    )
   },
 
   // HCM 4: Phố Đi Bộ Nguyễn Huệ
@@ -187,32 +229,37 @@ const LOCAL_GUIDES_DATA = [
     location: 'Hồ Chí Minh',
     lat: 10.7740,
     lng: 106.7038,
-    fullContent_vi: `
-      <h3>Trái tim sôi động của thành phố không ngủ</h3>
-      <p>Phố đi bộ Nguyễn Huệ là con đường quảng trường hiện đại bậc nhất Việt Nam, nối liền Trụ sở UBND Thành phố đến bờ sông Sài Gòn. Nơi đây được ví như trái tim của Sài Gòn, luôn ngập tràn năng lượng trẻ trung và là điểm vui chơi quen thuộc của người dân lẫn du khách mỗi tối.</p>
-      
-      <h3>Không gian trình diễn nghệ thuật đường phố đa sắc màu</h3>
-      <p>Mỗi khi đêm xuống, con phố khoác lên mình vẻ ngoài lung linh nhờ hệ thống nhạc nước nghệ thuật. Bạn sẽ dễ dàng bắt gặp những nhóm bạn trẻ say mê biểu diễn âm nhạc acoustic, nhảy hiện đại, hay các chương trình lễ hội quy mô lớn được tổ chức định kỳ đầy ấn tượng.</p>
-      
-      <h3>Huyền thoại Chung cư 42 Nguyễn Huệ</h3>
-      <p>Một điểm nhấn không thể bỏ qua chính là Chung cư 42 Nguyễn Huệ. Tòa nhà cổ kính này đã được cải tạo thành tổ hợp quán cà phê, trà chiều và cửa hàng thời trang xinh xắn xếp lớp như những khối rubik màu sắc. Đây là địa điểm lý tưởng để ngồi nhâm nhi cà phê và ngắm nhìn dòng người nhộn nhịp bên dưới.</p>
-      
-      <h3>Thưởng thức tinh hoa ẩm thực đường phố</h3>
-      <p>Quanh khu vực phố đi bộ là thế giới ẩm thực đường phố đầy màu sắc với trà sữa sang chảnh, bánh tráng nướng giòn rụm, kem bơ béo ngậy, bingsu mát lạnh... hứa hẹn mang lại những trải nghiệm ẩm thực vô cùng thú vị.</p>
-    `,
-    fullContent_en: `
-      <h3>The Heart of the City That Never Sleeps</h3>
-      <p>Nguyen Hue Walking Street is Vietnam's most modern boulevard plaza, connecting the City Hall to the Saigon River bank. It is widely considered the heart of Saigon, brimming with youth energy and serving as a prime gathering spot for locals and tourists alike.</p>
-      
-      <h3>Vibrant Street Art & Music Performances</h3>
-      <p>At night, the street lights up beautifully with colorful musical fountains. You will easily spot local youth groups performing acoustic sets, street dance, and magic tricks, alongside large-scale cultural festivals held during holidays.</p>
-      
-      <h3>The Iconic Cafe Apartment at 42 Nguyen Hue</h3>
-      <p>A must-visit highlight is the historic Cafe Apartment building at No. 42. This old apartment block has been transformed into a charming vertical grid of coffee shops and fashion boutiques. It's the perfect place to sit back, sip Vietnamese coffee, and watch the bustling street below.</p>
-      
-      <h3>Street Food Paradise</h3>
-      <p>Surrounding the walking street is a vibrant culinary world featuring trendy bubble teas, crispy grilled rice paper (Vietnamese pizza), creamy avocado ice cream, and modern desserts, guaranteeing an exciting street food tour.</p>
-    `
+    content_vi: (
+      <div style={blogContainerStyle}>
+        <p>Nếu có ai đó hỏi "Đi đâu để thấy một Sài Gòn trẻ trung và tràn đầy nhựa sống nhất?", câu trả lời chắc chắn là <strong>Phố Đi Bộ Nguyễn Huệ</strong>. Con đường quảng trường đi bộ lát đá hoa cương hiện đại bậc nhất Việt Nam này là nơi giao thoa tuyệt vời của nhịp sống đô thị, nghệ thuật đường phố và ẩm thực đường phố đa sắc màu.</p>
+        
+        <h4 style={blogHeadingStyle}>Đại lộ lịch sử chuyển mình hiện đại</h4>
+        <p>Đại lộ Nguyễn Huệ kéo dài hơn 670 mét bắt đầu từ tòa nhà UBND Thành phố mang kiến trúc Pháp cổ kính đến tận bến Bạch Đằng lộng gió. Ban ngày con phố trông lịch lãm, yên bình, nhưng khi hoàng hôn buông xuống, nó thực sự lột xác khoác lên mình vẻ ngoài nhộn nhịp, lung linh ánh đèn đầy lôi cuốn.</p>
+        
+        <h4 style={blogHeadingStyle}>Sân khấu biểu diễn nghệ thuật đường phố tự phát sôi động</h4>
+        <p>Mỗi tối cuối tuần, phố đi bộ Nguyễn Huệ cấm hoàn toàn xe cộ để nhường không gian cho dòng người tấp nập. Dưới làn nước phun nghệ thuật lấp lánh ánh sáng nhiều màu, bạn sẽ bắt gặp những vòng tròn đám đông xem các bạn trẻ say sưa hát acoustic, chơi nhạc cụ mộc mạc hay biểu diễn những bước nhảy hiện đại đầy năng lượng.</p>
+        
+        <h4 style={blogHeadingStyle}>Check-in tại Chung cư 42 Nguyễn Huệ huyền thoại</h4>
+        <p>Đối diện quảng trường là khu chung cư số 42 Nguyễn Huệ - công trình mang tính biểu tượng nổi tiếng trên mạng xã hội toàn cầu. Nhìn từ xa, tòa nhà cổ này trông giống như một chiếc hộp khổng lồ chứa hàng chục ô màu rực rỡ, mỗi ô là một quán cà phê trang trí xinh xắn. Ngồi trên ban công một quán cà phê nhỏ, nhâm nhi ly trà đào, ngắm nhìn nhịp sống hối hả trôi chảy bên dưới là trải nghiệm vô cùng thú vị.</p>
+        
+        <h4 style={blogHeadingStyle}>Thiên đường ẩm thực đường phố đủ vị ngọt béo</h4>
+        <p>Bên cạnh các thương hiệu trà sữa nổi tiếng dọc hai bên đường, bạn còn có thể thưởng thức những món ăn vặt "kinh điển" của giới trẻ Sài Gòn như bánh tráng nướng trứng thơm nức, kem bơ béo ngậy hay những que xiên chiên nóng hổi được bán quanh khu phố.</p>
+      </div>
+    ),
+    content_en: (
+      <div style={blogContainerStyle}>
+        <p>To feel the youth, rhythm, and modern energy of Saigon at night, head straight to <strong>Nguyen Hue Walking Street</strong>. This granite-paved walking plaza, the most modern in Vietnam, is the perfect stage for music, lights, and local urban life.</p>
+        
+        <h4 style={blogHeadingStyle}>The Historic Boulevard of District 1</h4>
+        <p>Nguyen Hue Boulevard stretches 670 meters from the historic City Hall to the Bach Dang Wharf park along the Saigon River. By day, the street is a calm plaza, but as dusk falls, it turns into a vibrant, neon-lit outdoor festival theater.</p>
+        
+        <h4 style={blogHeadingStyle}>A Stage for Street Art and Music</h4>
+        <p>At night, colorful music fountains light up the boulevard. Walking along the street, you will find acoustic band circles, street dancers performing modern choreography, and large cultural stages constructed during weekend events and national festivals.</p>
+        
+        <h4 style={blogHeadingStyle}>Check-in at the Famous 42 Nguyen Hue Cafe Apartment</h4>
+        <p>Standing tall on the boulevard is the old apartment block at No. 42. This building looks like a giant Rubik's cube filled with independent coffee houses, cozy tea rooms, and fashion boutiques. Sitting on a high balcony with a cup of Vietnamese drip coffee watching the crowds walk below is a signature Saigon youth experience.</p>
+      </div>
+    )
   },
 
   // HCM 5: Bưu điện Thành phố
@@ -236,32 +283,34 @@ const LOCAL_GUIDES_DATA = [
     location: 'Hồ Chí Minh',
     lat: 10.7798,
     lng: 106.6999,
-    fullContent_vi: `
-      <h3>Kiệt tác kiến trúc Phục Hưng Pháp cổ kính</h3>
-      <p>Tọa lạc tại Công xã Paris, Bưu điện Thành phố Hồ Chí Minh là một trong những công trình kiến trúc Pháp cổ kính đẹp nhất Đông Dương còn sót lại. Được xây dựng từ năm 1886 đến 1891 bởi kiến trúc sư lừng danh người Pháp Gustave Eiffel, tòa nhà mang vẻ đẹp sang trọng, quý phái của phong cách Phục Hưng Âu châu.</p>
-      
-      <h3>Không gian nội thất cổ điển đầy hoài niệm</h3>
-      <p>Bước qua cánh cổng sắt, bạn sẽ được chiêm ngưỡng mái vòm cuốn cao vút nâng đỡ bởi hàng cột sắt kiên cố nhuốm màu thời gian. Điểm độc đáo bên trong bưu điện chính là hai bản đồ cổ vẽ tay tỉ mỉ mô tả Sài Gòn xưa, cùng những bốt điện thoại bằng gỗ cổ kính đưa du khách quay về thế kỷ 19.</p>
-      
-      <h3>Nơi lưu giữ nét đẹp gửi thư tay truyền thống</h3>
-      <p>Dù xã hội hiện đại phát triển, Bưu điện Trung tâm Sài Gòn vẫn thực hiện chức năng bưu chính của mình. Du khách ghé thăm thường thích thú tự tay chọn những tấm bưu thiếp phong cảnh đẹp đẽ, viết những lời chúc đong đầy yêu thương để gửi về cho người thân, bạn bè.</p>
-      
-      <h3>Góc chụp ảnh triệu view khó lòng bỏ qua</h3>
-      <p>Với gam màu vàng pastel đặc trưng, những ô cửa sổ hình vòm cuốn duyên dáng và ban công gỗ cổ xưa, bưu điện là phông nền hoàn hảo cho mọi bức ảnh check-in. Vị trí đắc địa ngay cạnh Nhà thờ Đức Bà cổ kính càng tạo nên một cụm di tích tham quan tuyệt đẹp giữa lòng thành phố.</p>
-    `,
-    fullContent_en: `
-      <h3>A Classic French Renaissance Masterpiece</h3>
-      <p>Located at Paris Square, the Saigon Central Post Office is one of the most beautiful French colonial buildings in Indochina. Built between 1886 and 1891 by the famous architect Gustave Eiffel, the building boasts the elegant and classic beauty of European Renaissance architecture.</p>
-      
-      <h3>Nostalgic Classical Interior Space</h3>
-      <p>Passing through the iron gates, you will marvel at the high vaulted ceilings supported by historic iron pillars. Inside, two hand-painted historical maps depicting old Saigon and vintage wooden telephone booths transport visitors back to the late 19th century.</p>
-      
-      <h3>Preserving the Tradition of Handwritten Letters</h3>
-      <p>Despite modern technology, the post office still operates fully. Visitors love choosing postcards featuring local landmarks, writing heartfelt wishes, and mailing them directly to family and friends worldwide.</p>
-      
-      <h3>An Iconic Photo Spot Next to Notre Dame</h3>
-      <p>With its signature pastel yellow walls, graceful arched windows, and old wooden shutters, the post office is a perfect backdrop for travel photos. Its prime location next to the historic Notre Dame Cathedral forms a magnificent sightseeing complex in Saigon.</p>
-    `
+    content_vi: (
+      <div style={blogContainerStyle}>
+        <p><strong>Bưu điện Thành phố Hồ Chí Minh</strong> là bưu điện lớn nhất Việt Nam và là một trong những kiệt tác kiến trúc Pháp cổ kính đẹp nhất khu vực Đông Dương còn tồn tại cho đến ngày nay. Trải qua hơn 130 năm thăng trầm, công trình không chỉ đảm nhận nhiệm vụ kết nối bưu chính truyền thống mà đã hóa thân thành một bảo tàng nghệ thuật sống động thu hút hàng vạn tâm hồn yêu cái đẹp ghé thăm mỗi tuần.</p>
+        
+        <h4 style={blogHeadingStyle}>Vài nét về Bưu điện Thành phố Hồ Chí Minh</h4>
+        <p>Tọa lạc tại số 2 Công trường Công xã Paris, ngay cạnh nhà thờ Đức Bà cổ kính, tòa nhà được khởi công xây dựng từ năm 1886 đến năm 1891 mới hoàn thành. Được thiết kế bởi kiến trúc sư người Pháp lỗi lạc Gustave Eiffel - người đã khai sinh ra tháp Eiffel và tượng Nữ thần Tự do - tòa nhà mang đậm phong thái kiến trúc thời kỳ phục hưng kết hợp hài hòa với những đường nét mỹ thuật cổ điển.</p>
+        
+        <h4 style={blogHeadingStyle}>Kiến trúc độc đáo mang vẻ đẹp Phục Hưng cổ kính</h4>
+        <p>Mặt tiền bưu điện thu hút mọi ánh nhìn với tông màu vàng pastel nhã nhặn, nổi bật là chiếc đồng hồ tròn cổ kính phía trên cửa chính ghi năm khởi công. Bước chân vào bên trong, bạn sẽ cảm giác như bước vào một nhà ga xe lửa châu Âu cổ xưa với những vòm trần uốn cong cao vút bằng sắt thép kiên cố. Hai bên tường vẫn lưu giữ hai bản đồ vẽ tay cổ họa lại lịch sử giao thông Sài Gòn xưa và Nam Kỳ lục tỉnh. Những dãy quầy giao dịch bằng gỗ lim sậm màu bóng loáng thời gian cùng các bốt điện thoại cổ kính vẫn đứng trầm mặc đưa bạn quay về thế kỷ trước.</p>
+        
+        <h4 style={blogHeadingStyle}>Những trải nghiệm không thể bỏ lỡ tại Bưu điện cổ</h4>
+        <p>Đến đây, bạn không chỉ có cơ hội lưu giữ những tấm hình check-in triệu view trước cổng tòa nhà cổ kính, mà hãy thử một lần mua một tấm bưu thiếp in phong cảnh Việt Nam, ngồi viết những nét bút tay nắn nót và gửi về cho người thân yêu từ hòm thư bưu điện. Chắc chắn đó sẽ là món quà lưu niệm lãng mạn mang giá trị tinh thần to lớn vượt thời gian.</p>
+      </div>
+    ),
+    content_en: (
+      <div style={blogContainerStyle}>
+        <p><strong>The Saigon Central Post Office</strong> is the largest post office in Vietnam and one of the oldest architectural masterpieces in Saigon, boasting over 130 years of history. More than just a postal hub, it is a cultural and artistic icon attracting millions of global visitors annually.</p>
+        
+        <h4 style={blogHeadingStyle}>A Quick Tour of Saigon Post Office History</h4>
+        <p>Located at 2 Paris Square, District 1, the building was constructed between 1886 and 1891 based on the design of the famous French architect Gustave Eiffel. This period marked a transition from classical European architecture to modern industrial design, establishing a unique architectural identity in the heart of Saigon.</p>
+        
+        <h4 style={blogHeadingStyle}>The Fusion of French Renaissance and Eastern Architecture</h4>
+        <p>The building stands out with its vibrant yellow paint under the Saigon sun, elegant arched windows, and meticulously carved iron pillars. Stepping inside, visitors are greeted by a massive high-vaulted ceiling that creates a grand, spacious atmosphere. On the side walls are two hand-painted historical maps: one depicting the old Saigon postal network and the other mapping 19th-century Southern Vietnam. Vintage ironwood telephone booths line the entrance, acting as a time machine back to the 19th century.</p>
+        
+        <h4 style={blogHeadingStyle}>Unmissable Experiences for Travelers</h4>
+        <p>When visiting the post office, you must try choosing postcards featuring classic Saigon views, writing messages to loved ones, and mailing them directly from the vintage wooden mailboxes.</p>
+      </div>
+    )
   }
 ];
 
@@ -386,14 +435,19 @@ const CustomerAttractionsPage = () => {
   const [locationFilter, setLocationFilter] = useState('');
   const [userLocation, setUserLocation] = useState(null);
 
-  // ── Resolve item text theo ngôn ngữ hiện tại ────────────────────────────────
+  // ── Resolve item text theo ngôn ngữ hiện tại ──
   const resolveItem = (item) => {
     const title   = item.titleKey   ? t(item.titleKey)   : (lang === 'vi' ? item.title_vi   : item.title_en)   || item.title_vi;
     const desc    = item.descKey    ? t(item.descKey)    : (lang === 'vi' ? item.desc_vi    : item.desc_en)    || item.desc_vi;
     const category = item.categoryKey ? t(item.categoryKey) : (lang === 'vi' ? item.category : item.category);
     const tags    = item.tagsKey    ? t(item.tagsKey, { returnObjects: true }) : (lang === 'vi' ? item.tags_vi : item.tags_en) || item.tags_vi || [];
     const duration = item.durationKey ? t(item.durationKey) : (lang === 'vi' ? item.duration_vi : item.duration_en) || item.duration_vi;
-    const fullContent = item.fullContentKey ? t(item.fullContentKey) : (lang === 'vi' ? item.fullContent_vi : item.fullContent_en) || (lang === 'vi' ? item.desc_vi : item.desc_en) || '';
+    
+    // Nếu có dạng content_vi/content_en dạng JSX thì ưu tiên sử dụng, ngược lại dùng fullContentKey từ file dịch
+    const fullContent = item.content_vi || item.content_en 
+      ? (lang === 'vi' ? item.content_vi : item.content_en)
+      : (item.fullContentKey ? t(item.fullContentKey) : (lang === 'vi' ? item.desc_vi : item.desc_en) || '');
+      
     return { ...item, resolvedTitle: title, resolvedDesc: desc, resolvedCategory: category, resolvedTags: Array.isArray(tags) ? tags : [], resolvedDuration: duration, resolvedFullContent: fullContent };
   };
 
@@ -527,35 +581,6 @@ const CustomerAttractionsPage = () => {
 
   return (
     <div style={{ paddingBottom: 60 }}>
-      {/* CSS custom cho phần hiển thị blog trong Modal */}
-      <style dangerouslySetInnerHTML={{ __html: `
-        .blog-content h3 {
-          font-size: 1.25rem !important;
-          color: #1a1a1a !important;
-          margin-top: 24px !important;
-          margin-bottom: 12px !important;
-          font-weight: 600 !important;
-          border-left: 4px solid #c9a961 !important;
-          padding-left: 12px !important;
-        }
-        .blog-content p {
-          margin-bottom: 16px !important;
-          text-align: justify !important;
-          font-size: 0.95rem !important;
-          line-height: 1.8 !important;
-          color: #444 !important;
-        }
-        .blog-content ul {
-          margin-bottom: 16px !important;
-          padding-left: 20px !important;
-        }
-        .blog-content li {
-          margin-bottom: 8px !important;
-          font-size: 0.95rem !important;
-          color: #444 !important;
-        }
-      `}} />
-
       {/* ── Hero Banner ──────────────────────────────────────────────────────── */}
       <div style={{
         position: "relative", height: "450px", borderRadius: 16, marginBottom: 48,
@@ -710,11 +735,25 @@ const CustomerAttractionsPage = () => {
 
                 <Divider />
 
-                {/* Render nội dung chi tiết dạng HTML sạch */}
+                {/* Phần chứa bài viết có scrollbar thanh lịch và giới hạn chiều cao tối đa để tránh tràn */}
                 <div 
-                  className="blog-content"
-                  dangerouslySetInnerHTML={{ __html: resolved.resolvedFullContent || resolved.resolvedDesc }}
-                />
+                  style={{ 
+                    maxHeight: "350px", 
+                    overflowY: "auto", 
+                    paddingRight: "12px", 
+                    scrollbarWidth: "thin", 
+                    scrollbarColor: "#c9a961 #f5f5f5"
+                  }}
+                >
+                  {typeof resolved.resolvedFullContent === 'string' ? (
+                    <div 
+                      style={{ fontSize: "0.95rem", lineHeight: 1.8, color: "#444", textAlign: "justify" }}
+                      dangerouslySetInnerHTML={{ __html: resolved.resolvedFullContent }}
+                    />
+                  ) : (
+                    resolved.resolvedFullContent
+                  )}
+                </div>
 
                 {detailModal.lat && detailModal.lng && (
                   <>
