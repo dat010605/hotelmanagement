@@ -189,6 +189,11 @@ const DashboardPage = () => {
   const [chartLoading, setChartLoading] = useState(false);
 
   const userRoleId = localStorage.getItem('userRole') || 'Guest';
+  const [previewRole, setPreviewRole] = useState(userRoleId);
+
+  useEffect(() => {
+    setPreviewRole(userRoleId);
+  }, [userRoleId]);
 
   const getRoleName = (id) => {
     switch(id) {
@@ -435,15 +440,30 @@ const DashboardPage = () => {
         <Col>
           <Title level={3} style={{ margin: 0 }}>
             {/* 🌟 SỬA ĐỔI: Admin và Manager xài chung title Tổng quan Quản trị & Quản lý */}
-            {(userRoleId === '1' || userRoleId === '2') ? '📊 Tổng quan Quản trị & Quản lý' : 
-             userRoleId === '3' ? '🛎️ Tổng quan Lễ tân' :
-             userRoleId === '5' ? '🧹 Bảng điều khiển Buồng phòng' : 'Bảng điều khiển'}
+            {(previewRole === '1' || previewRole === '2') ? '📊 Tổng quan Quản trị & Quản lý' : 
+             previewRole === '3' ? '🛎️ Tổng quan Lễ tân' :
+             previewRole === '5' ? '🧹 Bảng điều khiển Buồng phòng' : 'Bảng điều khiển'}
           </Title>
           <Text type="secondary">Xin chào, chúc bạn một ngày làm việc hiệu quả!</Text>
         </Col>
         <Col>
-          <Space>
-            <Tag color="blue" style={{ fontSize: 14, padding: '4px 10px', borderRadius: '4px' }}>Vai trò: {getRoleName(userRoleId)}</Tag>
+          <Space size="large">
+            {(userRoleId === '1' || userRoleId === '2') && (
+              <Space>
+                <span style={{ fontSize: '13px', fontWeight: '500', color: '#555' }}>Xem nhanh vai trò:</span>
+                <Segmented 
+                  options={[
+                    { label: 'Admin/Manager', value: userRoleId },
+                    { label: 'Lễ tân (3)', value: '3' },
+                    { label: 'Buồng phòng (5)', value: '5' }
+                  ]}
+                  value={previewRole}
+                  onChange={(val) => setPreviewRole(val)}
+                  style={{ border: '1px solid #d9d9d9', borderRadius: '6px' }}
+                />
+              </Space>
+            )}
+            <Tag color="blue" style={{ fontSize: 14, padding: '4px 10px', borderRadius: '4px' }}>Vai trò thực tế: {getRoleName(userRoleId)}</Tag>
             <Tooltip title="Làm mới dữ liệu">
               <ReloadOutlined
                 style={{ fontSize: 20, cursor: 'pointer', color: '#1890ff', padding: 8, borderRadius: 8, background: 'rgba(24,144,255,0.06)' }}
@@ -459,10 +479,10 @@ const DashboardPage = () => {
       </Row>
 
       {/* 🌟 SỬA ĐỔI: Gọi hàm renderAdminView cho cả Role 1 và Role 2 */}
-      {(userRoleId === '1' || userRoleId === '2') && renderAdminView()}
-      {userRoleId === '3' && renderRoomManagementView()}
-      {userRoleId === '5' && renderHousekeepingView()}
-      {!['1', '2', '3', '5'].includes(userRoleId) && renderDevelopingView()}
+      {(previewRole === '1' || previewRole === '2') && renderAdminView()}
+      {previewRole === '3' && renderRoomManagementView()}
+      {previewRole === '5' && renderHousekeepingView()}
+      {!['1', '2', '3', '5'].includes(previewRole) && renderDevelopingView()}
 
     </div>
   );
