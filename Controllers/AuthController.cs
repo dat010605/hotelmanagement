@@ -24,6 +24,21 @@ namespace HotelManagement.API.Controllers
             _config = config;
         }
 
+        [HttpGet("reset-admin")]
+        public async Task<IActionResult> ResetAdminPass()
+        {
+            var hashed = BCrypt.Net.BCrypt.HashPassword("123456");
+            var rows = await _context.Users
+                .Where(u => u.Email == "admin@hotel.com")
+                .ExecuteUpdateAsync(s => s.SetProperty(u => u.PasswordHash, hashed));
+            
+            if (rows > 0)
+            {
+                return Ok(new { message = "Thành công! Đã reset mật khẩu của admin@hotel.com thành 123456." });
+            }
+            return NotFound(new { message = "Không tìm thấy user admin@hotel.com trong CSDL." });
+        }
+
         // ====================================================
         // 1. ĐĂNG KÝ 
         // ====================================================
