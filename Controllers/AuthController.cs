@@ -78,57 +78,64 @@ namespace HotelManagement.API.Controllers
         [HttpPost("Login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            var user = await _context.Users
-                                     .Include(u => u.Role).ThenInclude(r => r.Permissions)
-                                     .FirstOrDefaultAsync(u => u.Email == request.Email && u.Status == true);
-
-            if (user == null)
-                return Unauthorized(new { message = "Email không tồn tại hoặc tài khoản bị khóa." });
-
-            // Xác thực mật khẩu: hỗ trợ cả BCrypt hash lẫn plain text (tài khoản cũ từ seed.sql)
-            bool isPasswordValid;
-            if (user.PasswordHash.StartsWith("$"))
+            try
             {
-                // Mật khẩu đã được mã hóa BCrypt → verify bằng BCrypt
-                isPasswordValid = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
-            }
-            else
-            {
-                // Mật khẩu cũ lưu dạng plain text → so sánh trực tiếp
-                isPasswordValid = (user.PasswordHash == request.Password);
+                var user = await _context.Users
+                                         .Include(u => u.Role).ThenInclude(r => r.Permissions)
+                                         .FirstOrDefaultAsync(u => u.Email == request.Email && u.Status == true);
 
-                // Auto-migrate: Nếu đúng, tự động mã hóa lại bằng BCrypt cho lần sau
-                // Dùng ExecuteUpdate để CHỈ update cột password_hash, tránh lỗi NOT NULL ở các cột khác
-                if (isPasswordValid)
+                if (user == null)
+                    return Unauthorized(new { message = "Email không tồn tại hoặc tài khoản bị khóa." });
+
+                // Xác thực mật khẩu: hỗ trợ cả BCrypt hash lẫn plain text (tài khoản cũ từ seed.sql)
+                bool isPasswordValid;
+                if (user.PasswordHash.StartsWith("$"))
                 {
-                    var hashedPassword = BCrypt.Net.BCrypt.HashPassword(request.Password);
-                    await _context.Users
-                        .Where(u => u.Id == user.Id)
-                        .ExecuteUpdateAsync(s => s.SetProperty(u => u.PasswordHash, hashedPassword));
+                    // Mật khẩu đã được mã hóa BCrypt → verify bằng BCrypt
+                    isPasswordValid = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
                 }
-            }
-
-            if (!isPasswordValid)
-                return Unauthorized(new { message = "Mật khẩu không đúng." });
-
-            var token = GenerateJwtToken(user);
-            var permissions = user.Role?.Permissions?.Select(p => p.Name).ToList() ?? new List<string>();
-            
-            // Trả về đúng format để Frontend không bị sập
-            return Ok(new
-            {
-                message = "Đăng nhập thành công",
-                token = token,
-                permissions = permissions,
-                user = new
+                else
                 {
-                    id = user.Id,
-                    fullName = user.FullName,
-                    email = user.Email,
-                    role = user.Role?.Name,
-                    avatarUrl = user.AvatarUrl
+                    // Mật khẩu cũ lưu dạng plain text → so sánh trực tiếp
+                    isPasswordValid = (user.PasswordHash == request.Password);
+
+                    // Auto-migrate: Nếu đúng, tự động mã hóa lại bằng BCrypt cho lần sau
+                    // Dùng ExecuteUpdate để CHỈ update cột password_hash, tránh lỗi NOT NULL ở các cột khác
+                    if (isPasswordValid)
+                    {
+                        var hashedPassword = BCrypt.Net.BCrypt.HashPassword(request.Password);
+                        await _context.Users
+                            .Where(u => u.Id == user.Id)
+                            .ExecuteUpdateAsync(s => s.SetProperty(u => u.PasswordHash, hashedPassword));
+                    }
                 }
-            });
+
+                if (!isPasswordValid)
+                    return Unauthorized(new { message = "Mật khẩu không đúng." });
+
+                var token = GenerateJwtToken(user);
+                var permissions = user.Role?.Permissions?.Select(p => p.Name).ToList() ?? new List<string>();
+                
+                // Trả về đúng format để Frontend không bị sập
+                return Ok(new
+                {
+                    message = "Đăng nhập thành công",
+                    token = token,
+                    permissions = permissions,
+                    user = new
+                    {
+                        id = user.Id,
+                        fullName = user.FullName,
+                        email = user.Email,
+                        role = user.Role?.Name,
+                        avatarUrl = user.AvatarUrl
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Lỗi Database: " + ex.Message, inner = ex.InnerException?.Message });
+            }
         }
 
         // ====================================================
