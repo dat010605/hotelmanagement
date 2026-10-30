@@ -7,6 +7,14 @@
     <CetCompat>false</CetCompat>
   </PropertyGroup>
 
+  <!-- Exclude the test project subfolder from main API compilation -->
+  <ItemGroup>
+    <Compile Remove="HotelManagement.Tests\**" />
+    <Content Remove="HotelManagement.Tests\**" />
+    <EmbeddedResource Remove="HotelManagement.Tests\**" />
+    <None Remove="HotelManagement.Tests\**" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.1.0" />
     <PackageReference Include="ClosedXML" Version="0.105.0" />

@@ -1,0 +1,5 @@
+# Terminal 1 — Backend (từ thư mục HotelManagement.Tests)
+dotnet test -c Release --logger "console;verbosity=normal"
+
+# Terminal 2 — Frontend (từ thư mục hotel-erp-frontend)
+npm run test
